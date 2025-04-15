@@ -1,0 +1,44 @@
+<!-- model
+	 
+	 type IndexModel struct {
+	     RepositoryList []struct{RelPath string; Description string}
+	 }
+
+  -->
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Gitus</title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<div class="index-header">
+	  <div class="index-header-label">DEPOT</div>
+      <h1 class="index-header-name">Gitus</h1>
+	</div>
+    <hr />
+	<table>
+	  <thead>
+		<tr>
+		  <th>Repository</th>
+		  <th>Description</th>
+		</tr>
+	  </thead>
+	  <tbody>
+		{{range .RepositoryList}}
+		<tr>
+		  <td><a href="/repo/{{.RelPath}}">{{.RelPath}}</a></td>
+		  <td>{{.Description}}</td>
+		</tr>
+		{{end}}
+	  </tbody>
+    </table>
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>

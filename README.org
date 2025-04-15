@@ -1,0 +1,10 @@
+* gitus
+
+A web frontend for Git.
+
+** Build
+
+```
+go generate
+go build
+```

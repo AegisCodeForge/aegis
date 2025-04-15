@@ -1,0 +1,49 @@
+<!-- model
+
+type RepositoryModel struct{
+	RepoName string
+	RepoObj gitlib.LocalGitRepository
+	BranchList map[string]*gitlib.Branch
+	TagList map[string]*gitlib.Tag
+}
+  -->
+
+
+{{$reponame := .RepoName}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<div class="repo-header">
+	  <div class="repo-header-label"><a href="/">DEPOT</a> / REPOSITORY</div>
+      <h1 class="repo-header-name">{{.RepoName}}</h1>
+	</div>
+	<div class="repo-description">{{.RepoObj.Description}}</div>
+    <hr />
+
+	<h2>Branches</h2>
+	<ul>
+	  {{range .BranchList}}
+	  <li><a href="/repo/{{$reponame}}/branch/{{.Name}}">{{.Name}}</a></li>
+	  {{end}}
+	</ul>
+
+	<h2>Tags</h2>
+	<ul>
+	  {{range .TagList}}
+	  <li><a href="/repo/{{$reponame}}/tag/{{.Name}}">{{.Name}}</a></li>
+	  {{end}}
+	</ul>
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+
+

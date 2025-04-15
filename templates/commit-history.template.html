@@ -1,0 +1,62 @@
+<!-- model
+
+	 type CommitHistoryItemModel struct {
+	 ShortId string
+	 Id string
+	 Message string
+	 AuthorInfo gitlib.AuthorTime
+	 CommitterInfo gitlib.AuthorTime
+	 }
+	 
+	 type CommitHistoryModel struct {
+	 RepoName string
+	 RepoDescription string
+	 TypeStr string
+	 NodeName string
+	 CommitHistory []CommitHistoryItemModel
+	 }
+
+	 
+  -->
+{{$repoName := .RepoName}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+	<link rel="stylesheet" href="/static/style.css">
+	<title>history of {{.TypeStr}}:{{.NodeName}} @ {{.RepoName}} :: Gitus</title>
+  </head>
+  <body>
+	<div class="repo-header">
+	  <div class="repo-header-label"><a href="/">DEPOT</a> / REPOSITORY</div>
+      <h1 class="repo-header-name" style="margin-bottom: 0">{{.RepoName}}</h1>
+	  <div class="repo-header-branch">History @ <a href="/repo/{{.RepoName}}/{{.TypeStr}}/{{.NodeName}}">{{.TypeStr}}:{{.NodeName}}</a></div>
+	</div>
+	
+	<div class="repo-description">{{.RepoDescription}}</div>
+	
+	<hr />
+
+	<div class="commit-history-container">
+	  {{range .CommitHistory}}
+	  <div class="commit-history-item">
+		<div class="commit-history-item-id">
+		  <span class="commit-history-item-short-id">{{.ShortId}}</span>
+		  <span class="commit-history-item-id"><a href="/repo/{{$repoName}}/commit/{{.Id}}">{{.Id}}</a></span>
+		</div>
+		<div class="commit-history-item-author-info">
+		  <b>Author</b>: {{.AuthorInfo.AuthorName}} (<a href="mailto:{{.AuthorInfo.AuthorEmail}}">{{.AuthorInfo.AuthorEmail}}</a>) at {{.AuthorInfo.Time}}<br />
+		  <b>Committer</b>: {{.CommitterInfo.AuthorName}} (<a href="mailto:{{.AuthorInfo.AuthorEmail}}">{{.CommitterInfo.AuthorEmail}}</a>) at {{.CommitterInfo.Time}}<br />
+		</div>
+		<div class="commit-history-item-message">{{.Message}}</div>
+	  </div>
+	  {{end}}
+	</div>
+	<hr />
+	<footer>
+	  <a href="/repo/{{.RepoName}}/{{.TypeStr}}/{{.NodeName}}">Back</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+
