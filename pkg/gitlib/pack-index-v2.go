@@ -19,6 +19,8 @@ func (pi PackIndex) lookupObjectIdV2(indexHead string, indexTail string) (int64,
 	totalItemCount, err := readBigEndianUInt32(pi.file)
 	if err != nil { return 0, err }
 	objNameTableBase := 8+4*256
+	levelOneOffsetBase := 8+4*256+int64(totalItemCount)*(20+4)
+	levelTwoOffsetBase := 8+4*256+int64(totalItemCount)*(20+4+4)
 	
 	fanoutIdx := byteHexToInt(indexHead)
 	_, err = pi.file.Seek(fanoutBase+int64(fanoutIdx)*4, 0)
