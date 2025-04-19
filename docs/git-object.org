@@ -1,0 +1,297 @@
+* git object format
+
+This is written for reference in the future.
+
+** Object ids and the two kinds of hashes
+
+As you may already have known, Git is about to convert to using SHA-256 instead of SHA-1 for object ids. The direct implication of this, other than things would have a much lesser possibility suffering from hash collision, is that object ids are 32 bytes (64 hex digits in plain-text ASCII) instead of 20 bytes (40 hex digits in plain-text ASCII). This obviously determines how should one properly read pack files as well (see further section on pack files).
+
+The way to determine whether a git repo is using SHA-1 or SHA-256 is as follows.
+
+As of now (2025.4.17; Git v2.49.0), the way Git signifies a repo to be that of SHA-256 is the repo's config file residing in =.git/config=, whose format & syntax is a variant of INI file. In this config file, under the section =core=, there will be a field named =repositoryformatversion=. For repositories that uses SHA-256, the value of this field would be =1=, which would signify the existence of a section named =extensions=, and within that section a field named =objectformat=, whose accompanying value would be =sha256=. For repositories that uses SHA-1, the value to =repositoryformatversion= would be zero =0=, and there will not be an =extensions= section.
+
+NOTE THAT one with this information would tend to assume that a repository with its =repositoryformatversion= set to =1= but with no =extensions= section or a =objectformat= field value of =sha1= would also signifies that this repository uses SHA-1. It would be logical to assume so, but since Git only naturally generates the two kinds of situation I've described above, so I'm not actually sure.
+
+** Packed refs
+
+(Not to be confused with *pack file* or *pack index*, both of which has a completely different format.)
+
+Packed-refs file seems to happen when there are references (which normally resides in =.git/refs=) that resides in a pack file (happens when e.g. cloning a repo from a remote source). It can contain info about local branches, remote branches and tags, so code for resolving related things must examine this file as well. The path of the packed-ref file would be =.git/packed-refs=. The format that I currently can be sure of is listed as follows:
+
++ Any line that starts with =#= is a comment.
++ Most of the lines is made up of two parts: an object id and the full name of the ref that points to that id.
++ Sometimes there would be lines that only consist of a single circumflex =^= and an object id. As far as the instances I've personally come across, they all seems to be object ids that are tagged by the tags and are here for some kind of quick access. For example, within a packed-ref file, there could be a line that is =[objId1] refs/tags/my-tag1= whose very next line would be =^[objId2]=, where =objId2= is the id of the object the tag =my-tag1= was associated with.
+
+** Directly accessible objects
+
+Directly accessible objects are the one you could find by going into =.git/objects=. They will only appear under the subdirectories whose name is the first byte of their id. (For example, an object that has an id of =0f3684dc...= will be at path =.git/objects/0f/3684dc...=.) All directly accessible objects are stored compressed with zlib.
+
+After decompressing, all objects starts with a common object header:
+
++ Object type, in plain-text ASCII. This will always be one of =tree=, =blob=, =tag= and =commit=.
++ One space character.
++ Size of the content after header in decimal digits.
++ One zero character =\x00=.
+
+The format of the rest is different depending on its type.
+
+*** Blob
+
+The simplest. There is no format, you just take whatever that's after the object header.
+
+*** Tree
+
+A tree object consists of a sequence of tree item objects. Git documentation probably didn't call them "tree items" but here we call it that.
+
+A tree item object consists of the following fields:
+
++ A mode string of length 6, digits in plain-text ASCII.
+  + The possible values of this field mimics those of UNIX-like operating systems, which I shall list as follows:
+    + =100644= for normal file.
+    + =100755= for executable file.
+    + =120000= for symbolic link.
+    + =040000= for other tree objects (i.e. sub-directories)
+    + =160000= for git submodules.
+  + A few things that you might need to be careful about:
+    + If a file is labelled as executable (either through =chmod= or other methods) under a UNIX-like system, then it would be registered as =100755= when using Git.
+    + Whether Git on Windows would label =.lnk= files as =120000= is not clear - I have never tried.
+    + Git treats any mode that is not the first 4 values of the list above as a mode for submodules.
++ A single space character.
++ A variable-length zero-terminated string. This is the file or directory name.
++ The ID of that object representing that file, in binary. Most Git repository uses SHA-1, which gives 160-bit = 20-byte object ids, so this field would be 20 bytes most of the time.
+
+There's no separators between tree items. The next item's mode string is directly after the object id of the previous item.
+
+*** Commit
+
+A commit object consists of a commit header and a commit message part separated by an empty line. The commit message comes *after* the commit header. The commit header consists of multiple key-value pair in the form of "key + <space> + value + <newline>". The keys with the meaning of their accompanying values are listed as follows:
+
++ =tree=: The id of the tree object associated with this commit.
++ =parent=: The commit that this commit is based upon.
++ =author=: The author of this commit (for format, see below).
++ =committer=: The committer of this commit (see below).
++ =gpgsig=: The GPG signature of this commit.
+
+Git separates the role of author (intuitively, the one who wrote the changes) and the role of committer (intuitively, the one who push the changes) in its mental model.
+
+The value of =gpgsig=, of course, spans multiple lines. Since the signature could also contain empty lines, it's better to check for the =-----BEGIN PGP SIGNATURE-----= header & footer when parsing.
+
+[[https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/creating-a-commit-with-multiple-authors][GitHub]] adopts the convention of adding =Co-authored-by= at the end of the commit message field as a form of recording multiple authorship. This is not an official Git feature, but certain software & platform other than GitHub were said to have adopted this convention as well.
+
+**** Author-Time
+
+"Author-Time" is not a term used in Git documentation but a term I made up; it occurs often enough that it makes sense to have its dedicated name. It's called "author-time" because it's a 2-tuple consisting of the identity of the one who performed the action (i.e. "author") and the point in time the action happened.
+
+Its format is as follows:
+
++ Author's name
++ One space character.
++ Author's email, surrounded by angle brackets =<= =>=.
++ One space character.
++ The timestamp of the datetime when the commit is created, in decimal digits, plain-text ASCII.
++ One space character.
++ The timezone offset of the datetime when the commit is created, in plain-text ASCII, in the form of "=+= or =-= + 4 decimal digits=. (For example, a timezone of UTC+8:30 would've been =+0830=.)
+
+From this it's obvious that one should split by space from *right* instead of left, since the author's name can contain (and in almost all cases would contain at least one) spaces.
+
+*** Tag
+
+Two kinds of tag exist in Git. The *lightweight tag* is only a reference to an existing object. The *annotated tag* is itself a separate object, within whose content is a literal reference to the object being tagged.
+
+The format of a tag object is similar to that of a commit object for the most part. It's composed of a header section and a body section separated by an empty line. The header can have the following key-value pairs:
+
++ =object=: The id of the object being tagged.
++ =type=: The type of the object being tagged. Presumably to be one of =blob=, =tree=, =tag= or =commit=.
++ =tag=: The name of the tag.
++ =tagger=" An author-time showing who perfomed the tagging action and at which point in time. The format of an author-time is described above.
+
+Unlike a commit object whose GPG signature (if any) is a part of the header and preceeds any commit message, the GPG signature of a tag object is a part of the body and comes *after* the tag message. There is *no* empty line between the tag message and the signature.
+
+One should notice that one can tag any object; [[https://git-scm.com/book/en/v2/Git-Internals-Git-References][according to documentation]], tagging a non-commit object can sometimes serve meaningful uses, which means they *will* occur in the wild purposefully. This also means that one can tag a tag object (the de-reference of which seemed to be called "peeling onion" in Git lingo) and it's possible for circular tags to exist. It would be wise to have a check for the latter situation if you're writing software that deals with Git internals.
+
+** Object types that only appears in pack files
+
+Two extra kind of object exist within pack files. They are collectivelly called the "delta objects", and instead of storing the data of that object, they describes the instructions one requires to perform to rebuild this object from another "base object".
+
+The two kinds of delta objects are called "ref delta" and "ofs delta", possibly short for "reference delta" and "offset delta". The difference between them is how they specify their base object: a ref-delta object specifies the object id of its base object, while an ofs-delta object specifies the offset within the same pack file from the location of the ofs-delta object within the pack file. This means that the base object of an ofs-delta object is always within the same pack file, while the base object of a ref-delta object can be "outside", i.e. as a directly accessible object.
+
+** Pack file
+
+Pack files reside in =.git/objects/pack=. As far as I know, there's no known ways where Git specifically stores a list of currently existing packfiles other than the file system itself, so one should scan the directory himself. The file name of packfiles follows the pattern of =pack-[packid].[ext]=, where =ext= can be different types depending on its functionality; =.pack= and =.idx= are the most common, sometimes =.rev= also exist but not necessary for basic functionalities.
+
+*** =.idx=
+
+=.pack= files do not contain the ids of the objects in the packfiles; it's the job of the =.idx= files.
+
+There are two versions of =.idx= files (version 1 and version 2). Version 1 was said to be the old format but I haven't actually seen one; one should support it for compatibility reasons.
+
+**** Version 1
+
+The Version 1 =.idx= file lays out as follows:
+
++ 256 4-byte big-endian unsigned integer. Assumes these 32-bit numbers are labelled 0x00 to 0xff by their indices within this 256-number table; the meaning of the value is the number of objects within the corresponding =.pack= file that has an id with its first byte value smaller or equal to that index.
+
+  For example; assumes the first 4 value of the table is =0x00:3=, =0x01:3=, =0x02:4= and =0x03:6=; this means that:
+  + there are 3 objects whose ids have a first byte of smaller or equal than =0x00=, i.e. there are 3 objects within the corresponding =.pack= file whose id starts with =0x00=.
+  + there are 3 objects whose ids have a first byte of smaller or equal than =0x01=. since we just know that there are 3 objects whose id starts with =0x00=, we can know that there isn't any object within the =.pack= file whose id starts with =0x01=.
+  + there are 4 objects whose ids have a first byte of smaller or equal than =0x02=. since we just know that there are 3 objects whose id starts with =0x00= or =0x01=, we know that there's exactly one object within the =.pack= file whose id starts with =0x02=.
+  + with the same logic, we can know there's two objects whose id starts with =0x03=.
+
+  In Git's documentatioin this is called the "first-level fan-out" table and works similarly in spirit as the subdirectories of the directly accessible objects. One should also note that with this logic, the last item within this 256-number table *contains the number of the objects within the corresponding =.pack= file*. We'll call this value =objcount= from now on.
+
++ =objcount= 24-byte entries. Each entries consists of a 4-byte big-endian unsigned integer and a 20-byte part. The 20-byte part is the object id directly stored (instead of plain-text ASCII). The 4-byte part is the offset within the corresponding =.pack= file where the object of the corresponding id is stored. The offset starts from the very beginning, which from the words of Git's documentation seems to have no account for the =.pack= files' headers.
+  + (The fact that Git's documentation meentions "24-byte entries" seems to imply Version 1 =.idx= only happens with SHA-1 repositories. I'm not sure how this will work out with the whole SHA-1/SHA-256 migration thing, but it *should* be safe to assume this way.)
++ A copy of the pack's checksum. This is the checksum that is also present in the file name. Seems to be SHA-1.
++ A checksum of all the content above. Seems to be SHA-1.
+
+**** Version 2
+
+The format of Version 2 =.idx= file goes as follows:
+
++ 4-byte magic number =0xff 0x74 0x4f 0x63=.
+  + (If we interpret this value as Version 1 =.idx= it will indicates that the =.pack= file is around 95 GBytes, which is "unreasonable fanout[0] value". Of course the more decisive proof would be the fact that the next 4-byte big-endian number within a Version 2 =.idx= file would be smaller than this magic number, which is invalid because a valid fanout table shoud always have its latter values be equal or bigger than former values by design.)
++ 4-byte big-endian version number, in this case it would be =0x00 0x00 0x00 0x02=.
++ 256 4-byte big-endian unsigned integer. This is the same 256-number table as in Version 1.
++ =objcount= object ids, which could be 20-byte (SHA-1) or 32-byte (SHA-256). This part is sorted from low to high to allow quicker search.
++ =objcount= 4-byte CRC32 values of the packed object data.
+  + (From the words of Git's documentation this seems to be the checksum of the data *after* compression. I haven't digged deep enough so I can't say what exactly it is the checksum of e.g. with the header or just the data)
++ =objcount= 4-byte big-endian unsigned integers. This would be the offset values with an extra catch:
+  + If its most-significant bit is 0, then the rest 31 bits would be the offset within the corresponding =.pack= file, just like in Version 1.
+  + If its most-significant bit is 1, then the rest 31 bits would be the *index* (not offset) into the next table which would contain the real offset.
+  We'll call the number of integers with its most-significant bit set to 1 =farobjcount=.
++ =farobjcount= 8-byte big-endian unsigned integers. These are offsets to the corresponding =.pack= file from the very beginning. This table is used when the =.pack= file grows to be very huge, and (according to Git's documentation) will not appear for =.pack= files smaller than 2 GBytes.
+  + (NOTE that there wouldn't be =objcount= numbers in this table. For example, if there's only 3 objects whose 4-byte value (from the last table) has a most-significant bit of 1, this table would only contain 3 8-byte integers.)
++ A checksum of the corresponding =.pack= file (which occurs in file name), same as Version 1.
++ A checksum of all the above, same as Version 1.
+
+   
+*** =.pack=
+
+The format of =.pack= files is as follows:
+
++ 4-byte signature; the characters =P= =A= =C= =K= in ASCII.
++ 4-byte big-endian unsigned integer, which would be the version number.
+  + The value is either 2 (0x00000002) or 3 (0x00000003). Despite Git claims to support "version number 3" but only generate =.pack= files with version number 2, I have yet to see what "version 3 =.pack= file" actually looks like and the whole "version 3" bit only seems like a "just in case" thing.
++ 4-byte big-endian unsigned integer. This is the number of objects stored within this =.pack= file.
++ A list of packed objects; see below.
++ A checksum of all the data above.
+
+**** Packed objects
+
+All packed objects start with a varint type-size tuple whose format is as follows:
+
+#+begin_example
++----------+----------+----------+----------+----------+
+| 1TTTCCCC | 1DDDDDDD | 1EEEEEEE | ........ | 0FFFFFFF |
++----------+----------+----------+----------+----------+
+#+end_example
+
++ First: the tuple is in the form of a varint, which means its size is not fixed. For each of the octet starting from the beginning, if the octet's most-significant bit is 1, then the next octet is considered a part of this tuple; if the most-significant bit is 0 instead, then this octet would be considered as the last octet of this tuple.
++ The three bits of bit 6 ~ bit 4 of the first byte (bit 7 as the most-significant bit) would be the *type number* of this object (shown as =TTT= in the diagram above). The possible values and their meanings is as follows:
+  + 1 (=001=): commit
+  + 2 (=010=): tree
+  + 3 (=011=): blob
+  + 4 (=100=): tag
+  + 6 (=110=): offset delta (=OFS_DELTA=)
+  + 7 (=111=): ref delta (=REF_DELTA=)
+  Type 5 is "reserved for future expansion" and Type 0 is invalid.
++ The rest of the bits (bit 3 ~ bit 0 of the first octet, bit 6 ~ bit 0 of all the following octets) made up the size of the data *before* compression in a *little-endian* manner.
+
+For example, assume that there's a tree object of length 70 (0x46); its header can be constructed as follows:
+
++ The length in binary would be =0b100 0110= which is more than 4 bits. The header would require 2 bytes.
++ The type of this object is "tree", so its type number would be =010=.
++ The overall header would be =1 010 0110= =0 0000100= which would be =0xa6 0x04=.
++ The way you reconstruct the type-size tuple would be to extract the =010= part from the first octet and the =0110= and =0000100= part from the first & the second octet.
+
+The header for a blob object of length 6746 could be costructed as follows:
+
++ The length in binary would be =0b11 0100101 1010=, which requires 3 bytes.
++ Tye type of this object is "blob", so its type number would be =011=.
++ The overall header would be =1 011 1010= =1 0100101= =0 0000011= which would be =0xba 0xa5 0x03=.
++ The way you reconstruct the type-size tuple would be to extract the =011= part from the first octet and the =1010= =0100101= and =0000011= parts from the first, second and third octet.
+
+If the object is not of any of the delta types, then after this type-size tuple is the data compressed with zlib. Note that the size in the type-size tuple refers to the *uncompressed* (or *decompressed* size), not the compressed size, so one should not directly reading the specified amount of bytes without involving zlib.
+
+If the object is one of the delta types, then an extra field follows after the header before the compressed data. As discussed above, delta objects describes instructions of reconstructing the object basing on some other objects; this extra field is of course used to specify the base object the delta uses.
+
++ If the object is a ref delta, a directly stored object id would follow. Obviously, this would be 20 bytes in a SHA-1 repo and 32 bytes in a SHA-256 repo. One should note that this base object can be in anywhere, including being inside other pack files or being directly accessible.
++ If the object is an offset delta, then its base object resides within the same pack file and the offset *from the location of the delta object) follows. This field is also in the form of a varint, but the meaning of its bits are slightly different.
+  + According to Git, "The offset is then the number constructed by concatenating the lower 7 bit of each byte, and for n >= 2 adding 2^7 + 2^14 + ... + 2^(7*(n-1)) to the result.". This time the bits are concatenated in a *big-endian* manner (unlike the type-size tuple where it's in little-endian). To be honest, this calculating process is probably best described in pseudocode
+
+    #+begin_example
+    baseOffset = readByte() & 0x7f
+    while baseOffset & 0x80 > 0 {
+        baseOffset = baseOffset + 1
+	baseOffset = (baseOffset << 7) | (readByte() & 0x7f)
+    }
+    #+end_example
+
+    Assume the offset of the delta object to be =deltaOffset=, then the offset within the =.pack= file of its base object is then =deltaOffset - baseOffset=. This result would put you at the very beginning of the type-size tuple of that base object.
+  + An offset delta object can have other delta object as its base object, so sometimes one would have to resolve multiple delta to fully reconstruct one object.
+
+In any cases, the size of this specification of the base object does not count for the size part of the type-size tuple; the size in the type-size tuple is exclusively for the zlib-compressed data that directly follows after this.
+
+Note that deltas can somehow be used as a part of the diff calculating process, but they themselves are not diffs.
+
+For non-delta objects, the format of the data after decompressing follows the ones described in the section for directly accessible object (except this time no object header is needed since it's already described with the type-size tuple). Other than the way the base object is described, there is no difference between the data format of a ref delta and an offset delta. The format of the delta is described below.
+
+**** Delta
+
+*All delta starts with two varints*: one describing the size of the base object, followed by one describing the size of the resulting object after applying this delta to the base object. Both are simple *little-endian* varint with no type field (like in type-size tuple) and no 2^7 + 2^14 + ... + 2^(7*(n-1)) shenanigans (like in base object offsets of offset delta).
+
+After the two varints are a series of "instructions". Two kinds of instruction exist: Copy and Data. These are differentiated by the most-significant bit of the first octet; if it's 1, then it's a Copy command; if it's 0, then it's a Data command. A Copy command specifies an offset into the base object (where you should start the copying) and a length (how many bytes you should copy starting from the offset). A Data command specifies a length (how many bytes of data that follows) and the data you need to append to the current reconstruction.
+
+The Data command is simple. Followed by the first octet are the actual data The rest 7 bits contains the length of the data that follows.
+
+The Copy command requires a bit of explanation:
+
++ A copy command contains an offset (maximum 4 byte) and a size (maximum 3 bytes). Both of them are in little-endian order. (Note that none of them is a varint; all the bits within these octets contribute to the resulting value of these two fields. See the next point.)
++ Whether a certain byte is present is determined by the rest 7 bits of the first byte, with the first least significant bit representing the first remaining byte (1 - present; 0 - not present). The layout is as follows:
+
+  #+begin_example
+  +-----+------+------+------+------+-----+-----+-----+
+  | fsb | off1 | off2 | off3 | off4 | sz1 | sz2 | sz3 |
+  +-----+------+------+------+------+-----+-----+-----+
+  #+end_example
+  
+  This means that, for example, if FSB is 0b10010001, only off1 and
+  sz1 would be present, thus the command is like this:
+
+  #+begin_example
+  +----------+------+-----+
+  | 10010001 | off1 | sz1 |
+  +----------+------+-----+
+  #+end_example
+  
+  if FSB is 0b10000101 instead, the command would be like this:
+  (only off1 and off3 present)
+
+  #+begin_example
+  +----------+------+------+
+  | 10000101 | off1 | off3 |
+  +----------+------+------+
+  #+end_example
+  
+  note that in this case the 3rd byte is off3 instead of off2. the
+  missing bytes are considered as zero. For example, this:
+
+  #+begin_example
+  +----------+------+------+
+  | 10000011 | 0xcd | 0xab |
+  +----------+------+------+
+  #+end_example
+  
+  has an offset of 0xabcd, since the FSB is 0b10000011 which means
+  the next two bytes are off1 and off2, but this:
+
+  #+begin_example
+  +----------+------+------+
+  | 10000101 | 0xcd | 0xab |
+  +----------+------+------+
+  #+end_example
+  would have an offset of 0xab00cd, since the next two bytes are
+  off1 and off3 (off2 considered 0).
+  
+Also, if the resulting value for the size field after calculating in this manner turns out to be 0, then it's not considered as size 0 but as size 0x10000 instead.
+

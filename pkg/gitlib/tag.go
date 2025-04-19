@@ -24,6 +24,11 @@ func (c TagObject) Type() int { return TAG }
 func (c TagObject) ObjectId() string { return c.Id }
 func (c TagObject) RawData() []byte { return c.rawData }
 
+func IsTagObject(gobj GitObject) bool {
+	_, ok := gobj.(*TagObject)
+	return ok
+}
+
 func (c TagObject) String() string {
 	return fmt.Sprintf("Tag{%s,%s}", c.Id, c.TaggedObjId)
 }

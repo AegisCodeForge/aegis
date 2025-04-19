@@ -1,0 +1,12 @@
+{{define "_blob-text"}}
+	<div class="file-source-view">
+	  <div class="file-source-line-number-panel">
+		{{range .FileLineCount}}
+		<a id="L{{.}}" class="file-source-line-number-item" href="#L{{.}}">{{.}}</a>
+		{{end}}
+	  </div>
+	  <pre class="file-content">{{.FileContent}}</pre>
+	</div>
+{{end}}
+
+	

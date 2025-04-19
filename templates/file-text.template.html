@@ -1,0 +1,42 @@
+<!-- model
+
+	 type FileTextTemplateModel struct {
+	 RepoHeaderInfo RepoHeaderTemplateModel
+	 File BlobTextTemplateModel
+
+	 TreePath *TreePathTemplateModel
+	 CommitInfo *CommitInfoTemplateModel
+	 TagInfo *TagInfoTemplateModel
+	 }
+
+	 
+  -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+	<link rel="stylesheet" href="/static/style.css">
+	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.RepoHeaderInfo.RepoName}} :: Gitus</title>
+  </head>
+  <body>
+	{{template "_repo-header" .RepoHeaderInfo}}
+	<div class="repo-branch-description">
+	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
+	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	</div>
+	
+	<hr />
+
+	{{template "_tree-path" .TreePath}}
+	{{template "_blob-text" .File}}
+
+	<hr />
+	<footer>
+	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>
+	  <a href="/">Back (Depot)</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

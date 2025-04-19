@@ -1,0 +1,13 @@
+
+{{define "_tree-path"}}
+{{$rootPath := .RootPath}}
+<div class="tree-path-segment">
+  <span class="tree-path-segment-head"><a href="{{.RootPath}}">{{.RootFullName}}</a></span>
+  {{if gt (len .TreePathSegmentList) 0}}
+  {{range .TreePathSegmentList}}
+  / <span class="tree-path-segment-item"><a href="{{$rootPath}}/{{.RelPath}}">{{.Name}}</a></span>
+  {{end}}
+  {{end}}
+</div>
+{{end}}
+

@@ -1,0 +1,50 @@
+<!-- model
+
+	 import "github.com/bctnry/gitus/pkg/gitlib"
+	 
+	 type TagTemplateModel struct {
+	 RepoHeaderInfo RepoHeaderTemplateModel
+	 Tag *gitlib.TagObject
+	 TagInfo *TagInfoTemplateModel
+	 }
+
+	 
+  -->
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+	<link rel="stylesheet" href="/static/style.css">
+	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.RepoHeaderInfo.RepoName}} :: Gitus</title>
+  </head>
+  <body>
+	{{template "_repo-header" .RepoHeaderInfo}}
+	<div class="repo-branch-description">
+	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	</div>
+	
+	<hr />
+
+	<div class="repo-branch-commit">
+      <b>Tag</b> <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}/tag/{{.Tag.Id}}">{{.Tag.Id}}</a><br />
+      <b>Tagged Object</b>: <a href="{{getRootPath .RepoHeaderInfo.RepoName .Tag.TaggedObjType .Tag.TaggedObjId}}">{{.Tag.TaggedObjType}}:{{.Tag.TaggedObjId}}</a><br />
+      <b>Tagger</b>: 
+      <span class="tagger-name">{{.Tag.TaggerInfo.AuthorName}}</span>
+      (<span class="tagger-email"><a href="mailto:{{.Tag.TaggerInfo.AuthorEmail}}">{{.Tag.TaggerInfo.AuthorEmail}}</a></span>)
+      at <span class="tagger-time">{{.Tag.TaggerInfo.Time}}</span><br />
+      <b>Message</b>:<br /><pre>{{.Tag.TagMessage}}</pre>
+      {{if gt (len .Tag.Signature) 0}}
+      <details><summary><b>Tag Signature</b></summary><pre>{{.Tag.Signature}}</pre></details>
+	  {{end}}
+	</div>
+
+	<hr />
+	<footer>
+	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>
+	  <a href="/">Back (Depot)</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

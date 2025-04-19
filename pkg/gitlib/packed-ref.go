@@ -25,6 +25,10 @@ func (gr LocalGitRepository) readPackedRefIndex() ([]PackedRefIndexItem, error) 
 	for item := range strings.SplitSeq(string(a), "\n") {
 		if len(item) <= 0 { continue }
 		if strings.HasPrefix(item, "#") { continue }
+		// NOTE: lines that starts with "^" seems to be an easy access for the
+		// id of the tagged object. we currently are not using that feature
+		// here.
+		if strings.HasPrefix(item, "^") { continue }
 		splitted := strings.Split(item, " ")
 		res = append(res, PackedRefIndexItem{
 			Id: strings.TrimSpace(splitted[0]),

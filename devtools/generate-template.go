@@ -137,6 +137,7 @@ func parseFunc(filename string, f io.Reader) (templateFunc, error) {
 	imports := make([]string, 0)
 	for item := range strings.SplitSeq(string(data), "\n") {
 		if strings.HasPrefix(item, "//") { continue }
+		if strings.HasPrefix(item, "package") { continue }
 		if strings.HasPrefix(item, "import") {
 			s := strings.Split(item, " ")
 			imports = append(imports, s[1][1:len(s[1])-1])

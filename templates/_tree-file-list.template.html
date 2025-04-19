@@ -1,0 +1,22 @@
+{{define "_tree-file-list"}}
+{{$rootPath := .RootPath}}
+{{$treePath := .TreePath}}
+<div class="file-list">
+  {{if .ShouldHaveParentLink}}
+  <div class="file-list-item"><a href="..">..</a></div>
+  {{end}}
+  
+  {{range .FileList}}
+  <div class="file-list-item">
+	<svg class="file-list-item-icon">
+	  {{if or (eq (.Mode) 100644) (eq (.Mode) 100755)}}
+	  <use href="/static/assets/icons.svg#file"></use>
+	  {{else if (eq (.Mode) 40000) }}
+	  <use href="/static/assets/icons.svg#folder"></use>
+	{{end}}
+	</svg>
+	<a href="{{$rootPath}}/{{$treePath}}/{{.Name}}">{{.Name}}</a></div>
+  {{end}}
+</div>
+{{end}}
+	
