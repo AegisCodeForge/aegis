@@ -59,7 +59,7 @@ func (c TreeObject) String() string {
 	return fmt.Sprintf("Tree{%s,%s}", c.Id, c.ObjectList)
 }
 
-func (c TreeObject) Type() int { return TREE }
+func (c TreeObject) Type() GitObjectType { return TREE }
 func (c TreeObject) ObjectId() string { return c.Id }
 func (c TreeObject) RawData() []byte { return c.rawData }
 
@@ -130,5 +130,28 @@ func parseTreeObject(objid string, f io.Reader) (*TreeObject, error) {
 		ObjectList: objlist,
 	}
 	return &tree, nil
+}
+
+func (gr LocalGitRepository) ResolveTreePath(t *TreeObject, p string) (GitObject, error) {
+	var gobj GitObject = t
+	var err error = nil
+	var tobj *TreeObject = t
+	for item := range strings.SplitSeq(p, "/") {
+		tobj = gobj.(*TreeObject)
+		if len(item) <= 0 { continue }
+		found := false
+		for _, sub := range tobj.ObjectList {
+			if sub.Name == item {
+				found = true;
+				gobj, err = gr.ReadObject(sub.Hash)
+				if err != nil { return nil, err }
+				break
+			}
+		}
+		if !found {
+			return nil, errors.New(fmt.Sprintf("Cannot find object named %s in tree", item))
+		}
+	}
+	return gobj, nil
 }
 

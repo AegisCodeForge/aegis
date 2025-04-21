@@ -22,7 +22,7 @@ type CommitObject struct {
 	rawData []byte
 }
 
-func (c CommitObject) Type() int { return COMMIT }
+func (c CommitObject) Type() GitObjectType { return COMMIT }
 func (c CommitObject) ObjectId() string { return c.Id }
 func (c CommitObject) RawData() []byte { return c.rawData }
 

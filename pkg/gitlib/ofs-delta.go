@@ -14,7 +14,7 @@ type OfsDeltaObject struct {
 	rawData []byte
 }
 
-func (rd OfsDeltaObject) Type() int { return OFS_DELTA }
+func (rd OfsDeltaObject) Type() GitObjectType { return OFS_DELTA }
 func (rd OfsDeltaObject) ObjectId() string { return rd.Id }
 func (rd OfsDeltaObject) RawData() []byte { return rd.rawData }
 

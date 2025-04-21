@@ -2,7 +2,7 @@
 <div class="repo-header">
   <div class="repo-header-label"><a href="/">DEPOT</a> / REPOSITORY</div>
   <h1 class="repo-header-name" style="margin-bottom: 0"><a href="{{getRepoPath .RepoName}}">{{.RepoName}}</a></h1>
-  <div class="repo-header-branch">@{{.TypeStr}}:<a href="{{getRootPath .RepoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8}}</span>{{else}}{{.NodeName}}{{end}}</a></div>
+  <div class="repo-header-branch">@{{.TypeStr}}:<a href="{{getRootPath .RepoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
 </div>
 <div class="repo-description">{{.RepoDescription}}</div>
 {{end}}

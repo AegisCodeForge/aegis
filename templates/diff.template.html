@@ -1,12 +1,11 @@
 <!-- model
 
-	 type FileTextTemplateModel struct {
+	 import "github.com/bctnry/gitus/pkg/gitlib"
+	 
+	 type DiffTemplateModel struct {
 	 RepoHeaderInfo RepoHeaderTemplateModel
-	 File BlobTextTemplateModel
-
-	 TreePath *TreePathTemplateModel
-	 CommitInfo *CommitInfoTemplateModel
-	 TagInfo *TagInfoTemplateModel
+	 CommitInfo CommitInfoTemplateModel
+	 Diff string
 	 }
 
 	 
@@ -21,16 +20,14 @@
   </head>
   <body>
 	{{template "_repo-header" .RepoHeaderInfo}}
-	<div class="repo-branch-description">
-	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
-	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	<div class="repo-description">
+	  {{template "_commit-info" .CommitInfo}}
 	</div>
 	
 	<hr />
 
-	{{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
-	{{template "_blob-text" .File}}
-
+	<pre>{{if .Diff}}{{.Diff}}{{else}}No diff available.{{end}}</pre>
+	
 	<hr />
 	<footer>
 	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>

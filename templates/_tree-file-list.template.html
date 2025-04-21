@@ -15,7 +15,7 @@
 	  <use href="/static/assets/icons.svg#folder"></use>
 	{{end}}
 	</svg>
-	<a href="{{$rootPath}}/{{$treePath}}/{{.Name}}">{{.Name}}</a></div>
+	<a href="./{{.Name}}{{if eq .Mode 40000}}/{{end}}">{{.Name}}</a></div>
   {{end}}
 </div>
 {{end}}

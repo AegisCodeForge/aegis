@@ -20,7 +20,7 @@ type TagObject struct {
 	rawData []byte
 }
 
-func (c TagObject) Type() int { return TAG }
+func (c TagObject) Type() GitObjectType { return TAG }
 func (c TagObject) ObjectId() string { return c.Id }
 func (c TagObject) RawData() []byte { return c.rawData }
 

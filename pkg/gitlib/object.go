@@ -5,30 +5,46 @@ import (
 	"compress/zlib"
 	"errors"
 	"io"
+	"log"
 	"os"
 	"path"
 	"slices"
 	"strconv"
 )
 
+type GitObjectType int
 const (
-	COMMIT = 1
-	TREE = 2
-	BLOB = 3
-	TAG = 4
-	OFS_DELTA = 6
-	REF_DELTA = 7
+	INVALID GitObjectType = 0
+	COMMIT GitObjectType = 1
+	TREE GitObjectType = 2
+	BLOB GitObjectType = 3
+	TAG GitObjectType = 4
+	OFS_DELTA GitObjectType = 6
+	REF_DELTA GitObjectType = 7
 )
 
 type GitObject interface {
-	Type() int
+	Type() GitObjectType
 	ObjectId() string
 	RawData() []byte
 }
 
+func (got GitObjectType) String() string {
+	switch got {
+	case COMMIT: return "COMMIT"
+	case TREE: return "TREE"
+	case BLOB: return "BLOB"
+	case TAG: return "TAG"
+	case OFS_DELTA: return "OFS_DELTA"
+	case REF_DELTA: return "REF_DELTA"
+	default: log.Panicf("Invalid object type: %d", int(got))
+	}
+	return ""
+}
+
 type RawGitObject struct {
 	objId string
-	objType int
+	objType GitObjectType
 	objSize int
 	reader io.ReadCloser
 	// we need to have this because directly accessible objects and
@@ -51,7 +67,7 @@ type RawGitObject struct {
 }
 
 type GitObjectHeader struct {
-	Type int
+	Type GitObjectType
 	Size int
 }
 
@@ -63,7 +79,7 @@ func parseDirectlyAccessibleObjectHeader(s io.Reader) (GitObjectHeader, error) {
 	sizeBytes, err := readUntil(s, byte(0))
 	if err != nil { return GitObjectHeader{}, nil }
 	size, err := strconv.ParseInt(string(sizeBytes), 10, 64)
-	typenum := 0
+	typenum := INVALID
 	switch typeStr {
 	case "tree": typenum = TREE
 	case "blob": typenum = BLOB

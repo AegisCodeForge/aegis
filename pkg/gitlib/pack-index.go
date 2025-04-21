@@ -121,7 +121,7 @@ func parsePackedObjectHeaderAtOffset(pf *os.File, offset int64) (GitObjectHeader
 	bytebuf := make([]byte, 1)
 	_, err = io.ReadFull(pf, bytebuf)
 	if err != nil { return GitObjectHeader{}, err }
-	typenum := int((bytebuf[0]>>4)&0x7)
+	typenum := GitObjectType((bytebuf[0]>>4)&0x7)
 	shiftCount := 4
 	size := int64(bytebuf[0]&0xf)
 	for (bytebuf[0]&0x80) != 0 {

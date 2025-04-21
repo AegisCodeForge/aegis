@@ -14,7 +14,7 @@ type RefDeltaObject struct {
 	rawData []byte
 }
 
-func (rd RefDeltaObject) Type() int { return REF_DELTA }
+func (rd RefDeltaObject) Type() GitObjectType { return REF_DELTA }
 func (rd RefDeltaObject) ObjectId() string { return rd.Id }
 func (rd RefDeltaObject) RawData() []byte { return rd.rawData }
 

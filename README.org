@@ -4,7 +4,8 @@ A web frontend for Git.
 
 ** Build
 
-```
+#+begin_src
 go generate
 go build
-```
+#+end_src
+

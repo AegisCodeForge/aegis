@@ -14,7 +14,7 @@ type BlobObject struct {
 	Data []byte
 }
 
-func (c BlobObject) Type() int { return BLOB }
+func (c BlobObject) Type() GitObjectType { return BLOB }
 func (c BlobObject) ObjectId() string { return c.Id }
 func (c BlobObject) RawData() []byte { return c.Data }
 
