@@ -20,13 +20,13 @@
   </head>
   <body>
 	{{template "_repo-header" .RepoHeaderInfo}}
-	<div class="repo-branch-description">
+	<div class="node-description">
 	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
 	</div>
 	
 	<hr />
 
-	<div class="repo-branch-commit">
+	<div class="node-tag-description">
       <b>Tag</b> <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}/tag/{{.Tag.Id}}">{{.Tag.Id}}</a><br />
       <b>Tagged Object</b>: <a href="{{getRootPath .RepoHeaderInfo.RepoName .Tag.TaggedObjType .Tag.TaggedObjId}}">{{.Tag.TaggedObjType}}:{{.Tag.TaggedObjId}}</a><br />
       <b>Tagger</b>: 

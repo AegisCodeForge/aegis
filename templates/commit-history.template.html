@@ -24,7 +24,7 @@
   <body>
 	{{template "_repo-header" .RepoHeaderInfo}}
 	
-	<div class="repo-description">
+	<div class="node-description">
 	  <div class="commit-info">
 		<b>Commit</b> <a href="{{$repoPath}}/commit/{{.Commit.Id}}">{{.Commit.Id}}</a> (<a href="{{$repoPath}}/diff/{{.Commit.Id}}">Diff</a>) (<a href="{{$repoPath}}/commit/{{.Commit.Id}}">Tree</a>) (<a href="{{$repoPath}}/history/commit:{{.Commit.Id}}">Full History</a>)<br />
 		<b>Author</b>:

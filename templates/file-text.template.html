@@ -1,17 +1,3 @@
-<!-- model
-
-	 type FileTextTemplateModel struct {
-	 RepoHeaderInfo RepoHeaderTemplateModel
-	 File BlobTextTemplateModel
-
-	 TreePath *TreePathTemplateModel
-	 CommitInfo *CommitInfoTemplateModel
-	 TagInfo *TagInfoTemplateModel
-	 }
-
-	 
-  -->
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -21,7 +7,7 @@
   </head>
   <body>
 	{{template "_repo-header" .RepoHeaderInfo}}
-	<div class="repo-branch-description">
+	<div class="node-description">
 	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
 	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
 	</div>
@@ -29,6 +15,7 @@
 	<hr />
 
 	{{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
+	<div class="file-nav"><a href="?raw">Raw</a>  <a href="{{.PermaLink}}">Permalink</a></div>
 	{{template "_blob-text" .File}}
 
 	<hr />

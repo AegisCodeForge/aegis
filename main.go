@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -154,6 +155,7 @@ func (ctx RouterContext) branchHandler(repoName string, branchName string, treeP
 		TreePath: treePath,
 		TreePathSegmentList: treePathSegmentList,
 	}
+	permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, cobj.Id, treePath)
 	switch target.Type() {
 	case gitlib.TREE:
 		if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
@@ -168,19 +170,32 @@ func (ctx RouterContext) branchHandler(repoName string, branchName string, treeP
 				TreePath: treePath,
 				FileList: target.(*gitlib.TreeObject).ObjectList,
 			},
+			PermaLink: permaLink,
 			TreePath: treePathModelValue,
 			CommitInfo: commitInfo,
 			TagInfo: nil,
 		}))
 	case gitlib.BLOB:
+		mime := mime.TypeByExtension(path.Ext(treePath))
+		if len(mime) <= 0 { mime = "application/octet-stream" }
+		templateType := "file-text"
+		if strings.HasPrefix(mime, "image/") {
+			templateType = "file-image"
+		}
 		bobj := target.(*gitlib.BlobObject)
+		if r.URL.Query().Has("raw") {
+			w.Header().Add("Content-Type", mime)
+			w.Write(bobj.Data)
+			return
+		}
 		str := string(bobj.Data)
-		logTemplateError(ctx.loadTemplate("file-text").Execute(w, templates.FileTextTemplateModel{
+		logTemplateError(ctx.loadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,
 			File: templates.BlobTextTemplateModel{
 				FileLineCount: strings.Count(str, "\n"),
 				FileContent: str,
 			},
+			PermaLink: permaLink,
 			TreePath: treePathModelValue,
 			CommitInfo: commitInfo,
 			TagInfo: nil,
@@ -237,6 +252,7 @@ func (ctx RouterContext) commitHandler(repoName string, commitId string, treePat
 	}
 	rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "commit", commitId)
 	rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "commit", commitId)
+	permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, commitId, treePath)
 	treePathModelValue := &templates.TreePathTemplateModel{
 		RootFullName: rootFullName,
 		RootPath: rootPath,
@@ -257,19 +273,32 @@ func (ctx RouterContext) commitHandler(repoName string, commitId string, treePat
 				TreePath: treePath,
 				FileList: target.(*gitlib.TreeObject).ObjectList,
 			},
+			PermaLink: permaLink,
 			TreePath: treePathModelValue,
 			CommitInfo: commitInfo,
 			TagInfo: nil,
 		}))
 	case gitlib.BLOB:
+		mime := mime.TypeByExtension(path.Ext(treePath))
+		if len(mime) <= 0 { mime = "application/octet-stream" }
+		templateType := "file-text"
+		if strings.HasPrefix(mime, "image/") {
+			templateType = "file-image"
+		}
 		bobj := target.(*gitlib.BlobObject)
+		if r.URL.Query().Has("raw") {
+			w.Header().Add("Content-Type", mime)
+			w.Write(bobj.Data)
+			return
+		}
 		str := string(bobj.Data)
-		logTemplateError(ctx.loadTemplate("file-text").Execute(w, templates.FileTextTemplateModel{
+		logTemplateError(ctx.loadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,
 			File: templates.BlobTextTemplateModel{
 				FileLineCount: strings.Count(str, "\n"),
 				FileContent: str,
 			},
+			PermaLink: permaLink,
 			TreePath: treePathModelValue,
 			CommitInfo: commitInfo,
 			TagInfo: nil,
@@ -304,6 +333,7 @@ func (ctx RouterContext) treeHandler(repoName string, treeId string, treePath st
 
 	rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "tree", treeId)
 	rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "tree", treeId)
+	permaLink := fmt.Sprintf("/repo/%s/tree/%s/%s", repoName, treeId, treePath)
 	tobj := gobj.(*gitlib.TreeObject)
 	var commitInfo *templates.CommitInfoTemplateModel = nil
 	target, err := repo.ResolveTreePath(tobj, treePath)
@@ -339,6 +369,7 @@ func (ctx RouterContext) treeHandler(repoName string, treeId string, treePath st
 			TreePath: treePath,
 			FileList: target.(*gitlib.TreeObject).ObjectList,
 		},
+		PermaLink: permaLink,
 		TreePath: treePathModelValue,
 		CommitInfo: commitInfo,
 		TagInfo: nil,
@@ -368,14 +399,26 @@ func (ctx RouterContext) blobHandler(repoName string, blobId string, w http.Resp
 		return
 	}
 
+	// NOTE THAT we don't know the path with blob so we can't predict what kind of
+	// file it is unless we look at its content and hope that we can make a good
+	// assumption without calculating too much. the current behaviour is thus
+	// intentional and we shall come back to this in the future...
+	templateType := "file-text"
 	bobj := gobj.(*gitlib.BlobObject)
+	if r.URL.Query().Has("raw") {
+		w.Write(bobj.Data)
+		return
+	}
 	str := string(bobj.Data)
-	logTemplateError(ctx.loadTemplate("file-text").Execute(w, templates.FileTextTemplateModel{
+	permaLink := fmt.Sprintf("/repo/%s/blob/%s", repoName, blobId)
+		 
+	logTemplateError(ctx.loadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 		RepoHeaderInfo: repoHeaderInfo,
 		File: templates.BlobTextTemplateModel{
 			FileLineCount: strings.Count(str, "\n"),
 			FileContent: str,
 		},
+		PermaLink: permaLink,
 		TreePath: nil,
 		CommitInfo: nil,
 		TagInfo: nil,
@@ -422,6 +465,14 @@ func (ctx RouterContext) tagHandler(repoName string, tagName string, treePath st
 		ctx.reportObjectReadFailure(t.HeadId, err.Error(), w, r)
 		return
 	}
+
+	// NOTE: the part about permalink is slightly tricky.
+	// + if a tag points to a tag, then the permalink is the same as the link.
+	// + if a tag points to a commit, then the permalink should be that of
+	//   the commit.
+	// + if a tag points to anything else then the permalink should be that
+	//   of those.
+	permaLink := ""
 	
 	var subject gitlib.GitObject = nil
 	var tagInfo *templates.TagInfoTemplateModel = nil
@@ -468,6 +519,7 @@ func (ctx RouterContext) tagHandler(repoName string, tagName string, treePath st
 			)
 			return
 		}
+		permaLink = fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, cobj.Id, treePath)
 	}
 
 	if subject.Type() == gitlib.TREE {
@@ -475,6 +527,9 @@ func (ctx RouterContext) tagHandler(repoName string, tagName string, treePath st
 		if subject.Type() == gitlib.TREE && len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
 			foundAt(w, fmt.Sprintf("/repo/%s/tag/%s/%s/", repoName, tagName, treePath))
 			return
+		}
+		if len(permaLink) <= 0 {
+			permaLink = fmt.Sprintf("/repo/%s/tree/%s/%s", repoName, subject.ObjectId(), treePath)
 		}
 	}
 
@@ -497,14 +552,29 @@ func (ctx RouterContext) tagHandler(repoName string, tagName string, treePath st
 		}))
 		return
 	case gitlib.BLOB:
+		mime := mime.TypeByExtension(path.Ext(treePath))
+		if len(mime) <= 0 { mime = "application/octet-stream" }
+		templateType := "file-text"
+		if strings.HasPrefix(mime, "image/") {
+			templateType = "file-image"
+		}
 		bobj := subject.(*gitlib.BlobObject)
+		if r.URL.Query().Has("raw") {
+			w.Header().Add("Content-Type", mime)
+			w.Write(bobj.Data)
+			return
+		}
+		if len(permaLink) <= 0 {
+			permaLink = fmt.Sprintf("/repo/%s/blob/%s", repoName, bobj.Id)
+		}
 		str := string(bobj.Data)
-		logTemplateError(ctx.loadTemplate("file-text").Execute(w, templates.FileTextTemplateModel{
+		logTemplateError(ctx.loadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,
 			File: templates.BlobTextTemplateModel{
 				FileLineCount: strings.Count(str, "\n"),
 				FileContent: str,
 			},
+			PermaLink: permaLink,
 			TreePath: nil,
 			CommitInfo: commitInfo,
 			TagInfo: tagInfo,
@@ -542,6 +612,7 @@ func (ctx RouterContext) tagHandler(repoName string, tagName string, treePath st
 				TreePath: treePath,
 				FileList: target.(*gitlib.TreeObject).ObjectList,
 			},
+			PermaLink: permaLink,
 			TreePath: treePathModelValue,
 			CommitInfo: commitInfo,
 			TagInfo: nil,

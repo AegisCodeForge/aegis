@@ -1,18 +1,3 @@
-<!-- model
-
-	 type TreeTemplateModel struct {
-	 RepoHeaderInfo RepoHeaderTemplateModel
-	 TreeFileList TreeFileListTemplateModel
-	 PermaLink string
-
-	 TreePath *TreePathTemplateModel
-	 CommitInfo *CommitInfoTemplateModel
-	 TagInfo *TagInfoTemplateModel
-	 }
-
-	 
-  -->
-
 <!DOCTYPE html>
 <html>
   <head>
@@ -29,9 +14,9 @@
 	
 	<hr />
 
-	{{template "_tree-path" .TreePath}}
-	<div class="file-nav"><a href="{{.PermaLink}}">Permalink</a></div>
-	{{template "_tree-file-list" .TreeFileList}}
+	{{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
+	<div class="file-raw"><a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+	<img class="file-image" src="?raw" />
 
 	<hr />
 	<footer>
