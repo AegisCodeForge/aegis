@@ -1,0 +1,64 @@
+package routes
+
+import (
+	"fmt"
+	"net/http"
+	"html/template"
+	
+	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/gitus/pkg/gitus"
+	"github.com/bctnry/gitus/pkg/gitlib"
+)
+
+type RouterContext struct {
+	Config *gitus.GitusConfig
+	MasterTemplate *template.Template
+	GitRepositoryList map[string]gitlib.LocalGitRepository
+}
+
+func (ctx RouterContext) LoadTemplate(name string) *template.Template {
+	return ctx.MasterTemplate.Lookup(name)
+}
+
+func (ctx RouterContext) ReportNotFound(objName string, objType string, namespace string, w http.ResponseWriter, r *http.Request) {
+	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
+		templates.ErrorTemplateModel{
+			ErrorCode: 404,
+			ErrorMessage: fmt.Sprintf(
+				"%s %s not found in %s",
+				objType, objName, namespace,
+			),
+		},
+	))
+}
+
+func (ctx RouterContext) ReportInternalError(msg string, w http.ResponseWriter, r *http.Request) {
+	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
+		templates.ErrorTemplateModel{
+			ErrorCode: 500,
+			ErrorMessage: fmt.Sprintf(
+				"Internal error: %s",
+				msg,
+			),
+		},
+	))
+}
+
+func (ctx RouterContext) ReportObjectReadFailure(objid string, msg string, w http.ResponseWriter, r *http.Request) {
+	ctx.ReportInternalError(
+		fmt.Sprintf(
+			"Fail to read object %s: %s",
+			objid, msg,
+		), w, r,
+	)
+}
+
+func (ctx RouterContext) ReportObjectTypeMismatch(objid string, expectedType string, actualType string, w http.ResponseWriter, r *http.Request) {
+	ctx.ReportInternalError(
+		fmt.Sprintf(
+			"Object type mismatch for %s: %s expected but %s found",
+			objid, expectedType, actualType,
+		), w, r,
+	)
+}
+

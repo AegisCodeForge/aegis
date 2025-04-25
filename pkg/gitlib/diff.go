@@ -2,6 +2,10 @@ package gitlib
 
 import "os/exec"
 
+type DiffItem struct {
+	
+}
+
 // returns the diff by invoking the "git diff" command.
 // i should probably implement my own diff and rely as little on the
 // git executable as possible at some point.

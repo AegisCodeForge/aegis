@@ -6,5 +6,6 @@ type RepoHeaderTemplateModel struct {
 	RepoDescription string
 	TypeStr string
 	NodeName string
+	RepoLabelList []string
 }
 

@@ -3,3 +3,4 @@
 gitus
 templates/templates.go
 templates/models.go
+gitus-config.json

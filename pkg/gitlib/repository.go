@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/bctnry/gitus/pkg/ini"
 )
 
 type LocalGitRepository struct {
@@ -15,6 +17,12 @@ type LocalGitRepository struct {
 	PackIndex map[string]*PackIndex
 	BranchIndex map[string]*Branch
 	TagIndex map[string]*Tag
+	Config ini.INI
+	isSHA256 bool
+}
+
+func (gr LocalGitRepository) IsSHA256() bool {
+	return gr.isSHA256
 }
 
 func NewLocalGitRepository(p string) LocalGitRepository {
@@ -28,7 +36,32 @@ func NewLocalGitRepository(p string) LocalGitRepository {
 	description, err := res.readDescription()
 	if err != nil { description = "Error due to: " + err.Error() }
 	res.Description = description
+	config, err := res.readConfig()
+	if err != nil {
+		res.Config = nil
+	} else {
+		res.Config = config
+	}
+	if config == nil {
+		res.isSHA256 = false
+	} else {
+		version, ok1 := config.GetValue("core", "", "repositoryformatversion")
+		format, ok2 := config.GetValue("extensions", "", "objectformat")
+		if ok1 && ok2 && version == "1" && strings.ToLower(format) == "sha256" {
+			res.isSHA256 = true
+		} else {
+			res.isSHA256 = false
+		}
+	}
 	return res
+}
+
+func (gr LocalGitRepository) readConfig() (ini.INI, error) {
+	configFilePath := path.Join(gr.GitDirectoryPath, "config")
+	f, err := os.Open(configFilePath)
+	if err != nil { return nil, err }
+	defer f.Close()
+	return ini.ParseINI(f)
 }
 
 func (gr LocalGitRepository) readDescription() (string, error) {

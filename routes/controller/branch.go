@@ -1,0 +1,141 @@
+package controller
+
+import (
+	"fmt"
+	"path"
+	"mime"
+	"strings"
+	"net/http"
+	
+	. "github.com/bctnry/gitus/routes"
+	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/gitus/pkg/gitlib"
+)
+
+func bindBranchController(ctx RouterContext) {
+	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		repoName := r.PathValue("repoName")
+		branchName := r.PathValue("branchName")
+		treePath := r.PathValue("treePath")
+		repo, ok := ctx.GitRepositoryList[repoName]
+		if !ok {
+			ctx.ReportNotFound(repoName, "Repository", "depot", w, r)
+			return
+		}
+		repoHeaderInfo := templates.RepoHeaderTemplateModel{
+			RepoName: repoName,
+			RepoDescription: repo.Description,
+			TypeStr: "branch",
+			NodeName: branchName,
+			RepoLabelList: nil,
+		}
+
+		err := repo.SyncAllBranchList()
+		if err != nil {
+			ctx.ReportInternalError(
+				fmt.Sprintf(
+					"Cannot sync branch list for %s: %s",
+					repoName,
+					err.Error(),
+				), w, r,
+			)
+			return
+		}
+		br, ok := repo.BranchIndex[branchName]
+		if !ok {
+			ctx.ReportNotFound(branchName, "Branch", repoName, w, r)
+			return
+		}
+		gobj, err := repo.ReadObject(br.HeadId)
+		if err != nil {
+			ctx.ReportObjectReadFailure(br.HeadId, err.Error(), w, r)
+			return
+		}
+		if gobj.Type() != gitlib.COMMIT {
+			ctx.ReportObjectTypeMismatch(gobj.ObjectId(), "COMMIT", gobj.Type().String(), w, r)
+			return
+		}
+
+		cobj := gobj.(*gitlib.CommitObject)
+		commitInfo := &templates.CommitInfoTemplateModel{
+			RepoName: repoName,
+			Commit: cobj,
+		}
+		gobj, err = repo.ReadObject(cobj.TreeObjId)
+		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }
+		target, err := repo.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+		}
+		tp1 := make([]string, 0)
+		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
+		for item := range strings.SplitSeq(treePath, "/") {
+			if len(item) <= 0 { continue }
+			tp1 = append(tp1, item)
+			treePathSegmentList = append(treePathSegmentList, struct{
+				Name string; RelPath string
+			}{
+				Name: item, RelPath: strings.Join(tp1, "/"),
+			})
+		}
+		rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "branch", branchName)
+		rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "branch", branchName)
+		treePathModelValue := &templates.TreePathTemplateModel{
+			RootFullName: rootFullName,
+			RootPath: rootPath,
+			TreePath: treePath,
+			TreePathSegmentList: treePathSegmentList,
+		}
+		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, cobj.Id, treePath)
+		switch target.Type() {
+		case gitlib.TREE:
+			if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
+				FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
+				return
+			}
+			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
+				RepoHeaderInfo: repoHeaderInfo,
+				TreeFileList: templates.TreeFileListTemplateModel{
+					ShouldHaveParentLink: len(treePath) > 0,
+					RootPath: rootPath,
+					TreePath: treePath,
+					FileList: target.(*gitlib.TreeObject).ObjectList,
+				},
+				PermaLink: permaLink,
+				TreePath: treePathModelValue,
+				CommitInfo: commitInfo,
+				TagInfo: nil,
+			}))
+		case gitlib.BLOB:
+			mime := mime.TypeByExtension(path.Ext(treePath))
+			if len(mime) <= 0 { mime = "application/octet-stream" }
+			templateType := "file-text"
+			if strings.HasPrefix(mime, "image/") {
+				templateType = "file-image"
+			}
+			bobj := target.(*gitlib.BlobObject)
+			if r.URL.Query().Has("raw") {
+				w.Header().Add("Content-Type", mime)
+				w.Write(bobj.Data)
+				return
+			}
+			str := string(bobj.Data)
+			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
+				RepoHeaderInfo: repoHeaderInfo,
+				File: templates.BlobTextTemplateModel{
+					FileLineCount: strings.Count(str, "\n"),
+					FileContent: str,
+				},
+				PermaLink: permaLink,
+				TreePath: treePathModelValue,
+				CommitInfo: commitInfo,
+				TagInfo: nil,
+			}))
+		default:
+			ctx.ReportInternalError("", w, r)
+		}
+
+	}))
+}
+
+

@@ -31,7 +31,7 @@ tr > th {
 tr > td {
 }
 
-.index-header-label, .repo-header-label {
+.index-header-nav, .repo-header-nav {
 	font-weight: bold;
 	font-style: 1rem;
 	letter-spacing: 1rem;
@@ -55,13 +55,13 @@ pre { font-size: 1rem; }
 .repo-header-name > a {
 	text-decoration: none;
 }
-.repo-header-label > a {
+.repo-header-nav > a {
 	text-decoration: none;
 }
-.repo-header-label > a:before {
+.repo-header-nav > a:before {
 	content: "{";
 }
-.repo-header-label > a:after {
+.repo-header-nav > a:after {
 	content: "}";
 }
 
