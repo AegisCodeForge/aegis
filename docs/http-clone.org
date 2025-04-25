@@ -1,0 +1,7 @@
+* git clone thru http
+
+For the most part please refer to: https://git-scm.com/book/ms/v2/Git-Internals-Transfer-Protocols
+
+
+
+

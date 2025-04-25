@@ -34,6 +34,7 @@ func bindTreeHandler(ctx RouterContext) {
 			TypeStr: "tree",
 			NodeName: treeId,
 			RepoLabelList: nil,
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
 		}
 
 		gobj, err := repo.ReadObject(treeId)

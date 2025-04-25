@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 
@@ -66,6 +67,10 @@ func NewLocalGitRepository(namespace string, name string, p string) LocalGitRepo
 			res.isSHA256 = false
 		}
 	}
+	cmd := exec.Command("git", "update-server-info")
+	cmd.Dir = p
+	// ignore error for now.
+	cmd.Run()
 	return res
 }
 

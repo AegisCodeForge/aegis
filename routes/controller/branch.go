@@ -36,6 +36,7 @@ func bindBranchController(ctx RouterContext) {
 			TypeStr: "branch",
 			NodeName: branchName,
 			RepoLabelList: nil,
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
 		}
 
 		err := repo.SyncAllBranchList()

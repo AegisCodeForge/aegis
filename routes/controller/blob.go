@@ -27,6 +27,7 @@ func bindBlobController(ctx RouterContext) {
 			TypeStr: "blob",
 			NodeName: blobId,
 			RepoLabelList: nil,
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
 		}
 
 		gobj, err := repo.ReadObject(blobId)

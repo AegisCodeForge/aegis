@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -69,6 +70,33 @@ type RawGitObject struct {
 type GitObjectHeader struct {
 	Type GitObjectType
 	Size int
+}
+
+func EncodeAsDirectObject(gobj GitObject) ([]byte, error) {
+	// requires `gobj` to be resolved (i.e. not delta)
+	typestr := ""
+	switch gobj.Type() {
+	case TREE: typestr = "tree"
+	case COMMIT: typestr = "commit"
+	case BLOB: typestr = "blob"
+	case TAG: typestr = "tag"
+	default: return nil, errors.New("Invalid type for encoding: " + gobj.Type().String())
+	}
+	size := fmt.Sprintf("%d", len(gobj.RawData()))
+	header := []byte(typestr + " " + size + "\x00")
+	res := append(header, gobj.RawData()...)
+	return res, nil
+}
+
+func EncodeAsDirectObjectCompressed(gobj GitObject) ([]byte, error) {
+	preres, err := EncodeAsDirectObject(gobj)
+	if err != nil { return nil, err }
+	var res bytes.Buffer
+	wr := zlib.NewWriter(&res)
+	wr.Write(preres)
+	wr.Flush()
+	wr.Close()
+	return res.Bytes(), nil
 }
 
 // returns the type and size of the object.
@@ -176,6 +204,7 @@ func (rgo RawGitObject) dispatchNoDeflate() (GitObject, error) {
 
 func (gr LocalGitRepository) ReadObject(oid string) (GitObject, error) {
 	rgo, err := gr.openRawObject(oid)
+	if err != nil { return nil, err }
 	defer rgo.reader.Close()
 	var dispatched GitObject = nil
 	if rgo.readerIsUncompressed {

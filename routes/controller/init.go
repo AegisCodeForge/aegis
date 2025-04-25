@@ -14,5 +14,7 @@ func InitializeRoute(context routes.RouterContext) {
 	bindRepositoryController(context)
 	bindTagController(context)
 	bindTreeHandler(context)
+
+	bindHttpCloneController(context)
 }
 

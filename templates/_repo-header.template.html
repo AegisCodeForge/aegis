@@ -12,6 +12,9 @@
 	{{end}}
 	{{end}}
   </div>
+  <div class="repo-header-clone-address">
+	<span class="clone-address-label">Clone URL</span>: <input class="repo-header-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoURL}}"readonly/>
+  </div>
 </div>
 <div class="repo-description">{{.RepoDescription}}</div>
 {{end}}

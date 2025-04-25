@@ -44,6 +44,7 @@ func bindDiffController(ctx RouterContext) {
 				TypeStr: "commit",
 				NodeName: commitId,
 				RepoLabelList: nil,
+				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rn),
 			},
 			CommitInfo: templates.CommitInfoTemplateModel{
 				RepoName: rn,

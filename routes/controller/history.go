@@ -77,6 +77,7 @@ func bindHistoryController(ctx RouterContext) {
 					TypeStr: typeStr,
 					NodeName: nodeNameElem[1],
 					RepoLabelList: nil,
+					RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rn),
 				},
 				Commit: *(cobj.(*gitlib.CommitObject)),
 				CommitHistory: h,

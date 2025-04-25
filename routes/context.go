@@ -21,6 +21,7 @@ func (ctx RouterContext) LoadTemplate(name string) *template.Template {
 }
 
 func (ctx RouterContext) ReportNotFound(objName string, objType string, namespace string, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(404)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
 			ErrorCode: 404,
@@ -33,6 +34,7 @@ func (ctx RouterContext) ReportNotFound(objName string, objType string, namespac
 }
 
 func (ctx RouterContext) ReportInternalError(msg string, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(500)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
 			ErrorCode: 500,
