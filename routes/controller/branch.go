@@ -2,15 +2,23 @@ package controller
 
 import (
 	"fmt"
-	"path"
 	"mime"
-	"strings"
 	"net/http"
-	
+	"path"
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
+
+func handleBranchSnapshotRequest(repo gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
+	filename := fmt.Sprintf(
+		"%s-%s-branch-%s",
+		repo.Namespace, repo.Name, branchName,
+	)
+	responseWithTreeZip(repo, obj, filename, w, r)
+}
 
 func bindBranchController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +75,23 @@ func bindBranchController(ctx RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
+
+		// if it's a query for snapshot of a tree we directly output
+		// the tree object as a .zip file
+		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
+		if isSnapshotRequest {
+			if target.Type() == gitlib.BLOB {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				w.Header().Add("Content-Type", mime)
+				w.Write((target.(*gitlib.BlobObject)).Data)
+				return
+			} else {
+				handleBranchSnapshotRequest(repo, branchName, target, w, r)
+				return
+			}
+		}
+		
 		tp1 := make([]string, 0)
 		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
 		for item := range strings.SplitSeq(treePath, "/") {

@@ -12,6 +12,14 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
+func handleCommitSnapshotRequest(repo gitlib.LocalGitRepository, commitId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
+	filename := fmt.Sprintf(
+		"%s-%s-commit-%s",
+		repo.Namespace, repo.Name, commitId,
+	)
+	responseWithTreeZip(repo, obj, filename, w, r)
+}
+
 func bindCommitController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/commit/{commitId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		repoName := r.PathValue("repoName")
@@ -52,6 +60,21 @@ func bindCommitController(ctx RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
+
+		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
+		if isSnapshotRequest {
+			if target.Type() == gitlib.BLOB {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				w.Header().Add("Content-Type", mime)
+				w.Write((target.(*gitlib.BlobObject)).Data)
+				return
+			} else {
+				handleCommitSnapshotRequest(repo, commitId, target, w, r)
+				return
+			}
+		}
+		
 		tp1 := make([]string, 0)
 		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
 		for item := range strings.SplitSeq(treePath, "/") {

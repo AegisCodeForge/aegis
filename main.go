@@ -9,12 +9,13 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/pkg/gitus"
-	"github.com/bctnry/gitus/templates"
 	"github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/routes/controller"
+	"github.com/bctnry/gitus/templates"
 )
 
 func getAllGitRepository(gitPath string) (map[string]gitlib.LocalGitRepository, error) {
@@ -22,16 +23,18 @@ func getAllGitRepository(gitPath string) (map[string]gitlib.LocalGitRepository, 
 	l, err := os.ReadDir(gitPath)
 	if err != nil { return nil, err }
 	for _, item := range l {
+		repoName := item.Name()
 		p := path.Join(gitPath, item.Name())
-		if gitlib.IsValidGitDirectory(p) {
-			res[item.Name()] = gitlib.NewLocalGitRepository(p)
+		if !gitlib.IsValidGitDirectory(p) {
+			p = path.Join(gitPath, item.Name(), ".git")
+		}
+		if !gitlib.IsValidGitDirectory(p) {
 			continue
 		}
-		p2 := path.Join(p, ".git")
-		if gitlib.IsValidGitDirectory(p2) {
-			res[item.Name() + ".git"] = gitlib.NewLocalGitRepository(p2)
-			continue
+		if strings.HasSuffix(repoName, ".git") {
+			repoName = repoName[:len(repoName)-len(".git")]
 		}
+		res[repoName] = gitlib.NewLocalGitRepository("", repoName, p)
 	}
 	return res, nil
 }

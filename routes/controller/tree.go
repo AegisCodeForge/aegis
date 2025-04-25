@@ -10,6 +10,14 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
+func handleTreeSnapshotRequest(repo gitlib.LocalGitRepository, treeId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
+	filename := fmt.Sprintf(
+		"%s-%s-tree-%s",
+		repo.Namespace, repo.Name, treeId,
+	)
+	responseWithTreeZip(repo, obj, filename, w, r)
+}
+
 func bindTreeHandler(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tree/{treeId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		repoName := r.PathValue("repoName")
@@ -47,10 +55,18 @@ func bindTreeHandler(ctx RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
+
 		if target.Type() == gitlib.TREE && len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
 			FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
 			return
 		}
+
+		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
+		if isSnapshotRequest {
+			handleTreeSnapshotRequest(repo, treeId, target, w, r)
+			return
+		}
+		
 		tp1 := make([]string, 0)
 		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
 		for item := range strings.SplitSeq(treePath, "/") {

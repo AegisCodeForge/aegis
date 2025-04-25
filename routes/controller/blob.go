@@ -45,7 +45,7 @@ func bindBlobController(ctx RouterContext) {
 		// intentional and we shall come back to this in the future...
 		templateType := "file-text"
 		bobj := gobj.(*gitlib.BlobObject)
-		if r.URL.Query().Has("raw") {
+		if r.URL.Query().Has("raw") || r.URL.Query().Has("snapshot") {
 			w.Write(bobj.Data)
 			return
 		}

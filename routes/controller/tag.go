@@ -12,6 +12,26 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
+func handleTagSnapshotRequest(repo gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) error {
+	// would resolve tags that point to tags.
+	subj := obj
+	var err error = nil
+	for subj.Type() == gitlib.TAG {
+		subj, err = repo.ReadObject((subj.(*gitlib.TagObject)).TaggedObjId)
+		if err != nil { return err }
+	}
+	filename := fmt.Sprintf(
+		"%s-%s-branch-%s",
+		repo.Namespace, repo.Name, branchName,
+	)
+	if subj.Type() == gitlib.TREE {
+		return responseWithTreeZip(repo, obj, filename, w, r)
+	} else {
+		w.Write(subj.RawData())
+		return nil
+	}
+}
+
 func bindTagController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tag/{tagId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		repoName := r.PathValue("repoName")
@@ -55,6 +75,11 @@ func bindTagController(ctx RouterContext) {
 		tobj, err := repo.ReadObject(t.HeadId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(t.HeadId, err.Error(), w, r)
+			return
+		}
+
+		if r.URL.Query().Has("snapshot") {
+			handleTagSnapshotRequest(repo, tagName, tobj, w, r)
 			return
 		}
 

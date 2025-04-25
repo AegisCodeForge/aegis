@@ -21,6 +21,7 @@ func bindIndexController(ctx RouterContext) {
 	http.HandleFunc("GET /", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		LogTemplateError(ctx.LoadTemplate("index").Execute(w, templates.IndexModel{
 			RepositoryList: grmodel,
+			DepotName: ctx.Config.DepotName,
 		}))
 	}))
 }

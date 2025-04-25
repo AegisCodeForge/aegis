@@ -2,6 +2,7 @@ package gitlib
 
 import (
 	"compress/zlib"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -12,6 +13,8 @@ import (
 )
 
 type LocalGitRepository struct {
+	Namespace string
+	Name string
 	GitDirectoryPath string
 	Description string
 	PackIndex map[string]*PackIndex
@@ -25,8 +28,18 @@ func (gr LocalGitRepository) IsSHA256() bool {
 	return gr.isSHA256
 }
 
-func NewLocalGitRepository(p string) LocalGitRepository {
+func (gr LocalGitRepository) FullName() string {
+	if len(gr.Namespace) > 0 {
+		return fmt.Sprintf("%s:%s", gr.Namespace, gr.Name)
+	} else {
+		return gr.Name
+	}
+}
+
+func NewLocalGitRepository(namespace string, name string, p string) LocalGitRepository {
 	res := LocalGitRepository{
+		Namespace: namespace,
+		Name: name,
 		GitDirectoryPath: p,
 		PackIndex: nil,
 	}
