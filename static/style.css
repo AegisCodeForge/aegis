@@ -153,4 +153,10 @@ hr {
 	margin-top: 1rem;
 	margin-bottom: 1rem;
 }
+.header-clone-address > input {
+	background-color: var(--background-color);
+	color: var(--foreground-color);
+	border: 2px var(--foreground-color) solid;
+	width: 100%;
+}
 

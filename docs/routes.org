@@ -2,6 +2,7 @@
 
 (very early draft; subject to change)
 
++ ={hostname}/s/{namespace}=: The front page of the namespace.
 + ={hostname}/repo/{reponame}=: The front page of the repository.
   + =reponame= has the format of ={namespace}:{name}= if namespaces are used.
 + ={hostname}/repo/{reponame}/branch/{branchName}=:

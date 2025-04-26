@@ -2,32 +2,43 @@ package controller
 
 import (
 	"fmt"
-	"strings"
 	"net/http"
-	
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
 
 func bindBlobController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/blob/{blobId}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
-		blobId := r.PathValue("blobId")
-		
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", "depot", w, r)
+		rfn := r.PathValue("repoName")
+		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
 			return
 		}
+		blobId := r.PathValue("blobId")
+		
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
+			NamespaceName: namespaceName,
 			RepoName: repoName,
 			RepoDescription: repo.Description,
 			TypeStr: "blob",
 			NodeName: blobId,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
 		gobj, err := repo.ReadObject(blobId)
@@ -51,7 +62,7 @@ func bindBlobController(ctx RouterContext) {
 			return
 		}
 		str := string(bobj.Data)
-		permaLink := fmt.Sprintf("/repo/%s/blob/%s", repoName, blobId)
+		permaLink := fmt.Sprintf("/repo/%s/blob/%s", rfn, blobId)
 
 		LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,

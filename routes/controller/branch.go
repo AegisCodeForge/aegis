@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
 )
@@ -22,24 +23,34 @@ func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName str
 
 func bindBranchController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
-		branchName := r.PathValue("branchName")
-		treePath := r.PathValue("treePath")
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", "depot", w, r)
+		rfn := r.PathValue("repoName")
+		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
 			return
 		}
+		branchName := r.PathValue("branchName")
+		treePath := r.PathValue("treePath")
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			RepoName: repoName,
+			NamespaceName: namespaceName,
+			RepoName: rfn,
 			RepoDescription: repo.Description,
 			TypeStr: "branch",
 			NodeName: branchName,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
-		err := repo.SyncAllBranchList()
+		err = repo.SyncAllBranchList()
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf(
@@ -104,15 +115,15 @@ func bindBranchController(ctx RouterContext) {
 				Name: item, RelPath: strings.Join(tp1, "/"),
 			})
 		}
-		rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "branch", branchName)
-		rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "branch", branchName)
+		rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "branch", branchName)
+		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName)
 		treePathModelValue := &templates.TreePathTemplateModel{
 			RootFullName: rootFullName,
 			RootPath: rootPath,
 			TreePath: treePath,
 			TreePathSegmentList: treePathSegmentList,
 		}
-		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, cobj.Id, treePath)
+		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
 		switch target.Type() {
 		case gitlib.TREE:
 			if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {

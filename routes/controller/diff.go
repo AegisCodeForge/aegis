@@ -3,20 +3,27 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
 func bindDiffController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", WithLog(func(w http.ResponseWriter, r *http.Request){
-		rn := r.PathValue("repoName")
-		repo, ok := ctx.GitRepositoryList[rn]
-		if !ok {
+		rfn := r.PathValue("repoName")
+		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: 404,
-				ErrorMessage: fmt.Sprintf("Repository %s not found.", rn),
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
 			}))
 			return
 		}
@@ -39,15 +46,16 @@ func bindDiffController(ctx RouterContext) {
 		}
 		LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{
 			RepoHeaderInfo: templates.RepoHeaderTemplateModel{
-				RepoName: rn,
+				NamespaceName: namespaceName,
+				RepoName: rfn,
 				RepoDescription: repo.Description,
 				TypeStr: "commit",
 				NodeName: commitId,
 				RepoLabelList: nil,
-				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rn),
+				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 			},
 			CommitInfo: templates.CommitInfoTemplateModel{
-				RepoName: rn,
+				RepoName: rfn,
 				Commit: cobj.(*gitlib.CommitObject),
 			},
 			Diff: diff,

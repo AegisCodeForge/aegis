@@ -2,14 +2,15 @@ package controller
 
 import (
 	"fmt"
-	"path"
 	"mime"
-	"strings"
 	"net/http"
-	
+	"path"
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
 func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) error {
@@ -34,7 +35,21 @@ func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string
 
 func bindTagController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tag/{tagId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
+		rfn := r.PathValue("repoName")
+		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
+			return
+		}
 		tagName := r.PathValue("tagId")
 		treePath := r.PathValue("treePath")
 
@@ -46,21 +61,17 @@ func bindTagController(ctx RouterContext) {
 		//   into a tree or a blob.
 		// + by now we have a tagInfo/nil, a commitInfo/nil and a tree/blob/tag.
 		//   we thus display them accordingly.
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", "depot", w, r)
-			return
-		}
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			RepoName: repoName,
+			NamespaceName: namespaceName,
+			RepoName: rfn,
 			RepoDescription: repo.Description,
 			TypeStr: "tag",
 			NodeName: tagName,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 		
-		err := repo.SyncAllTagList()
+		err = repo.SyncAllTagList()
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf("Failed to sync tag list: %s", err.Error()),
@@ -70,7 +81,7 @@ func bindTagController(ctx RouterContext) {
 		}
 		t, ok := repo.TagIndex[tagName]
 		if !ok {
-			ctx.ReportNotFound(tagName, "Tag", repoName, w, r)
+			ctx.ReportNotFound(tagName, "Tag", rfn, w, r)
 			return
 		}
 		tobj, err := repo.ReadObject(t.HeadId)
@@ -99,7 +110,7 @@ func bindTagController(ctx RouterContext) {
 			to := tobj.(*gitlib.TagObject)
 			tagInfo = &templates.TagInfoTemplateModel{
 				Annotated: true,
-				RepoName: repoName,
+				RepoName: rfn,
 				Tag: to,
 			}
 			subject, err = repo.ReadObject(to.TaggedObjId)
@@ -125,7 +136,7 @@ func bindTagController(ctx RouterContext) {
 				return
 			}
 			commitInfo = &templates.CommitInfoTemplateModel{
-				RepoName: repoName,
+				RepoName: rfn,
 				Commit: cobj,
 			}
 			subject, err = repo.ReadObject(cobj.TreeObjId)
@@ -137,17 +148,17 @@ func bindTagController(ctx RouterContext) {
 				)
 				return
 			}
-			permaLink = fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, cobj.Id, treePath)
+			permaLink = fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
 		}
 
 		if subject.Type() == gitlib.TREE {
 			subject, err = repo.ResolveTreePath(subject.(*gitlib.TreeObject), treePath)
 			if subject.Type() == gitlib.TREE && len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
-				FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s/%s/", repoName, tagName, treePath))
+				FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s/%s/", rfn, tagName, treePath))
 				return
 			}
 			if len(permaLink) <= 0 {
-				permaLink = fmt.Sprintf("/repo/%s/tree/%s/%s", repoName, subject.ObjectId(), treePath)
+				permaLink = fmt.Sprintf("/repo/%s/tree/%s/%s", rfn, subject.ObjectId(), treePath)
 			}
 		}
 
@@ -183,7 +194,7 @@ func bindTagController(ctx RouterContext) {
 				return
 			}
 			if len(permaLink) <= 0 {
-				permaLink = fmt.Sprintf("/repo/%s/blob/%s", repoName, bobj.Id)
+				permaLink = fmt.Sprintf("/repo/%s/blob/%s", rfn, bobj.Id)
 			}
 			str := string(bobj.Data)
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
@@ -199,8 +210,8 @@ func bindTagController(ctx RouterContext) {
 			}))
 
 		case gitlib.TREE:
-			rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "tag", tagName)
-			rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "tag", tagName)
+			rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "tag", tagName)
+			rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "tag", tagName)
 			tp1 := make([]string, 0)
 			treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
 			for item := range strings.SplitSeq(treePath, "/") {

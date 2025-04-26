@@ -2,6 +2,7 @@
 package templates
 
 type RepoHeaderTemplateModel struct {
+	NamespaceName string
 	RepoName string
 	RepoDescription string
 	RepoURL string

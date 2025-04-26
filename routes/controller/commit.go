@@ -2,14 +2,15 @@ package controller
 
 import (
 	"fmt"
-	"path"
 	"mime"
-	"strings"
 	"net/http"
-	
+	"path"
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
 func handleCommitSnapshotRequest(repo *gitlib.LocalGitRepository, commitId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
@@ -22,22 +23,32 @@ func handleCommitSnapshotRequest(repo *gitlib.LocalGitRepository, commitId strin
 
 func bindCommitController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/commit/{commitId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
+		rfn := r.PathValue("repoName")
+		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
+			return
+		}
 		commitId := r.PathValue("commitId")
 		treePath := r.PathValue("treePath")
 
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", "depot", w, r)
-			return
-		}
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			RepoName: repoName,
+			NamespaceName: namespaceName,
+			RepoName: rfn,
 			RepoDescription: repo.Description,
 			TypeStr: "commit",
 			NodeName: commitId,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
 		gobj, err := repo.ReadObject(commitId)
@@ -52,7 +63,7 @@ func bindCommitController(ctx RouterContext) {
 
 		cobj := gobj.(*gitlib.CommitObject)
 		commitInfo := &templates.CommitInfoTemplateModel{
-			RepoName: repoName,
+			RepoName: rfn,
 			Commit: cobj,
 		}
 		gobj, err = repo.ReadObject(cobj.TreeObjId)
@@ -87,9 +98,9 @@ func bindCommitController(ctx RouterContext) {
 				Name: item, RelPath: strings.Join(tp1, "/"),
 			})
 		}
-		rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "commit", commitId)
-		rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "commit", commitId)
-		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", repoName, commitId, treePath)
+		rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "commit", commitId)
+		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "commit", commitId)
+		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, commitId, treePath)
 		treePathModelValue := &templates.TreePathTemplateModel{
 			RootFullName: rootFullName,
 			RootPath: rootPath,

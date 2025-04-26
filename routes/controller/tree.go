@@ -2,12 +2,13 @@ package controller
 
 import (
 	"fmt"
-	"strings"
 	"net/http"
-	
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
 func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
@@ -20,7 +21,21 @@ func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, o
 
 func bindTreeHandler(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tree/{treeId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
+		rfn := r.PathValue("repoName")
+		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
+			return
+		}
 		treeId := r.PathValue("treeId")
 		treePath := r.PathValue("treePath")
 		repo, ok := ctx.GitRepositoryList[repoName]
@@ -29,12 +44,13 @@ func bindTreeHandler(ctx RouterContext) {
 			return
 		}
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			RepoName: repoName,
+			NamespaceName: namespaceName,
+			RepoName: rfn,
 			RepoDescription: repo.Description,
 			TypeStr: "tree",
 			NodeName: treeId,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, repoName),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
 		gobj, err := repo.ReadObject(treeId)
@@ -47,9 +63,9 @@ func bindTreeHandler(ctx RouterContext) {
 			return
 		}
 
-		rootFullName := fmt.Sprintf("%s@%s:%s", repoName, "tree", treeId)
-		rootPath := fmt.Sprintf("/repo/%s/%s/%s", repoName, "tree", treeId)
-		permaLink := fmt.Sprintf("/repo/%s/tree/%s/%s", repoName, treeId, treePath)
+		rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "tree", treeId)
+		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "tree", treeId)
+		permaLink := fmt.Sprintf("/repo/%s/tree/%s/%s", rfn, treeId, treePath)
 		tobj := gobj.(*gitlib.TreeObject)
 		var commitInfo *templates.CommitInfoTemplateModel = nil
 		target, err := repo.ResolveTreePath(tobj, treePath)

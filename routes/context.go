@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"strings"
 
 	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/pkg/gitus"
@@ -64,5 +65,42 @@ func (ctx RouterContext) ReportObjectTypeMismatch(objid string, expectedType str
 			objid, expectedType, actualType,
 		), w, r,
 	)
+}
+
+var s error
+
+func (ctx RouterContext) ResolveRepositoryFullName(str string) (string, string, *gitlib.LocalGitRepository, error) {
+	np := strings.Split(str, ":")
+	namespaceName := ""
+	if len(np) <= 1 {
+		s, ok := ctx.GitRepositoryList[str]
+		if !ok {
+			return "", "", nil, NewRouteError(
+				NOT_FOUND, fmt.Sprintf(
+					"Repository %s not found.", str,
+				),
+			)
+		}
+		return "", str, s, nil
+	} else {
+		namespaceName = np[0]
+		ns, ok := ctx.GitNamespaceList[namespaceName]
+		if !ok {
+			return "", "", nil, NewRouteError(
+				NOT_FOUND, fmt.Sprintf(
+					"Namespace %s not found.", namespaceName,
+				),
+			)
+		}
+		r, ok := ns.RepositoryList[np[1]]
+		if !ok {
+			return "", "", nil, NewRouteError(
+				NOT_FOUND, fmt.Sprintf(
+					"Repository %s not found in namespace %s.", np[1], namespaceName,
+				),
+			)
+		}
+		return namespaceName, np[1], r, nil
+	}
 }
 

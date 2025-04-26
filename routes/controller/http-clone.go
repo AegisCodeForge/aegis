@@ -6,7 +6,9 @@ import (
 	"os"
 	"path"
 
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
+	"github.com/bctnry/gitus/templates"
 )
 
 // info/refs
@@ -15,10 +17,19 @@ import (
 
 func bindHttpCloneController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/info/{p...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", ctx.Config.DepotName, w, r)
+		rfn := r.PathValue("repoName")
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
 			return
 		}
 		fmt.Println(r.URL.Query())
@@ -31,10 +42,19 @@ func bindHttpCloneController(ctx RouterContext) {
 		w.Write(s)
 	}))
 	http.HandleFunc("GET /repo/{repoName}/HEAD", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", ctx.Config.DepotName, w, r)
+		rfn := r.PathValue("repoName")
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
 			return
 		}
 		fmt.Println(r.URL.Query())
@@ -47,17 +67,26 @@ func bindHttpCloneController(ctx RouterContext) {
 		w.Write(s)
 	}))
 	http.HandleFunc("GET /repo/{repoName}/objects/{obj...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		repoName := r.PathValue("repoName")
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", ctx.Config.DepotName, w, r)
+		rfn := r.PathValue("repoName")
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
+			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
+			}))
 			return
 		}
 		obj := r.PathValue("obj")
 		p := path.Join(repo.GitDirectoryPath, "objects", obj)
 		s, err := os.ReadFile(p)
 		if os.IsNotExist(err) {
-			ctx.ReportNotFound(repoName, "object", ctx.Config.DepotName, w, r)
+			ctx.ReportNotFound(rfn, "object", ctx.Config.DepotName, w, r)
 			return
 		}
 		if err != nil {

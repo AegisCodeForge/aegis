@@ -4,23 +4,30 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
 )
 
 func bindRepositoryController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rn := r.PathValue("repoName")
-		s, ok := ctx.GitRepositoryList[rn]
-		if !ok {
+		rfn := r.PathValue("repoName")
+		namespaceName, _, s, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: 404,
-				ErrorMessage: fmt.Sprintf("Repository %s not found.", rn),
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
 			}))
 			return
 		}
-
-		err := s.SyncAllBranchList()
+		
+		err = s.SyncAllBranchList()
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -38,15 +45,16 @@ func bindRepositoryController(ctx RouterContext) {
 		}
 
 		LogTemplateError(ctx.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
-			RepoName: rn,
+			RepoName: rfn,
 			RepoObj: s,
 			RepoHeaderInfo: templates.RepoHeaderTemplateModel{
-				RepoName: rn,
+				NamespaceName: namespaceName,
+				RepoName: rfn,
 				TypeStr: "",
 				NodeName: "",
 				RepoDescription: s.Description,
 				RepoLabelList: nil,
-				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rn),
+				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 			},
 			BranchList: s.BranchIndex,
 			TagList: s.TagIndex,

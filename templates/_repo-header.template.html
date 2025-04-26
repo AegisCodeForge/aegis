@@ -1,6 +1,6 @@
 {{define "_repo-header"}}
 <header>
-  <div class="header-nav"><a href="/">DEPOT</a> / REPOSITORY</div>
+  <div class="header-nav"><a href="/">DEPOT</a> / {{if gt (len .NamespaceName) 0}}<a href="/s/{{.NamespaceName}}">NS</a> / {{end}}REPOSITORY</div>
   <h1 class="header-name" style="margin-bottom: 0"><a href="{{getRepoPath .RepoName}}">{{.RepoName}}</a></h1>
   {{if gt (len .TypeStr) 0}}
   <div class="header-node">@{{.TypeStr}}:<a href="{{getRootPath .RepoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>

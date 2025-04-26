@@ -42,3 +42,4 @@ func LoadTemplate(t *template.Template, name string) *template.Template {
 func LogTemplateError(e error) {
 	if e != nil { log.Print(e) }
 }
+

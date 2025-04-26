@@ -2,22 +2,29 @@ package controller
 
 import (
 	"fmt"
-	"strings"
 	"net/http"
-	
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
 func bindHistoryController(ctx RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/history/{nodeName}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rn := r.PathValue("repoName")
-		repo, ok := ctx.GitRepositoryList[rn]
-		if !ok {
+		rfn := r.PathValue("repoName")
+		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			errCode := 500
+			if routes.IsRouteError(err) {
+				if err.(*RouteError).ErrorType == NOT_FOUND {
+					errCode = 404
+				}
+			}
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: 404,
-				ErrorMessage: fmt.Sprintf("Repository %s not found.", rn),
+				ErrorCode: errCode,
+				ErrorMessage: err.Error(),
 			}))
 			return
 		}
@@ -30,7 +37,7 @@ func bindHistoryController(ctx RouterContext) {
 			if err != nil {
 				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 					ErrorCode: 500,
-					ErrorMessage: fmt.Sprintf("Failed at syncing branch list for repository %s: %s", rn, err.Error()),
+					ErrorMessage: fmt.Sprintf("Failed at syncing branch list for repository %s: %s", rfn, err.Error()),
 				}))
 				return
 			}
@@ -38,7 +45,7 @@ func bindHistoryController(ctx RouterContext) {
 			if !ok {
 				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 					ErrorCode: 404,
-					ErrorMessage: fmt.Sprintf("Repository %s not found.", rn),
+					ErrorMessage: fmt.Sprintf("Repository %s not found.", rfn),
 				}))
 				return
 			}
@@ -72,12 +79,13 @@ func bindHistoryController(ctx RouterContext) {
 			w,
 			templates.CommitHistoryModel{
 				RepoHeaderInfo: templates.RepoHeaderTemplateModel{
-					RepoName: rn,
+					NamespaceName: namespaceName,
+					RepoName: rfn,
 					RepoDescription: repo.Description,
 					TypeStr: typeStr,
 					NodeName: nodeNameElem[1],
 					RepoLabelList: nil,
-					RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rn),
+					RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 				},
 				Commit: *(cobj.(*gitlib.CommitObject)),
 				CommitHistory: h,
