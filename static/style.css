@@ -31,12 +31,12 @@ tr > th {
 tr > td {
 }
 
-.index-header-nav, .repo-header-nav {
+.header-nav {
 	font-weight: bold;
 	font-style: 1rem;
 	letter-spacing: 1rem;
 }
-.index-header-name, .repo-header-name {
+.header-name {
 	line-height: 100%;
 	font-size: 3rem;
 	margin-top: 1rem;
@@ -45,23 +45,23 @@ tr > td {
 
 code { font-size: 1rem; }
 pre { font-size: 1rem; }
-.repo-header-branch {
+.header-node {
 	font-weight: bold;
 	font-size: 2rem;
 }
-.repo-header {
+header {
 	padding-bottom: 1rem;
 }
-.repo-header-name > a {
+.header-name > a {
 	text-decoration: none;
 }
-.repo-header-nav > a {
+.header-nav > a {
 	text-decoration: none;
 }
-.repo-header-nav > a:before {
+.header-nav > a:before {
 	content: "{";
 }
-.repo-header-nav > a:after {
+.header-nav > a:after {
 	content: "}";
 }
 

@@ -13,13 +13,29 @@ import (
 
 	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/pkg/gitus"
+	"github.com/bctnry/gitus/pkg/gitus/model"
 	"github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/routes/controller"
 	"github.com/bctnry/gitus/templates"
 )
 
-func getAllGitRepository(gitPath string) (map[string]gitlib.LocalGitRepository, error) {
-	res := make(map[string]gitlib.LocalGitRepository, 0)
+func getAllNamespace(gitPath string) (map[string]*model.Namespace, error) {
+	res := make(map[string]*model.Namespace, 0)
+	l, err := os.ReadDir(gitPath)
+	if err != nil { return nil, err }
+	for _, item := range l {
+		namespaceName := item.Name()
+		if !model.ValidNamespaceName(namespaceName) { continue }
+		p := path.Join(gitPath, namespaceName)
+		ns, err := model.NewNamespace(namespaceName, p)
+		if err != nil { return nil, err }
+		res[namespaceName] = ns
+	}
+	return res, nil
+}
+
+func getAllGitRepository(gitPath string) (map[string]*gitlib.LocalGitRepository, error) {
+	res := make(map[string]*gitlib.LocalGitRepository, 0)
 	l, err := os.ReadDir(gitPath)
 	if err != nil { return nil, err }
 	for _, item := range l {
@@ -33,6 +49,7 @@ func getAllGitRepository(gitPath string) (map[string]gitlib.LocalGitRepository, 
 		}
 		if strings.HasSuffix(repoName, ".git") {
 			repoName = repoName[:len(repoName)-len(".git")]
+			if len(repoName) <= 0 { continue }
 		}
 		res[repoName] = gitlib.NewLocalGitRepository("", repoName, p)
 	}
@@ -47,15 +64,11 @@ func main() {
 	}
 	initFlag := argparse.Bool("init", false, "Create an initial configuration file at the location specified with [config].")
 	argparse.Parse(os.Args[1:])
-	fmt.Println(argparse.NArg())
-	fmt.Println("initFlag", *initFlag, os.Args)
 	if len(argparse.Args()) <= 0 {
 		argparse.Usage()
 		os.Exit(0)
 	}
-	fmt.Println((*argparse).NArg())
 	configPath := argparse.Args()[0]
-	fmt.Println("configPath", configPath)
 
 	if *initFlag {
 		err := gitus.CreateConfigFile(configPath)
@@ -75,17 +88,25 @@ func main() {
 	}
 	
 	masterTemplate := templates.LoadTemplate()
-
-	grlist, err := getAllGitRepository(config.GitRoot)
-	if err != nil {
-		log.Panicf("Failed to load git repository: %s\n", err.Error())
-	}
-
+	
 	context := routes.RouterContext{
 		Config: config,
 		MasterTemplate: masterTemplate,
-		GitRepositoryList: grlist,
 	}
+	if !config.UseNamespace {
+		grlist, err := getAllGitRepository(config.GitRoot)
+		if err != nil {
+			log.Panicf("Failed to load git repository: %s\n", err.Error())
+		}
+		context.GitRepositoryList = grlist
+	} else {
+		nslist, err := getAllNamespace(config.GitRoot)
+		if err != nil {
+			log.Panicf("Failed to load git repository: %s\n", err.Error())
+		}
+		context.GitNamespaceList = nslist
+	}
+
 	controller.InitializeRoute(context)
 
 	staticPrefix := config.StaticAssetDirectory

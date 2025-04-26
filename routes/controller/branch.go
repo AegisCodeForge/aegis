@@ -12,7 +12,7 @@ import (
 	"github.com/bctnry/gitus/templates"
 )
 
-func handleBranchSnapshotRequest(repo gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
+func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
 	filename := fmt.Sprintf(
 		"%s-%s-branch-%s",
 		repo.Namespace, repo.Name, branchName,

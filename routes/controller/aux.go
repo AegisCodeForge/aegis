@@ -15,7 +15,7 @@ func basicStringEscape(s string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(s, "\\", "\\\\"), "\"", "\\\"")
 }
 
-func writeTree(repo gitlib.LocalGitRepository, w *zip.Writer, pathPrefix string, tree *gitlib.TreeObject) error {
+func writeTree(repo *gitlib.LocalGitRepository, w *zip.Writer, pathPrefix string, tree *gitlib.TreeObject) error {
 	// `pathPrefix` should be empty or end with slash.
 	for _, item := range tree.ObjectList {
 		pathname := fmt.Sprintf("%s%s", pathPrefix, item.Name)
@@ -48,7 +48,7 @@ func writeTree(repo gitlib.LocalGitRepository, w *zip.Writer, pathPrefix string,
 	return nil
 }
 
-func responseWithTreeZip(repo gitlib.LocalGitRepository, obj gitlib.GitObject, name string, w http.ResponseWriter, r *http.Request) error {
+func responseWithTreeZip(repo *gitlib.LocalGitRepository, obj gitlib.GitObject, name string, w http.ResponseWriter, r *http.Request) error {
 	// requires:
 	// + `name` to be descriptive and without the `.zip` extension name.
 	// + `obj` to be a tree object.

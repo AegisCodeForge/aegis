@@ -10,7 +10,7 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
-func handleTreeSnapshotRequest(repo gitlib.LocalGitRepository, treeId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
+func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
 	filename := fmt.Sprintf(
 		"%s-%s-tree-%s",
 		repo.Namespace, repo.Name, treeId,

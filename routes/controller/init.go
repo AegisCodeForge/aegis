@@ -16,5 +16,8 @@ func InitializeRoute(context routes.RouterContext) {
 	bindTreeHandler(context)
 
 	bindHttpCloneController(context)
+	if context.Config.UseNamespace {
+		bindNamespaceController(context)
+	}
 }
 

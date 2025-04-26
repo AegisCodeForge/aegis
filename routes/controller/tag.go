@@ -12,7 +12,7 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
-func handleTagSnapshotRequest(repo gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) error {
+func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) error {
 	// would resolve tags that point to tags.
 	subj := obj
 	var err error = nil

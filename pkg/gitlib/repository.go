@@ -37,7 +37,7 @@ func (gr LocalGitRepository) FullName() string {
 	}
 }
 
-func NewLocalGitRepository(namespace string, name string, p string) LocalGitRepository {
+func NewLocalGitRepository(namespace string, name string, p string) *LocalGitRepository {
 	res := LocalGitRepository{
 		Namespace: namespace,
 		Name: name,
@@ -71,7 +71,7 @@ func NewLocalGitRepository(namespace string, name string, p string) LocalGitRepo
 	cmd.Dir = p
 	// ignore error for now.
 	cmd.Run()
-	return res
+	return &res
 }
 
 func (gr LocalGitRepository) readConfig() (ini.INI, error) {

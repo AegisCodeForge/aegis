@@ -2,18 +2,20 @@ package routes
 
 import (
 	"fmt"
-	"net/http"
 	"html/template"
-	
-	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitus"
+	"net/http"
+
 	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/gitus/pkg/gitus"
+	"github.com/bctnry/gitus/pkg/gitus/model"
+	"github.com/bctnry/gitus/templates"
 )
 
 type RouterContext struct {
 	Config *gitus.GitusConfig
 	MasterTemplate *template.Template
-	GitRepositoryList map[string]gitlib.LocalGitRepository
+	GitRepositoryList map[string]*gitlib.LocalGitRepository
+	GitNamespaceList map[string]*model.Namespace
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {

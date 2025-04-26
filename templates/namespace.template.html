@@ -1,0 +1,43 @@
+{{$namespaceName := .Namespace.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{.Namespace.Name}} :: {{.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<header>
+	  <div class="header-nav index-header-nav"><a href="/">DEPOT</a> / NAMESPACE</div>
+      <h1 class="header-name index-header-name">{{.Namespace.Name}}</h1>
+	</header>
+	<hr />
+
+	{{if le (len (.Namespace.RepositoryList)) 0 }}
+	<p>There is no repository in this namespace.</p>
+	{{else}}
+
+	<table>
+	  <thead>
+		<tr>
+		  <th>Repository</th>
+		  <th>Description</th>
+		</tr>
+	  </thead>
+	  <tbody>
+		{{range $key, $value := .Namespace.RepositoryList}}
+		<tr>
+		  <td><a href="/repo/{{$namespaceName}}:{{$key}}">{{$key}}</a></td>
+		  <td>{{$value.Description}}</td>
+		</tr>
+		{{end}}
+	  </tbody>
+    </table>
+	{{end}}
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

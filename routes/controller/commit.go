@@ -12,7 +12,7 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
-func handleCommitSnapshotRequest(repo gitlib.LocalGitRepository, commitId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
+func handleCommitSnapshotRequest(repo *gitlib.LocalGitRepository, commitId string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {
 	filename := fmt.Sprintf(
 		"%s-%s-commit-%s",
 		repo.Namespace, repo.Name, commitId,

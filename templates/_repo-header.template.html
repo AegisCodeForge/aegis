@@ -1,21 +1,21 @@
 {{define "_repo-header"}}
-<div class="repo-header">
-  <div class="repo-header-nav"><a href="/">DEPOT</a> / REPOSITORY</div>
-  <h1 class="repo-header-name" style="margin-bottom: 0"><a href="{{getRepoPath .RepoName}}">{{.RepoName}}</a></h1>
+<header>
+  <div class="header-nav"><a href="/">DEPOT</a> / REPOSITORY</div>
+  <h1 class="header-name" style="margin-bottom: 0"><a href="{{getRepoPath .RepoName}}">{{.RepoName}}</a></h1>
   {{if gt (len .TypeStr) 0}}
-  <div class="repo-header-branch">@{{.TypeStr}}:<a href="{{getRootPath .RepoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
+  <div class="header-node">@{{.TypeStr}}:<a href="{{getRootPath .RepoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
   {{end}}
-  <div class="repo-header-label-list">
+  <div class="header-repo-label-list">
 	{{if .RepoLabelList}}
 	{{range .RepoLabelList}}
-	<span class="repo-header-label">{{.}}</span>
+	<span class="header-repo-label">{{.}}</span>
 	{{end}}
 	{{end}}
   </div>
-  <div class="repo-header-clone-address">
-	<span class="clone-address-label">Clone URL</span>: <input class="repo-header-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoURL}}"readonly/>
+  <div class="header-clone-address">
+	<span class="repo-clone-address-label">Clone URL</span>: <input class="repo-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoURL}}"readonly/>
   </div>
-</div>
+</header>
 <div class="repo-description">{{.RepoDescription}}</div>
 {{end}}
 

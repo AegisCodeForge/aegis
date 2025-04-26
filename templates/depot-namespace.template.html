@@ -1,0 +1,36 @@
+{{$depotName := .DepotName}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<header>
+	  <div class="header-nav">DEPOT</div>
+      <h1 class="header-name">{{.DepotName}}</h1>
+	</header>
+    <hr />
+	<table>
+	  <thead>
+		<tr>
+		  <th>Namespace</th>
+		  <th>Description</th>
+		</tr>
+	  </thead>
+	  <tbody>
+		{{range $key, $value := .NamespaceList}}
+		<tr>
+		  <td><a href="/s/{{$value.Name}}">{{$value.Title}}</a></td>
+		  <td>{{$value.Description}}</td>
+		</tr>
+		{{end}}
+	  </tbody>
+    </table>
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
