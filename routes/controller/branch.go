@@ -78,7 +78,7 @@ func bindBranchController(ctx RouterContext) {
 
 		cobj := gobj.(*gitlib.CommitObject)
 		commitInfo := &templates.CommitInfoTemplateModel{
-			RepoName: repoName,
+			RepoName: rfn,
 			Commit: cobj,
 		}
 		gobj, err = repo.ReadObject(cobj.TreeObjId)

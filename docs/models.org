@@ -1,4 +1,55 @@
 * models of gitus
 
+#+begin_src sql
+  CREATE TABLE IF NOT EXISTS gitus_user_authkey (
+      user_name TEXT,
+  	key_text TEXT,
+      FOREIGN KEY user_name gitus_user(user_name)
+  );
+  CREATE TABLE IF NOT EXISTS gitus_user_signkey (
+      user_name TEXT,
+  	key_text TEXT,
+  	FOREIGN KEY user_name gitus_user(user_name)
+  );
+  CREATE TABLE IF NOT EXISTS gitus_user (
+      user_name TEXT UNIQUE,
+  	user_title TEXT,
+  	user_email TEXT,
+  	user_bio TEXT,
+  	user_website TEXT,
+  	user_reg_datetime TEXT,
+  );
 
+  CREATE TABLE IF NOT EXISTS gitus_namespace (
+      ns_name TEXT UNIQUE,
+  	ns_title TEXT,
+  	ns_description TEXT,
+  	ns_email TEXT,
+  	ns_owner TEXT,
+  	ns_reg_datetime TEXT,
+  	FOREIGN KEY ns_owner gitus_user(user_name)
+  );
+
+  CREATE TABLE IF NOT EXISTS gitus_repository (
+      -- full name.
+      repo_name TEXT,
+  	repo_private INT
+  );
+
+  CREATE TABLE IF NOT EXISTS gitus_issue (
+      issue_repo TEXT,
+  	issue_datetime TEXT,
+  	issue_local_id INT,
+  	issue_title TEXT,
+  	issue_body TEXT,
+  );
+
+  CREATE TABLE IF NOT EXISTS gitus_issue_comment (
+      
+  );
+
+  CREATE TABLE IF NOT EXISTS gitus_pull_request (
+
+  );
+#+end_src
 

@@ -67,8 +67,6 @@ func (ctx RouterContext) ReportObjectTypeMismatch(objid string, expectedType str
 	)
 }
 
-var s error
-
 func (ctx RouterContext) ResolveRepositoryFullName(str string) (string, string, *gitlib.LocalGitRepository, error) {
 	np := strings.Split(str, ":")
 	namespaceName := ""

@@ -8,53 +8,12 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
-	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/pkg/gitus"
-	"github.com/bctnry/gitus/pkg/gitus/model"
 	"github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/routes/controller"
 	"github.com/bctnry/gitus/templates"
 )
-
-func getAllNamespace(gitPath string) (map[string]*model.Namespace, error) {
-	res := make(map[string]*model.Namespace, 0)
-	l, err := os.ReadDir(gitPath)
-	if err != nil { return nil, err }
-	for _, item := range l {
-		namespaceName := item.Name()
-		if !model.ValidNamespaceName(namespaceName) { continue }
-		p := path.Join(gitPath, namespaceName)
-		ns, err := model.NewNamespace(namespaceName, p)
-		if err != nil { return nil, err }
-		res[namespaceName] = ns
-	}
-	return res, nil
-}
-
-func getAllGitRepository(gitPath string) (map[string]*gitlib.LocalGitRepository, error) {
-	res := make(map[string]*gitlib.LocalGitRepository, 0)
-	l, err := os.ReadDir(gitPath)
-	if err != nil { return nil, err }
-	for _, item := range l {
-		repoName := item.Name()
-		p := path.Join(gitPath, item.Name())
-		if !gitlib.IsValidGitDirectory(p) {
-			p = path.Join(gitPath, item.Name(), ".git")
-		}
-		if !gitlib.IsValidGitDirectory(p) {
-			continue
-		}
-		if strings.HasSuffix(repoName, ".git") {
-			repoName = repoName[:len(repoName)-len(".git")]
-			if len(repoName) <= 0 { continue }
-		}
-		res[repoName] = gitlib.NewLocalGitRepository("", repoName, p)
-	}
-	return res, nil
-}
 
 func main() {
 	argparse := flag.NewFlagSet("gitus", flag.ContinueOnError)
@@ -93,18 +52,14 @@ func main() {
 		Config: config,
 		MasterTemplate: masterTemplate,
 	}
+	ns, err := config.GetAllNamespace()
+	if err != nil {
+		log.Panicf("Failed to load git repository: %s\n", err.Error())
+	}
 	if !config.UseNamespace {
-		grlist, err := getAllGitRepository(config.GitRoot)
-		if err != nil {
-			log.Panicf("Failed to load git repository: %s\n", err.Error())
-		}
-		context.GitRepositoryList = grlist
+		context.GitRepositoryList = ns[""].RepositoryList
 	} else {
-		nslist, err := getAllNamespace(config.GitRoot)
-		if err != nil {
-			log.Panicf("Failed to load git repository: %s\n", err.Error())
-		}
-		context.GitNamespaceList = nslist
+		context.GitNamespaceList = ns
 	}
 
 	controller.InitializeRoute(context)
