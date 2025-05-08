@@ -333,18 +333,20 @@ import (
 	if err != nil { log.Panic(err) }
 
 	for _, item := range templateList {
-		f2.WriteString(`
+		if len(strings.TrimSpace(item.modelDefinition)) > 0 {
+			f2.WriteString(`
 // from ` + item.name + ".template.html\n")
-		f2.WriteString(item.modelDefinition)
-		f2.WriteString("\n")
+			f2.WriteString(item.modelDefinition)
+			f2.WriteString("\n")
+		}
 	}
 
 	for _, item := range modelList {
-		for _, line := range item.content {
-			f2.WriteString(line)
+		content := strings.Join(item.content, "\n")
+		if len(strings.TrimSpace(content)) > 0 {
+			f2.WriteString(string(content))
 			f2.WriteString("\n")
 		}
-		f2.WriteString("\n")
 	}
 	
 	fmt.Println("Done.")

@@ -34,7 +34,7 @@ tr > td {
 .header-nav {
 	font-weight: bold;
 	font-style: 1rem;
-	letter-spacing: 1rem;
+	letter-spacing: 0.5rem;
 }
 .header-name {
 	line-height: 100%;
@@ -54,15 +54,6 @@ header {
 }
 .header-name > a {
 	text-decoration: none;
-}
-.header-nav > a {
-	text-decoration: none;
-}
-.header-nav > a:before {
-	content: "{";
-}
-.header-nav > a:after {
-	content: "}";
 }
 
 .repo-branch-description {
@@ -159,4 +150,49 @@ hr {
 	border: 2px var(--foreground-color) solid;
 	width: 100%;
 }
+.user-profile {
+	padding: 1rem;
+	padding-left: 0;
+	display: flex;
+}
+.user-profile-info {
+	min-width: 30%;
+}
+.user-profile-title {
+	font-weight: bold;
+	font-size: 300%;
+	line-height: 120%;
+}
+.user-profile-name {
+	font-size: 200%;
+	line-height: 120%;
+}
+.user-profile-repository-list {
+	padding: 1rem;
+}
+.user-profile-repository-list p {
+	margin: 0;
+}
+.header-nav {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+	display: flex;
+}
+.header-nav a {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+	text-decoration: none;
+    transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
 
+}
+.header-nav-left {
+	flex-grow: 2;
+}
+
+.header-nav a:hover {
+	color: var(--foreground-color);
+	background-color: var(--background-color);
+}

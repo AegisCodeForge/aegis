@@ -1,23 +1,44 @@
 * models of gitus
 
 #+begin_src sql
-  CREATE TABLE IF NOT EXISTS gitus_user_authkey (
-      user_name TEXT,
-  	key_text TEXT,
-      FOREIGN KEY user_name gitus_user(user_name)
-  );
-  CREATE TABLE IF NOT EXISTS gitus_user_signkey (
-      user_name TEXT,
-  	key_text TEXT,
-  	FOREIGN KEY user_name gitus_user(user_name)
-  );
   CREATE TABLE IF NOT EXISTS gitus_user (
       user_name TEXT UNIQUE,
   	user_title TEXT,
   	user_email TEXT,
   	user_bio TEXT,
   	user_website TEXT,
-  	user_reg_datetime TEXT,
+  	-- to prevent format mismatch we use timestamp for this.
+  	user_reg_datetime INTEGER,
+  	user_password_hash TEXT,
+  	-- should be tinyint.
+  	-- 1 - normal user
+  	-- 2 - normal user (waiting for approval).
+  	-- 3 - normal user (wait for confirmation).
+  	-- 4 - admin
+  -- 5 - super admin.
+  	-- 6 - deleted. 7 - banned.
+  	-- difference between admin & super admin: super admin can remove
+  	-- admin status while admin can't.
+  	user_status INTEGER,
+  );
+  -- for the next two tables (for the keys) the pair `user_name`
+  -- and `key_name` together should be unique (i.e. one user
+  -- can have multiple keys and multiple user can have (different)
+  -- keys that have the same name, but one user can only have
+  -- one key with the same name). we will enforce this at the
+  -- golang side for now before i find an easy & cheap way to
+  -- do this constraint.
+  CREATE TABLE IF NOT EXISTS gitus_user_authkey (
+      user_name TEXT,
+  	key_name TEXT,
+  	key_text TEXT,
+      FOREIGN KEY (user_name) REFERENCES gitus_user(user_name)
+  );
+  CREATE TABLE IF NOT EXISTS gitus_user_signkey (
+      user_name TEXT,
+  	key_name TEXT,
+  	key_text TEXT,
+  	FOREIGN KEY (user_name) REFERENCES gitus_user(user_name)
   );
 
   CREATE TABLE IF NOT EXISTS gitus_namespace (
@@ -26,30 +47,35 @@
   	ns_description TEXT,
   	ns_email TEXT,
   	ns_owner TEXT,
-  	ns_reg_datetime TEXT,
-  	FOREIGN KEY ns_owner gitus_user(user_name)
+  	ns_reg_datetime INTEGER,
+  	-- should be tinyint.
+  	-- 1 - normal (public). 2 - normal (private).
+  	-- 3 - deleted.
+  	ns_status INT
+  	FOREIGN KEY (ns_owner) REFERENCES gitus_user(user_name)
   );
 
   CREATE TABLE IF NOT EXISTS gitus_repository (
-      -- full name.
+      -- this field is here for the constraint only, but you should
+  	-- always kept it as `{namespace}:{name}`.
+      repo_fullname TEXT UNIQUE,
+  	repo_namespace TEXT,
       repo_name TEXT,
-  	repo_private INT
+  	repo_description TEXT,
+  	-- access control list
+  	repo_acl TEXT,
+  	-- status.
+  	-- 1 - normal (public). 2 - normal (private).
+  	-- 3 - deleted. 4 - archived.
+  	repo_status INTEGER
   );
 
-  CREATE TABLE IF NOT EXISTS gitus_issue (
-      issue_repo TEXT,
-  	issue_datetime TEXT,
-  	issue_local_id INT,
-  	issue_title TEXT,
-  	issue_body TEXT,
-  );
-
-  CREATE TABLE IF NOT EXISTS gitus_issue_comment (
-      
-  );
-
-  CREATE TABLE IF NOT EXISTS gitus_pull_request (
-
+  CREATE TABLE IF NOT EXISTS gitus_repo_redirect (
+      old_ns TEXT,
+      old_name TEXT,
+  	new_ns TEXT,
+  	new_name TEXT,
+  	redirect_timestamp INTEGER
   );
 #+end_src
 

@@ -11,7 +11,7 @@ import (
 	"github.com/bctnry/gitus/templates"
 )
 
-func bindHistoryController(ctx RouterContext) {
+func bindHistoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/history/{nodeName}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -33,7 +33,7 @@ func bindHistoryController(ctx RouterContext) {
 		typeStr := string(nodeNameElem[0])
 		cid := string(nodeNameElem[1])
 		if string(nodeNameElem[0]) == "branch" {
-			err := repo.SyncAllBranchList()
+			err := repo.Repository.SyncAllBranchList()
 			if err != nil {
 				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 					ErrorCode: 500,
@@ -41,7 +41,7 @@ func bindHistoryController(ctx RouterContext) {
 				}))
 				return
 			}
-			br, ok := repo.BranchIndex[string(nodeNameElem[1])]
+			br, ok := repo.Repository.BranchIndex[string(nodeNameElem[1])]
 			if !ok {
 				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 					ErrorCode: 404,
@@ -51,7 +51,7 @@ func bindHistoryController(ctx RouterContext) {
 			}
 			cid = br.HeadId
 		}
-		cobj, err := repo.ReadObject(cid)
+		cobj, err := repo.Repository.ReadObject(cid)
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -63,7 +63,7 @@ func bindHistoryController(ctx RouterContext) {
 			}))
 			return
 		}
-		h, err := repo.GetCommitHistory(cid)
+		h, err := repo.Repository.GetCommitHistory(cid)
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -75,6 +75,16 @@ func bindHistoryController(ctx RouterContext) {
 			}))
 			return
 		}
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		
 		LogTemplateError(ctx.LoadTemplate("commit-history").Execute(
 			w,
 			templates.CommitHistoryModel{
@@ -89,6 +99,7 @@ func bindHistoryController(ctx RouterContext) {
 				},
 				Commit: *(cobj.(*gitlib.CommitObject)),
 				CommitHistory: h,
+				LoginInfo: loginInfo,
 			},
 		))
 	}))

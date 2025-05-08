@@ -5,6 +5,15 @@ import (
 	"os"
 )
 
+func intToHex16(i int) string {
+	res := make([]byte, 0)
+	res = append(res, digitToChar(byte((i>>12)&0xf)))
+	res = append(res, digitToChar(byte((i>>8)&0xf)))
+	res = append(res, digitToChar(byte((i>>4)&0xf)))
+	res = append(res, digitToChar(byte((i)&0xf)))
+	return string(res)
+}
+
 func byteHexToInt(s string) int {
 	s1 := 0
 	if int('a') <= int(s[0]) && int(s[0]) <= int('f') {
@@ -28,6 +37,12 @@ func digitToChar(c byte) byte {
 	if c >= 0x0a {
 		return c + byte('a') - 10
 	} else { return c + byte('0') }
+}
+func charHexToDigit(c byte) byte {
+	if c >= byte('a') && c <= byte('f') { return byte(int(c) - int('a') + 10) }
+	if c >= byte('A') && c <= byte('F') { return byte(int(c) - int('A') + 10) }
+	if c >= byte('0') && c <= byte('9') { return byte(int(c) - int('0')) }
+	return 0
 }
 func readBigEndianUInt32(f *os.File) (uint32, error) {
 	var int32buf []byte = make([]byte, 4)

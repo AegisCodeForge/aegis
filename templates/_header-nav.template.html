@@ -1,0 +1,21 @@
+{{define "_header-nav"}}
+<div class="header-nav">
+  <div class="header-nav-left"><a href="/">HOME</a></div>
+  {{if not .Config.PlainMode}}
+  <div class="header-nav-action">
+	{{if .LoginInfo}}
+	  {{if .LoginInfo.LoggedIn}}
+	  <span class="header-nav-item"><a href="/u/{{.LoginInfo.UserName}}">{{.LoginInfo.UserName}}</a></span>
+	  <span class="header-nav-item"><a href="/setting">SETTING</a></span>
+	  <span class="header-nav-item"><a href="/logout">LOGOUT</a></span>
+	  {{else}}
+	  <span class="header-nav-item"><a href="/login">LOGIN</a></span>
+	    {{if .Config.AllowRegistration}}
+	    | <span class="header-nav-item"><a href="/signup">SIGN UP</a></span>
+	    {{end}}
+	  {{end}}
+	{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}

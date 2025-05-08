@@ -9,10 +9,11 @@ import (
 	"github.com/bctnry/gitus/templates"
 )
 
-func bindRepositoryController(ctx RouterContext) {
+func bindRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, _, s, err := ctx.ResolveRepositoryFullName(rfn)
+		fmt.Println("nsn", namespaceName)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -27,7 +28,7 @@ func bindRepositoryController(ctx RouterContext) {
 			return
 		}
 		
-		err = s.SyncAllBranchList()
+		err = s.Repository.SyncAllBranchList()
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -35,7 +36,7 @@ func bindRepositoryController(ctx RouterContext) {
 			}))
 			return
 		}
-		err = s.SyncAllTagList()
+		err = s.Repository.SyncAllTagList()
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -46,7 +47,7 @@ func bindRepositoryController(ctx RouterContext) {
 
 		LogTemplateError(ctx.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
 			RepoName: rfn,
-			RepoObj: s,
+			RepoObj: s.Repository,
 			RepoHeaderInfo: templates.RepoHeaderTemplateModel{
 				NamespaceName: namespaceName,
 				RepoName: rfn,
@@ -56,8 +57,8 @@ func bindRepositoryController(ctx RouterContext) {
 				RepoLabelList: nil,
 				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 			},
-			BranchList: s.BranchIndex,
-			TagList: s.TagIndex,
+			BranchList: s.Repository.BranchIndex,
+			TagList: s.Repository.TagIndex,
 		}))
 	}))
 }

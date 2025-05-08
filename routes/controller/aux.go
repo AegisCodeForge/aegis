@@ -1,5 +1,4 @@
 package controller
-
 import (
 	"archive/zip"
 	"errors"
@@ -7,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"math/rand"
 
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
@@ -74,5 +74,14 @@ func responseWithTreeZip(repo *gitlib.LocalGitRepository, obj gitlib.GitObject, 
 	if err != nil { return err }
 	zipWriter.Flush()
 	return nil
+}
+
+const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789-_"
+func mkname(n int) string {
+	res := make([]byte, 0)
+	for _ = range n {
+		res = append(res, passchdict[rand.Intn(len(passchdict))])
+	}
+	return string(res)
 }
 

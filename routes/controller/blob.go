@@ -12,7 +12,7 @@ import (
 )
 
 
-func bindBlobController(ctx RouterContext) {
+func bindBlobController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/blob/{blobId}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -41,7 +41,7 @@ func bindBlobController(ctx RouterContext) {
 			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
-		gobj, err := repo.ReadObject(blobId)
+		gobj, err := repo.Repository.ReadObject(blobId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(blobId, err.Error(), w, r)
 			return
@@ -64,6 +64,15 @@ func bindBlobController(ctx RouterContext) {
 		str := string(bobj.Data)
 		permaLink := fmt.Sprintf("/repo/%s/blob/%s", rfn, blobId)
 
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+
 		LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,
 			File: templates.BlobTextTemplateModel{
@@ -74,6 +83,7 @@ func bindBlobController(ctx RouterContext) {
 			TreePath: nil,
 			CommitInfo: nil,
 			TagInfo: nil,
+			LoginInfo: loginInfo,
 		}))
 
 	}))

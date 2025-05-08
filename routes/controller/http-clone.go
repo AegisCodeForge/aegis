@@ -15,7 +15,7 @@ import (
 // HEAD
 // objects/
 
-func bindHttpCloneController(ctx RouterContext) {
+func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/info/{p...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -33,7 +33,7 @@ func bindHttpCloneController(ctx RouterContext) {
 			return
 		}
 		fmt.Println(r.URL.Query())
-		p := path.Join(repo.GitDirectoryPath, "info", r.PathValue("p"))
+		p := path.Join(repo.Repository.GitDirectoryPath, "info", r.PathValue("p"))
 		s, err := os.ReadFile(p)
 		if err != nil {
 			ctx.ReportInternalError("Fail to read info/refs", w, r)
@@ -58,7 +58,7 @@ func bindHttpCloneController(ctx RouterContext) {
 			return
 		}
 		fmt.Println(r.URL.Query())
-		p := path.Join(repo.GitDirectoryPath, "HEAD")
+		p := path.Join(repo.Repository.GitDirectoryPath, "HEAD")
 		s, err := os.ReadFile(p)
 		if err != nil {
 			ctx.ReportInternalError("Fail to read info/refs", w, r)
@@ -83,7 +83,7 @@ func bindHttpCloneController(ctx RouterContext) {
 			return
 		}
 		obj := r.PathValue("obj")
-		p := path.Join(repo.GitDirectoryPath, "objects", obj)
+		p := path.Join(repo.Repository.GitDirectoryPath, "objects", obj)
 		s, err := os.ReadFile(p)
 		if os.IsNotExist(err) {
 			ctx.ReportNotFound(rfn, "object", ctx.Config.DepotName, w, r)

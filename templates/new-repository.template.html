@@ -1,0 +1,50 @@
+{{$selected := .Selected}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>New repository :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		New repository
+	  </h1>
+	</header>
+	<hr />
+
+	<div class="setting">
+	  {{template "_setting-sidebar"}}
+
+	  <div class="setting-main">
+		<h2>New repository</h2>
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		<form action="" method="POST">
+		  <div class="field"><label class="field-label" for="namespace">Namespace:</label> <select name="namespace">
+			  {{if .NamespaceList}}
+			  {{range $ns := .NamespaceList}}
+			  <option value="{{$ns.Name}}" {{if eq $selected $ns.Name}}selected{{end}} >{{$ns.Name}} ({{$ns.Title}})</option>
+			  {{end}}
+			  {{end}}
+		</select></div>
+		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
+		  <div class="field"><label class="field-label" for="description">Description:</label> <input name="description" /></div>
+		  <input type="submit" value="New Namespace" />
+		</form>
+		
+	  </div>
+	</div>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

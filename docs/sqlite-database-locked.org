@@ -1,0 +1,24 @@
+* go sqlite3 "database is locked" error
+
+See:
+
+https://github.com/mattn/go-sqlite3/issues/39
+https://github.com/mattn/go-sqlite3/issues/209
+
+and:
+
+https://stackoverflow.com/questions/57118674/go-sqlite3-with-journal-mode-wal-gives-database-is-locked-error
+
+#+begin_quote
+As part of opening the database, go-sqlite3 will execute PRAGMA statements to set various defaults. One of these defaults is setting the journal_mode=DELETE. However, if another process has the database opened, the mode cannot be changed back to DELETE. Executing this statement fails with "database is locked" and so you will see the open operation fail with that error.
+#+end_quote
+
+The current method is:
+
++ No =db.SetMaxOpenConns(1)= since we rely on multiple open connection.
++ The string =?cache=shared&mode=rwc&_journal_mode=WAL= is added to sqlite db path.
+
+Please note that while all =.Query= should've already had their corresponding =.Close= deferred, =.QueryRow=, which returns a =*sql.Row=, does not seem to provide a =.Close=. The decision above is made when all =.Query= are properly closed and all transaction properly =.Rollback=-ed or =.Committed= and the program still has "database is locked" error.
+
+2025.5.6
+

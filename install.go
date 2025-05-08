@@ -1,0 +1,390 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"log"
+	"math/rand"
+	"os"
+	"os/exec"
+	"path"
+	"strings"
+
+	"github.com/bctnry/gitus/pkg/gitus/db"
+	"github.com/bctnry/gitus/pkg/passwd"
+	"github.com/bctnry/gitus/routes"
+	"golang.org/x/crypto/bcrypt"
+)
+
+const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%_-"
+func mkpass() string {
+	res := make([]byte, 0)
+	for _ = range 16 {
+		res = append(res, passchdict[rand.Intn(len(passchdict))])
+	}
+	return string(res)
+}
+
+func whereIs(cmdname string) (string, error) {
+	cmd := exec.Command("whereis", "-b", cmdname)
+	out, err := cmd.Output()
+	if err != nil { return "", err }
+	s := strings.Split(string(out), ":")
+	preres := strings.TrimSpace(s[1])
+	return preres, nil
+}
+
+func createOtherOwnedFile(p string, uid int, gid int) error {
+	err := os.WriteFile(p, []byte(""), 0644)
+	if err != nil && !os.IsExist(err) { return err }
+	err = os.Chown(p, uid, gid)
+	if err != nil { return err }
+	return nil
+}
+
+func createOtherOwnedDirectory(p string, uid int, gid int) error {
+	err := os.MkdirAll(p, os.ModeDir|0755)
+	if err != nil && !os.IsExist(err) { return err }
+	err = os.Chown(p, uid, gid)
+	if err != nil { return err }
+	return nil
+}
+
+func gitusReadyCheck(ctx routes.RouterContext) (bool, error) {
+	dbif := ctx.DatabaseInterface
+	ssif := ctx.SessionInterface
+	cfg := ctx.Config
+	b, err := dbif.IsDatabaseUsable()
+	if err != nil { return b, err }
+	if !b { return false, nil }
+	_, err = os.ReadDir(cfg.GitRoot)
+	if err != nil {
+		if os.IsNotExist(err) { return false, nil }
+		return false, err
+	}
+	b, err = ssif.IsSessionStoreUsable()
+	if err != nil { return b, err }
+	if !b { return false, nil }
+	verdict, err := passwd.HasUser(ctx.Config.GitUser)
+	if err != nil { return verdict, err }
+	if !verdict { return false, nil }
+	return true, nil
+}
+
+func askYesNo(prompt string) bool {
+	fmt.Printf("%s [y/n]", prompt)
+	result := false
+	for {
+		var answer string
+		_, err := fmt.Scan(&answer)
+		if err != nil { log.Panic(err) }
+		if answer == "y" || answer == "Y" {
+			result = true
+			break
+		} else if answer == "n" || answer == "N" {
+			result = false
+			break
+		} else {
+			fmt.Println("Please enter y or n...")
+		}
+	}
+	return result
+}
+
+func gitUserSetupCheckPrompt() {
+	fmt.Printf("You need to check if the Git user is set up properly:\n")
+	fmt.Printf("1.  Make sure that both the Git user and the user running Gitus has full read/write permission of the Git Root specified in the config file\n")
+	fmt.Printf("2.  Make sure that the user running Gitus has full read/write permission of the `.ssh/authorized_keys` file under the home directory of the Git user. \n")
+	fmt.Printf("3.  Make sure the git shell commands are properly set up. This includes:\n")
+	fmt.Printf("    1.  A `git-shell-command` directory exists under the home directory of the Git user.\n")
+	fmt.Printf("    2.  A `no-interactive-login` file exists under the `git-shell-command` directory. This file needs to be executable. This is used to stop the original git-shell from providing things. It can be a simple shell script that calls the command `gitus no-login`.\n")
+	fmt.Printf("    3.  The `gitus` executable should be under the `git-shell-command` directory as well.\n")
+}
+
+func gitUserCheck(ctx routes.RouterContext) bool {
+	x, err := passwd.HasUser(ctx.Config.GitUser)
+	br := bufio.NewReader(os.Stdin)
+	if err != nil {
+		fmt.Printf("Failed to check if user exist.\n")
+		gitUserSetupCheckPrompt()
+		return false
+	}
+	if !x {
+		r := askYesNo(fmt.Sprintf("User %s does not exist. Create it?", ctx.Config.GitUser))
+		if !r {
+			gitUserSetupCheckPrompt()
+			return false
+		}
+		// find git-shell.
+		gitShellPath, err := whereIs("git-shell")
+		if err != nil {
+			fmt.Printf("Failed to search for git-shell: %s\n", err.Error())
+			gitUserSetupCheckPrompt(); return false
+		}
+		if len(gitShellPath) <= 0 {
+			fmt.Printf("Failed to find the path of the git-shell executable.\n")
+			gitUserSetupCheckPrompt(); return false
+		}
+		fmt.Printf("Please input the path of the home directory we're going to create for the Git user: [/home/%s] ", ctx.Config.GitUser)
+		line, _, err := br.ReadLine()
+		if err != nil {
+			fmt.Printf("Failed to read line: %s\n", err.Error())
+			gitUserSetupCheckPrompt()
+			return false
+		}
+		p := strings.TrimSpace(string(line))
+		if len(p) <= 0 {
+			p = fmt.Sprintf("/home/%s", ctx.Config.GitUser)
+		}
+		err = os.MkdirAll(p, os.ModeDir|0755)
+		if err != nil {
+			fmt.Printf("Failed to create home directory: %s\n", err.Error())
+			gitUserSetupCheckPrompt()
+			return false
+		}
+		// find useradd
+		useraddPath, err := whereIs("useradd")
+		if err != nil {
+			fmt.Printf("Failed to search for useradd: %s\n", err.Error())
+			gitUserSetupCheckPrompt(); return false
+		}
+		if len(useraddPath) <= 0 {
+			fmt.Printf("Failed to search for useradd.")
+			gitUserSetupCheckPrompt(); return false
+		}
+		cmd3 := exec.Command(useraddPath, "-d", p, "-m", "-s", gitShellPath, ctx.Config.GitUser)
+		fmt.Println(cmd3.String())
+		err = cmd3.Run()
+		if err != nil {
+			fmt.Printf("Failed to run useradd: %s\n", err.Error())
+			gitUserSetupCheckPrompt(); return false
+		}
+	}
+	pwd, err := passwd.LoadPasswdFile()
+	gitUser := pwd[ctx.Config.GitUser]
+	homeDir := gitUser.HomeDir
+	if homeDir == "" {
+		fmt.Printf("Cannot find the home directory for the Git user. ")
+		res := askYesNo("Should I set it up for you?")
+		if !res { gitUserSetupCheckPrompt(); return false }
+		fmt.Printf("Please input the path of the home directory we're going to create for the Git user: [/home/%s] ", ctx.Config.GitUser)
+		line, _, err := br.ReadLine()
+		if err != nil {
+			fmt.Printf("Failed to read line: %s\n", err.Error())
+			gitUserSetupCheckPrompt()
+			return false
+		}
+		p := strings.TrimSpace(string(line))
+		if len(p) <= 0 {
+			p = fmt.Sprintf("/home/%s", ctx.Config.GitUser)
+		}
+		err = os.MkdirAll(p, os.ModeDir|0755)
+		if err != nil {
+			fmt.Printf("Failed to create home directory: %s\n", err.Error())
+			gitUserSetupCheckPrompt()
+			return false
+		}
+		homeDir = p
+	}
+	err = createOtherOwnedDirectory(homeDir, gitUser.UID, gitUser.GID)
+	if err != nil {
+		fmt.Printf("Cannot set the true owner of the Git user's home directory.")
+		gitUserSetupCheckPrompt(); return false
+	}
+
+	gitShellCommandPath := path.Join(homeDir, "git-shell-commands")
+	err = createOtherOwnedDirectory(gitShellCommandPath, gitUser.UID, gitUser.GID)
+	if err != nil {
+		fmt.Printf("Failed to create the git-shell-commands directory: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+
+	sshPath := path.Join(homeDir, ".ssh")
+	err = createOtherOwnedDirectory(sshPath, gitUser.UID, gitUser.GID)
+	if err != nil {
+		fmt.Printf("Failed to create the .ssh directory: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+
+	authorizedKeysPath := path.Join(homeDir, ".ssh", "authorized_keys")
+	err = createOtherOwnedFile(authorizedKeysPath, gitUser.UID, gitUser.GID)
+	if err != nil {
+		fmt.Printf("Failed to create the authorized_keys file: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+
+	// copy gitus executable... for handling git over ssh.
+	s, err := os.Executable()
+	if err != nil {
+		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+	f, err := os.Open(s)
+	if err != nil {
+		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+	defer f.Close()
+	gitusPath := path.Join(homeDir, "git-shell-command", "gitus")
+	fout, err := os.OpenFile(gitusPath, os.O_WRONLY|os.O_CREATE, 0754)
+	if err != nil {
+		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+	defer fout.Close()
+	_, err = io.Copy(fout, f)
+	if err != nil {
+		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+	err = os.Chown(gitusPath, gitUser.UID, gitUser.GID)
+	if err != nil {
+		fmt.Printf("Failed to chown Gitus executable: %s\n", err.Error())
+		gitUserSetupCheckPrompt(); return false
+	}
+	fmt.Printf("Done.\n")
+	return true
+}
+
+// NOTE: you shouldn't check for plain mode here (instead - check it
+// at the *caller* side!) since plain mode is fully "passive" and will
+// not involve any database setup.
+func InstallGitus(ctx routes.RouterContext) {
+	if len(strings.TrimSpace(ctx.Config.GitUser)) <= 0 {
+		fmt.Printf("Plain mode disabled but empty Git user name... this won't do. We'll assume the name of the Git user is `git`.\n")
+		gitUserName := "git"
+		res := askYesNo("Continue with `git`?")
+		if !res {
+			res = askYesNo("Specify the user name yourself? ")
+			if !res {
+				fmt.Printf("Please config a Git user name, or in the case you only need a frontend like git-instaweb, enable plain mode.\n")
+				return
+			}
+			fmt.Print("Please input the Git user name of choice: ")
+			_, err := fmt.Scan(&gitUserName)
+			if err != nil {
+				fmt.Printf("Failed to read Git user name: %s\n", err.Error())
+				return
+			}
+			ctx.Config.GitUser = gitUserName
+			err = ctx.Config.Sync()
+			if err != nil {
+				fmt.Printf("Failed to sync config: %s\n", err.Error())
+				return
+			}
+		} else {
+			ctx.Config.GitUser = "git"
+			err := ctx.Config.Sync()
+			if err != nil {
+				fmt.Printf("Failed to sync config: %s\n", err.Error())
+				return
+			}
+		}
+	}
+	if !gitUserCheck(ctx) {
+		fmt.Printf("Failed to set up Git user. Please follow whatever instructions listed above and try again...")
+		return
+	}
+	
+	dbif := ctx.DatabaseInterface
+	ssif := ctx.SessionInterface
+	cfg := ctx.Config
+	fmt.Println("If you've reached this point, it means the database is there but not ready.")
+	fmt.Println("For this reason we now perform a few operations to setup the database.")
+	_, err := os.ReadDir(cfg.GitRoot)
+	if os.IsNotExist(err) {
+		fmt.Println("The root for storing Git repository according to the config file would be:\n")
+		fmt.Printf("\t%s\n\n", cfg.GitRoot)
+		fmt.Println("This folder does not exist yet; we will create it for you.")
+		err = os.MkdirAll(cfg.GitRoot, os.ModeDir|0755)
+		if err != nil {
+			log.Panic(err)
+		}
+		fmt.Println("Git root creation done.")
+	}
+
+	if len(cfg.DatabaseType) <= 0 {
+		fmt.Print("Cannot infer database interface since database type empty in config. Please fix it and try again.")
+		os.Exit(1)
+	}
+	s, err := dbif.IsDatabaseUsable()
+	if err != nil { log.Panic(err) }
+	if !s {
+		fmt.Println("Setting up tables...")
+		err = dbif.InstallTables()
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+
+	if len(cfg.SessionType) <= 0 {
+		fmt.Print("Cannot infer session interface since session type empty in config. Please fix it and try again.")
+		os.Exit(1)
+	}
+	s, err = ssif.IsSessionStoreUsable()
+	if err != nil { log.Panic(err) }
+	if !s {
+		fmt.Println("Setting up session store...")
+		err = ssif.Install()
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+	
+	fmt.Println("Setting up admin user...")
+	adminExists := false
+	_, err = dbif.GetUserByName("admin")
+	if db.IsGitusDatabaseError(err) {
+		if err.(*db.GitusDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
+			adminExists = false
+		} else {
+			log.Panic(err)
+		}
+	} else if err != nil {
+		log.Panic(err)
+	} else {
+		adminExists = true
+	}
+	reinstall := true
+	if adminExists {
+		r := askYesNo("Admin user already exist; reinitialize?")
+		reinstall = r
+	}
+	if reinstall {
+		if adminExists {
+			err = dbif.HardDeleteUserByName("admin")
+			if err != nil { log.Panic(err) }
+		}
+		userName := "admin"
+		userPassword := mkpass()
+		r, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
+		if err != nil {
+			log.Panicf("Failed to generate password: %s\n", err.Error())
+		}
+		_, err = dbif.RegisterUser("admin", "", string(r))
+		if err != nil {
+			log.Panicf("Failed to register user: %s\n", err.Error())
+		}
+		fmt.Println("Admin user info:")
+		fmt.Printf("Username: %s\n", userName)
+		fmt.Printf("Password: %s\n", userPassword)
+	}
+	// one last chown just to be sure.
+	// we do things that we can do, but if we ever fail we don't bother and
+	// leave the job of checking to the user.
+	gitUser, err := passwd.GetUser(ctx.Config.GitUser)
+	// when we reached here, gitUser shouldn't be nil, since if it's nil we
+	// would've created it with the code above.
+	if err == nil {
+		if ctx.Config.DatabaseType == "sqlite" {
+			err = os.Chown(ctx.Config.DatabasePath, gitUser.UID, gitUser.GID)
+		}
+		if ctx.Config.SessionType == "sqlite" {
+			err = os.Chown(ctx.Config.SessionPath, gitUser.UID, gitUser.GID)
+		}
+	}
+	fmt.Println("Done. Please restart the program to start the server.\n")
+	gitUserSetupCheckPrompt()
+}
+

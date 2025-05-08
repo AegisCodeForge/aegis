@@ -2,9 +2,11 @@ package routes
 
 import (
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
-	"html/template"
+
+	"github.com/bctnry/gitus/templates"
 )
 
 func LogIfError(err error) {
@@ -43,3 +45,53 @@ func LogTemplateError(e error) {
 	if e != nil { log.Print(e) }
 }
 
+func GetUsernameFromCookie(r *http.Request) (string, error) {
+	s, err := r.Cookie(COOKIE_KEY_USERNAME)
+	if err != nil {
+		return "", err
+	} else {
+		return s.Value, err
+	}
+}
+
+func CheckUserSession(ctx *RouterContext, r *http.Request) (bool, error) {
+	// the fact that go uses product type as disjoint union is
+	// actually some ridiculously insane take. i have heard rumours
+	// before starting this project, but to actually doing things this
+	// way is a different story.
+	un, err := GetUsernameFromCookie(r)
+	if err == http.ErrNoCookie { return false, nil }
+	if err != nil { return false, err }
+	s, err := r.Cookie(COOKIE_KEY_SESSION)
+	if err == http.ErrNoCookie { return false, nil }
+	if err != nil { return false, err }
+	res, err := ctx.SessionInterface.VerifySession(un, s.Value)
+	if err != nil { return false, err }
+	return res, nil
+}
+
+func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.LoginInfoModel, error) {
+	loggedIn := false
+	un, err := GetUsernameFromCookie(r)
+	if err != nil {
+		if err != http.ErrNoCookie { return nil, err }
+		return &templates.LoginInfoModel{
+			LoggedIn: loggedIn,
+			UserName: "",
+		}, nil
+	}
+	s, err := r.Cookie(COOKIE_KEY_SESSION)
+	if err != nil {
+		if err != http.ErrNoCookie { return nil, err }
+		return &templates.LoginInfoModel{
+			LoggedIn: loggedIn,
+			UserName: "",
+		}, nil
+	}
+	res, err := ctx.SessionInterface.VerifySession(un, s.Value)
+	if err != nil { return nil, err }
+	return &templates.LoginInfoModel{
+		LoggedIn: res,
+		UserName: un,
+	}, nil
+}

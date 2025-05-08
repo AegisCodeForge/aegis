@@ -1,0 +1,19 @@
+* ssh
+
++ By specifying a =command= argument in the =~/.ssh/authorized_keys= file, one could get the =git= user to run certain command automatically when logging in using certain keys.
+
+  #+begin_src
+    command="gitus ssh {username1} {keyname1}" {ssh-key-1}
+    command="gitus ssh {username1} {keyname2}" {ssh-key-2}
+    command="gitus ssh {username2} {keyname1}" {ssh-key-1}
+    command="gitus ssh {username2} {keyname2}" {ssh-key-2}
+    command="gitus ssh {username2} {keyname3}" {ssh-key-3}
+    # ...
+  #+end_src
+
+  It is still the same Git user that's being logged in, but the result is different because the ssh key is different (which means the command getting executed when logging in can be different if we make it this way.) When clone with SSH, the original command (type of command & the path of the git repo in question) would be stored in envvar =SSH_ORIGINAL_COMMAND=.
++ At this time, we know the *Gitus* username and the target git repository path, but we don't know where the heck everything else is: we need to know where the Git Root actually is, and just because the gitus executable is in the =~/git-shell-command= directory it doesn't mean that we can infer Git Root from here (it could be a completely random place like =/opt/whatever-you-like/gitus=). For this reason we need this information stored somewhere, and since we might need to use other information in the future, it's better to just somehow leave a link to the config file that Gitus uses.
++ And because we made it so that you provide the location of the config file to the Gitus server process when you starts it, a different process cannot get that info unless we have a designated place for the info beforehand.
++ Thus the following scheme is currently used: when run with a config specified, Gitus will write a file =last-config= directly under the home directory of the specified git user. The content of the file would be the absolute path of the config file.
+
+

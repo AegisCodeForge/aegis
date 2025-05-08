@@ -19,7 +19,7 @@ func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, o
 	responseWithTreeZip(repo, obj, filename, w, r)
 }
 
-func bindTreeHandler(ctx RouterContext) {
+func bindTreeHandler(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tree/{treeId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -53,7 +53,7 @@ func bindTreeHandler(ctx RouterContext) {
 			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
-		gobj, err := repo.ReadObject(treeId)
+		gobj, err := repo.Repository.ReadObject(treeId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(treeId, err.Error(), w, r)
 			return
@@ -68,7 +68,7 @@ func bindTreeHandler(ctx RouterContext) {
 		permaLink := fmt.Sprintf("/repo/%s/tree/%s/%s", rfn, treeId, treePath)
 		tobj := gobj.(*gitlib.TreeObject)
 		var commitInfo *templates.CommitInfoTemplateModel = nil
-		target, err := repo.ResolveTreePath(tobj, treePath)
+		target, err := repo.Repository.ResolveTreePath(tobj, treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
@@ -80,7 +80,7 @@ func bindTreeHandler(ctx RouterContext) {
 
 		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
 		if isSnapshotRequest {
-			handleTreeSnapshotRequest(repo, treeId, target, w, r)
+			handleTreeSnapshotRequest(repo.Repository, treeId, target, w, r)
 			return
 		}
 		
@@ -101,6 +101,14 @@ func bindTreeHandler(ctx RouterContext) {
 			TreePath: treePath,
 			TreePathSegmentList: treePathSegmentList,
 		}
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
 		LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,
 			TreeFileList: templates.TreeFileListTemplateModel{
@@ -113,6 +121,7 @@ func bindTreeHandler(ctx RouterContext) {
 			TreePath: treePathModelValue,
 			CommitInfo: commitInfo,
 			TagInfo: nil,
+			LoginInfo: loginInfo,
 		}))
 	}))
 }

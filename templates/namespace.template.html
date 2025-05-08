@@ -8,8 +8,15 @@
   </head>
   <body>
 	<header>
-	  <div class="header-nav index-header-nav"><a href="/">DEPOT</a> / NAMESPACE</div>
-      <h1 class="header-name index-header-name"><a href="/s/{{.Namespace.Name}}">{{.Namespace.Name}}</a></h1>
+	  {{template "_header-nav" .}}
+      <h1 class="header-name index-header-name"><a href="/s/{{.Namespace.Name}}">{{.Namespace.Title}}</a> ({{.Namespace.Name}})</h1>
+	  {{if gt (len (.Namespace.Owner)) 0}}
+	  <div>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></div>
+	  {{end}}
+	  {{if eq .Namespace.Owner .LoginInfo.UserName}}
+	  <div class="namespace-nav"><a href="/s/{{.Namespace.Name}}/setting">Settings</a> <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a></div>
+	  {{end}}
+	  <div class="namespace-description">{{.Namespace.Description}}</div>
 	</header>
 	<hr />
 

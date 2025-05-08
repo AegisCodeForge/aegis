@@ -21,7 +21,7 @@ func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName str
 	responseWithTreeZip(repo, obj, filename, w, r)
 }
 
-func bindBranchController(ctx RouterContext) {
+func bindBranchController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -50,7 +50,7 @@ func bindBranchController(ctx RouterContext) {
 			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
-		err = repo.SyncAllBranchList()
+		err = repo.Repository.SyncAllBranchList()
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf(
@@ -61,12 +61,12 @@ func bindBranchController(ctx RouterContext) {
 			)
 			return
 		}
-		br, ok := repo.BranchIndex[branchName]
+		br, ok := repo.Repository.BranchIndex[branchName]
 		if !ok {
 			ctx.ReportNotFound(branchName, "Branch", repoName, w, r)
 			return
 		}
-		gobj, err := repo.ReadObject(br.HeadId)
+		gobj, err := repo.Repository.ReadObject(br.HeadId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(br.HeadId, err.Error(), w, r)
 			return
@@ -81,9 +81,9 @@ func bindBranchController(ctx RouterContext) {
 			RepoName: rfn,
 			Commit: cobj,
 		}
-		gobj, err = repo.ReadObject(cobj.TreeObjId)
+		gobj, err = repo.Repository.ReadObject(cobj.TreeObjId)
 		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }
-		target, err := repo.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
+		target, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
@@ -99,7 +99,7 @@ func bindBranchController(ctx RouterContext) {
 				w.Write((target.(*gitlib.BlobObject)).Data)
 				return
 			} else {
-				handleBranchSnapshotRequest(repo, branchName, target, w, r)
+				handleBranchSnapshotRequest(repo.Repository, branchName, target, w, r)
 				return
 			}
 		}
@@ -124,6 +124,16 @@ func bindBranchController(ctx RouterContext) {
 			TreePathSegmentList: treePathSegmentList,
 		}
 		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		
 		switch target.Type() {
 		case gitlib.TREE:
 			if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
@@ -142,6 +152,7 @@ func bindBranchController(ctx RouterContext) {
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,
+				LoginInfo: loginInfo,
 			}))
 		case gitlib.BLOB:
 			mime := mime.TypeByExtension(path.Ext(treePath))
@@ -167,6 +178,7 @@ func bindBranchController(ctx RouterContext) {
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,
+				LoginInfo: loginInfo,
 			}))
 		default:
 			ctx.ReportInternalError("", w, r)

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{.User.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	</header>
+	<hr />
+
+	<div class="user-profile">
+	  <div class="user-profile-info">
+		<div class="user-profile-title">{{.User.Title}}</div>
+		<div class="user-profile-name">{{.User.Name}}</div>
+		<b>Email</b>: <a href="mailto:{{.User.Email}}">{{.User.Email}}</a><br />
+		<b>Website</b>: <a href="{{.User.Website}}">{{.User.Website}}</a><br />
+		<b>Bio</b>: {{.User.Bio}}<br />
+	  </div>
+	  <div class="user-profile-repository-list">
+		{{if le (len .RepositoryList) 0 }}
+		<p>There is no repository for this user.</p>
+		{{else}}
+		
+		<table>
+		  <thead>
+			<tr>
+		  <th>Repository</th>
+		  <th>Description</th>
+		</tr>
+		  </thead>
+		  <tbody>
+			{{range $key, $value := .RepositoryList}}
+		<tr>
+		  <td><a href="/repo/{{$value.Namespace}}:{{$key}}">{{$key}}</a></td>
+		  <td>{{$value.Description}}</td>
+		</tr>
+		{{end}}
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	</div>
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

@@ -4,7 +4,7 @@ import (
 	"github.com/bctnry/gitus/routes"
 )
 
-func InitializeRoute(context routes.RouterContext) {
+func InitializeRoute(context *routes.RouterContext) {
 	bindBlobController(context)
 	bindBranchController(context)
 	bindCommitController(context)
@@ -18,6 +18,17 @@ func InitializeRoute(context routes.RouterContext) {
 	bindHttpCloneController(context)
 	if context.Config.UseNamespace {
 		bindNamespaceController(context)
+	}
+
+	if !context.Config.PlainMode {
+		bindUserController(context)
+		bindLoginController(context)
+		bindLogoutController(context)
+		bindSettingController(context)
+		bindSettingSSHController(context)
+		bindSettingGPGController(context)
+		bindNewNamespaceController(context)
+		bindNewRepositoryController(context)
 	}
 }
 

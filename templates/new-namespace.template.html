@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>New namespace :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		Settings
+	  </h1>
+	</header>
+	<hr />
+
+	<div class="setting">
+	  {{template "_setting-sidebar"}}
+
+	  <div class="setting-main">
+		<h2>New namespace</h2>
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		<form action="" method="POST">
+		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
+		<div class="field"><label class="field-label" for="title">Title:</label> <input name="title" /></div>
+		<input type="submit" value="New Repository" />
+		</form>
+
+	  </div>
+	</div>
+
+	<hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

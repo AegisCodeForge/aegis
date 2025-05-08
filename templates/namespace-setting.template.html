@@ -1,0 +1,40 @@
+{{$namespaceName := .Namespace.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>settings of {{.Namespace.Name}} :: {{.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+      <h1 class="header-name index-header-name"><a href="/s/{{.Namespace.Name}}">{{.Namespace.Title}}</a> ({{.Namespace.Name}})</h1>
+	  {{if gt (len (.Namespace.Owner)) 0}}
+	  <div>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></div>
+	  {{end}}
+	  {{if eq .Namespace.Owner .LoginInfo.UserName}}
+	  <div class="namespace-nav"><a href="/s/{{.Namespace.Name}}/setting">Settings</a> <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a></div>
+	  {{end}}
+	  <div class="namespace-description">{{.Namespace.Description}}</div>
+	</header>
+	<hr />
+
+	<h2>Change info</h2>
+	<form action="" method="POST">
+	  <label for="title">Title:</label> <input name="title" />
+	  <label for="email">Email:</label> <input name="email" />
+	  <label for="description">Description:</label> <textarea name="description"></textarea>
+	  <input type="submit" value="Change Info" />
+	</form>
+
+	<h2>Delete Namespace</h2>
+	<a href="/s/{{.Namespace.Name}}/delete">Click here to delete this namespace</a>
+
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

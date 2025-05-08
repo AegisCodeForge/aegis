@@ -1,6 +1,8 @@
 //go:build ignore
 package templates
 
+import "github.com/bctnry/gitus/pkg/gitus"
+
 type RepoHeaderTemplateModel struct {
 	NamespaceName string
 	RepoName string
@@ -9,5 +11,6 @@ type RepoHeaderTemplateModel struct {
 	TypeStr string
 	NodeName string
 	RepoLabelList []string
+	Config *gitus.GitusConfig
 }
 

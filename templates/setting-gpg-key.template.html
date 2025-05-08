@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>GPG keys :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		Settings
+	  </h1>
+	</header>
+	<hr />
+
+	<div class="setting">
+	  {{template "_setting-sidebar"}}
+
+	  <div class="setting-main">
+		<h2>GPG Keys</h2>
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		
+		{{if .KeyList}}
+		{{if gt (len .KeyList) 0}}
+		<div class="key-list">
+		  {{range $k := .KeyList}}
+		  <div class="key-list-item">
+			<b>{{$k.KeyName}}</b>
+			<details><summary>Key Data</summary><pre>{{$k.KeyText}}</pre></details>
+		  </div>
+		  {{end}}
+		</div>
+		{{else}}
+		<p>There is no GPG keys set for this user.</p>
+		{{end}}
+		{{else}}
+		<p>There is no GPG keys set for this user.</p>
+		{{end}}
+
+		<h2>Add new GPG key</h2>
+		<form action="" method="POST">
+		  <div class="field">
+		  <label class="field-label" for="key-text">Key text:</label>
+		  <textarea name="key-text"></textarea>
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="password">Confirm with your password:</label><input type="password" name="password" required />
+		  </div>
+		  <input type="submit" value="Add SSH key" />
+		</form>
+		
+	  </div>
+	</div>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

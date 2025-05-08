@@ -3,6 +3,7 @@
 (very early draft; subject to change)
 
 + ={hostname}/s/{namespace}=: The front page of the namespace.
+  + ={hostname}/s/{namespace}/setting=: Namespace settings.
 + ={hostname}/repo/{reponame}=: The front page of the repository.
   + =reponame= has the format of ={namespace}:{name}= if namespaces are used.
 + ={hostname}/repo/{reponame}/branch/{branchName}=:
@@ -14,5 +15,9 @@
 + ={hostname}/repo/{reponame}/tag/{tagId}=: The tag with the id =tagId=, together with the info one can extract from the tagged object (e.g. if the tag tags a tree object, then a list of items that can be read from that tree obj is displayed; if the tag tags a blob object, the content of that blob is displayed; etc..)
 + ={hostname}/repo/{reponame}/history/branch:{branchName}=: the history of branch =branchName=.
 + ={hostname}/repo/{reponame}/history/commit:{commitId}=: the history of commit =commitId=.
-
++ ={hostname}/u/{username}=: User page.
++ ={hostname}/new/namespace=: New namespace page.
++ ={hostname}/new/repo=: New repository page.
+  + ={hostname}/new/repo?ns={namespace}=: New repository page (with pre-set namespace)
+  
 

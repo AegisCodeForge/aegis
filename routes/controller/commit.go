@@ -21,7 +21,7 @@ func handleCommitSnapshotRequest(repo *gitlib.LocalGitRepository, commitId strin
 	responseWithTreeZip(repo, obj, filename, w, r)
 }
 
-func bindCommitController(ctx RouterContext) {
+func bindCommitController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/commit/{commitId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -51,7 +51,7 @@ func bindCommitController(ctx RouterContext) {
 			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
 		}
 
-		gobj, err := repo.ReadObject(commitId)
+		gobj, err := repo.Repository.ReadObject(commitId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(commitId, err.Error(), w, r)
 			return
@@ -66,9 +66,9 @@ func bindCommitController(ctx RouterContext) {
 			RepoName: rfn,
 			Commit: cobj,
 		}
-		gobj, err = repo.ReadObject(cobj.TreeObjId)
+		gobj, err = repo.Repository.ReadObject(cobj.TreeObjId)
 		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }
-		target, err := repo.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
+		target, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
@@ -82,7 +82,7 @@ func bindCommitController(ctx RouterContext) {
 				w.Write((target.(*gitlib.BlobObject)).Data)
 				return
 			} else {
-				handleCommitSnapshotRequest(repo, commitId, target, w, r)
+				handleCommitSnapshotRequest(repo.Repository, commitId, target, w, r)
 				return
 			}
 		}
@@ -107,6 +107,16 @@ func bindCommitController(ctx RouterContext) {
 			TreePath: treePath,
 			TreePathSegmentList: treePathSegmentList,
 		}
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+
 		switch target.Type() {
 		case gitlib.TREE:
 			if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
@@ -125,6 +135,7 @@ func bindCommitController(ctx RouterContext) {
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,
+				LoginInfo: loginInfo,
 			}))
 		case gitlib.BLOB:
 			mime := mime.TypeByExtension(path.Ext(treePath))
@@ -150,6 +161,7 @@ func bindCommitController(ctx RouterContext) {
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,
+				LoginInfo: loginInfo,
 			}))
 		default:
 			ctx.ReportInternalError("", w, r)
