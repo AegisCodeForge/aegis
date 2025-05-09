@@ -7,6 +7,7 @@
   </head>
   <body>
 	{{template "_repo-header" .RepoHeaderInfo}}
+	
 	<div class="node-description">
 	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
 	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
@@ -14,9 +15,15 @@
 	
 	<hr />
 
-	{{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
-	<div class="file-raw"><a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
-	<img class="file-image" src="?raw" />
+	<main>
+	  <div class="file main-side">
+		<div class="main-side-top">
+		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
+		  <div class="file-nav"><a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+		</div>
+	  </div>
+	  <img class="file-image" src="?raw" />
+	</main>
 
 	<hr />
 	<footer>

@@ -7,18 +7,26 @@
   </head>
   <body>
 	{{template "_repo-header" .RepoHeaderInfo}}
+	
 	<div class="node-description">
 	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
 	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
 	</div>
 	
 	<hr />
-
-	{{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
-	<div class="file-nav"><a href="?raw">Raw</a>  <a href="{{.PermaLink}}">Permalink</a></div>
-	{{template "_blob-text" .File}}
-
+	
+	<main>
+	  <div class="file main-side">
+		<div class="main-side-top">
+		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
+		  <div class="file-nav"><a href="?raw">Raw</a>  <a href="{{.PermaLink}}">Permalink</a></div>
+		</div>
+		{{template "_blob-text" .File}}
+	  </div>
+	</main>
+	
 	<hr />
+	
 	<footer>
 	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>
 	  <a href="/">Back (Depot)</a>

@@ -1,0 +1,19 @@
+* The structure of this repository
+
+NOTE: this should be updated when there's very big changes.
+
+
++ =docs=: documentations.
++ =devtools=: things used in the development process, e.g. things that should be run at compile-time.
++ =pkg=:
+  + =gitlib=: package for handling git repo.
++ =routes=: routes.
+  + =context=: "RouterContext", a thing that bundles most of the things handling an HTTP route might need: site-wide config, database interfaces, etc..
+  + =defs=: actually the constant definition file. 
+  + =controller=: handlers for http routes. sometimes one file handle multiple routes if they're closely related.
+    + =init.go=: new routes should be "registered" in this file accordingly.
++ =static=: static files required by Gitus.
++ =templates=: The templates and the corresponding model files 
++ =install.go=: the installer.
++ =ssh.go=: The main handler when the gitus executable is called through git user SSH.
++ =reset-admin.go=: reset admin password of a Gitus instance.

@@ -10,17 +10,23 @@
 	<div class="node-nav tree-nav">
 	  <a href="?snapshot">Snapshot</a>
 	</div>
-	<div class="node-description">
-	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
-	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
-	</div>
 	
 	<hr />
 
-	{{template "_tree-path" .TreePath}}
-	<div class="file-nav"><a href="{{.PermaLink}}">Permalink</a></div>
-	{{template "_tree-file-list" .TreeFileList}}
-
+	<main>
+	  <div class="node-description left-side">
+		{{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
+		{{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	  </div>
+	  <div class="tree main-side">
+		<div class="main-side-top">
+		  {{template "_tree-path" .TreePath}}
+		  <div class="file-nav"><a href="{{.PermaLink}}">Permalink</a></div>
+		</div>
+		{{template "_tree-file-list" .TreeFileList}}
+	  </div>
+	</main>
+	
 	<hr />
 	<footer>
 	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>

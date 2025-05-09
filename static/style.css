@@ -76,6 +76,31 @@ header {
 	margin-top: 1rem;
 }
 
+
+.header-nav {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+	display: flex;
+}
+.header-nav a {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+	text-decoration: none;
+    transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+
+}
+.header-nav-left {
+	flex-grow: 2;
+}
+
+.header-nav a:hover {
+	color: var(--foreground-color);
+	background-color: var(--background-color);
+}
+
 hr {
 	height: 4px;
 	border: none;
@@ -126,21 +151,23 @@ hr {
 	height: var(--file-list-height);
 	fill: var(--foreground-color);
 }
+.tree {
+    border-left: 2px var(--foreground-color) solid;
+    padding-left: 2rem;
+}
 .tree-path-segment {
-	margin-top: 1rem;
-	margin-bottom: 1rem;
+	flex-grow: 2;
 	font-weight: bold;
+	margin-bottom: 1rem;
+	display: inline-block;
 }
 
+.file-nav {
+	display: inline-block;
+}
 .commit-info {
-	margin-top: 1rem;
-	margin-bottom: 1rem;
 }
 .tag-info {
-	margin-top: 1rem;
-	margin-bottom: 1rem;
-}
-.file-nav {
 	margin-top: 1rem;
 	margin-bottom: 1rem;
 }
@@ -173,26 +200,42 @@ hr {
 .user-profile-repository-list p {
 	margin: 0;
 }
-.header-nav {
-	background-color: var(--foreground-color);
-	color: var(--background-color);
+main {
 	display: flex;
 }
-.header-nav a {
-	background-color: var(--foreground-color);
-	color: var(--background-color);
-	text-decoration: none;
-    transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-    -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-    -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-    -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-
+.left-side {
+	width: 30%;
+	padding-right: 2rem;
 }
-.header-nav-left {
+.main-side {
+	width: 100%;
+	padding-right: 2rem;
 	flex-grow: 2;
 }
-
-.header-nav a:hover {
-	color: var(--foreground-color);
-	background-color: var(--background-color);
+@media (max-width: 960px) {
+	.left-side {
+		width: 35%;
+	}
 }
+@media (max-width: 820px) {
+	main { display: inherit; }
+	.left-side {
+		width: 100%;
+		border-bottom: 2px var(--foreground-color) solid;
+		padding-right: 0;
+		padding-bottom: 1rem;
+	}
+	.main-side {
+		border: 0;
+		padding: 0;
+		padding-top: 1rem;
+	}
+}
+.main-side-top {
+	display: flex;
+}
+.main-side-top > div {
+	display: inline-block;
+}
+
+.repo-clone-address-tf { width: 100%; box-sizing: border-box; }

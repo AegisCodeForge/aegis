@@ -28,4 +28,3 @@ func NewRouteError(t RouteErrorType, msg string) *RouteError {
 	}
 }
 
-
