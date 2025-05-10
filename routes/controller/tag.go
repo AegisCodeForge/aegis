@@ -68,7 +68,7 @@ func bindTagController(ctx *RouterContext) {
 			TypeStr: "tag",
 			NodeName: tagName,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 		}
 		
 		err = repo.Repository.SyncAllTagList()

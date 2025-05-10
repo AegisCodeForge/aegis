@@ -47,7 +47,7 @@ func bindBranchController(ctx *RouterContext) {
 			TypeStr: "branch",
 			NodeName: branchName,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 		}
 
 		err = repo.Repository.SyncAllBranchList()

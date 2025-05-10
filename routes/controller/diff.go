@@ -62,7 +62,7 @@ func bindDiffController(ctx *RouterContext) {
 				TypeStr: "commit",
 				NodeName: commitId,
 				RepoLabelList: nil,
-				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 			},
 			CommitInfo: templates.CommitInfoTemplateModel{
 				RepoName: rfn,

@@ -48,7 +48,7 @@ func bindCommitController(ctx *RouterContext) {
 			TypeStr: "commit",
 			NodeName: commitId,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 		}
 
 		gobj, err := repo.Repository.ReadObject(commitId)

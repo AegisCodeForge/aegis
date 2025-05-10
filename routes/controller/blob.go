@@ -38,7 +38,7 @@ func bindBlobController(ctx *RouterContext) {
 			TypeStr: "blob",
 			NodeName: blobId,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 		}
 
 		gobj, err := repo.Repository.ReadObject(blobId)

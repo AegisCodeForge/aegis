@@ -50,7 +50,7 @@ func bindTreeHandler(ctx *RouterContext) {
 			TypeStr: "tree",
 			NodeName: treeId,
 			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 		}
 
 		gobj, err := repo.Repository.ReadObject(treeId)

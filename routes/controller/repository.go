@@ -55,7 +55,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				NodeName: "",
 				RepoDescription: s.Description,
 				RepoLabelList: nil,
-				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HostName, rfn),
+				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
 			},
 			BranchList: s.Repository.BranchIndex,
 			TagList: s.Repository.TagIndex,
