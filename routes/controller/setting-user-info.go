@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/bctnry/gitus/pkg/gitus/db"
@@ -31,7 +30,6 @@ func bindSettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		fmt.Println(user, ctx.Config, loginInfo)
 		LogTemplateError(ctx.LoadTemplate("setting-user-info").Execute(w, templates.SettingUserInfoTemplateModel{
 			User: user,
 			Config: ctx.Config,
@@ -82,7 +80,6 @@ func bindSettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		fmt.Println(r.Form.Get("type"))
 		switch r.Form.Get("type") {
 		case "info":
 			if len(r.Form.Get("title")) > 0 { user.Title = r.Form.Get("title") }

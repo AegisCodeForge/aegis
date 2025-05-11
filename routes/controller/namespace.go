@@ -103,7 +103,6 @@ func bindNamespaceController(ctx *RouterContext) {
 			ctx.ReportForbidden("Not owner", w, r)
 			return
 		}
-		fmt.Printf("lahx")
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)

@@ -52,7 +52,6 @@ func bindNewRepositoryController(ctx *RouterContext) {
 			ctx.ReportForbidden("Not owner", w, r)
 			return
 		}
-		fmt.Println("reached!")
 		newRepoName := r.Form.Get("name")
 		newRepoDescription := r.Form.Get("description")
 		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName)

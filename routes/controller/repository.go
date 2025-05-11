@@ -19,7 +19,6 @@ func bindRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		namespaceName, _, s, err := ctx.ResolveRepositoryFullName(rfn)
-		fmt.Println("nsn", namespaceName)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {

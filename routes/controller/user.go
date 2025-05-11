@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 
 	. "github.com/bctnry/gitus/routes"
@@ -15,7 +14,6 @@ func bindUserController(ctx *RouterContext) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		un := r.PathValue("userName")
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
-		fmt.Println(user, err)
 		if db.IsGitusDatabaseError(err) {
 			if err.(*db.GitusDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
 				ctx.ReportNotFound(un, "User", "depot", w, r)
