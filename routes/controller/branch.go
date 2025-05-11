@@ -10,6 +10,7 @@ import (
 	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
+	"github.com/bctnry/gitus/routes/controller/components"
 	"github.com/bctnry/gitus/templates"
 )
 
@@ -155,6 +156,10 @@ func bindBranchController(ctx *RouterContext) {
 				LoginInfo: loginInfo,
 			}))
 		case gitlib.BLOB:
+			baseUrl := fmt.Sprintf("/repo/%s/branch/%s", rfn, branchName)
+			b, _ := repo.Repository.BuildTree(cobj.TreeObjId, "")
+			renderedFileTree, err := components.RenderFileTree(ctx, baseUrl, b)
+			
 			mime := mime.TypeByExtension(path.Ext(treePath))
 			if len(mime) <= 0 { mime = "application/octet-stream" }
 			templateType := "file-text"
@@ -178,6 +183,7 @@ func bindBranchController(ctx *RouterContext) {
 					FileContent: str,
 				},
 				PermaLink: permaLink,
+				RenderedTree: renderedFileTree,
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,

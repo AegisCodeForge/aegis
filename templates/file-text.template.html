@@ -16,6 +16,9 @@
 	<hr />
 	
 	<main>
+	  <div class="file-tree left-side">
+		{{rawHTML .RenderedTree}}
+	  </div>
 	  <div class="file main-side">
 		<div class="main-side-top">
 		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}

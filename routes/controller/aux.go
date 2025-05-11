@@ -98,7 +98,6 @@ func mkname(n int) string {
 // C, Nim and GAS Assembly are all GDScript 3. i'm tempted to make
 // my own syntax coloring engine here.
 func codeTypeDiscern(s string) string {
-	fmt.Println("discerning ", s)
 	switch s {
 	case ".as": return "ActionScript"
 	case ".antlr4": return "ANTLR"
@@ -222,9 +221,8 @@ func colorSyntax(filename string, s string) (string, error) {
 		}
 	}
 	if lexer == nil {
-		return fmt.Sprintf("<pre>%s</pre>", html.EscapeString(s)), nil
+		return html.EscapeString(s), nil
 	}
-	fmt.Println(lexer.Config().Name)
 	style := styles.Get("algol")
 	if style == nil { style = styles.Fallback }
 	formatter := chromaHtml.New(chromaHtml.PreventSurroundingPre(true))

@@ -1,3 +1,5 @@
+* { box-sizing: border-box; }
+
 :root {
 	--foreground-color: black;
 	--background-color: lightyellow;
@@ -154,10 +156,6 @@ hr {
 	height: var(--file-list-height);
 	fill: var(--foreground-color);
 }
-.tree {
-    border-left: 2px var(--foreground-color) solid;
-    padding-left: 2rem;
-}
 .tree-path-segment {
 	flex-grow: 2;
 	font-weight: bold;
@@ -208,16 +206,21 @@ main {
 }
 .left-side {
 	width: 30%;
+	min-width: 30%;
 	padding-right: 2rem;
 }
 .main-side {
-	width: 100%;
+	width: 70%;
+	max-width: 70%;
 	padding-right: 2rem;
+	padding-left: 2rem;
 	flex-grow: 2;
+    border-left: 2px var(--foreground-color) solid;
 }
 @media (max-width: 960px) {
 	.left-side {
 		width: 35%;
+		min-width: 35%;
 	}
 }
 @media (max-width: 820px) {
@@ -232,6 +235,8 @@ main {
 		border: 0;
 		padding: 0;
 		padding-top: 1rem;
+		width: 100%;
+		max-width: inherit;
 	}
 }
 .main-side-top {
@@ -242,3 +247,7 @@ main {
 }
 
 .repo-clone-address-tf { width: 100%; box-sizing: border-box; }
+
+.file-tree-item {
+	margin-left: 1rem;
+}
