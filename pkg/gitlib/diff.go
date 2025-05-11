@@ -1,6 +1,8 @@
 package gitlib
 
-import "os/exec"
+import (
+	"os/exec"
+)
 
 type DiffItem struct {
 	

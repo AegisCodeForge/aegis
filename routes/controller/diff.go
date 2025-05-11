@@ -32,7 +32,7 @@ func bindDiffController(ctx *RouterContext) {
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
-				ErrorMessage: fmt.Sprintf("Failed to read commit %s: $s", commitId, err),
+				ErrorMessage: fmt.Sprintf("Failed to read commit %s: %s", commitId, err),
 			}))
 			return
 		}
@@ -40,7 +40,7 @@ func bindDiffController(ctx *RouterContext) {
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
-				ErrorMessage: fmt.Sprintf("Failed to read diff %s: $s", commitId, err),
+				ErrorMessage: fmt.Sprintf("Failed to read diff %s: %s", commitId, err),
 			}))
 			return
 		}
