@@ -55,18 +55,55 @@ import (
 type template struct {
 	name string
 	modelDefinition string
-	modelImports []string
+	modelImports []*importSpec
 	view string
 }
 
+type importSpec struct {
+	k string
+	source string
+}
+
 type model struct {
-	imports []string
+	imports []*importSpec
 	content []string
 }
 
 type templateFunc struct {
-	imports []string
+	imports []*importSpec
 	content []string
+}
+
+// note that according to the definition of go, this happens:
+//     Import declaration          Local name of Sin
+//     
+//     import   "lib/math"         math.Sin
+//     import m "lib/math"         m.Sin
+//     import . "lib/math"         Sin
+//     import _ "lib/math"         (none.)
+// we must keep the qualified *module* names from clashing with each other
+// but we should allow any amount of "import _" and ignore possible clash
+// from "import .". for this reason we need to handle the three cases
+// differently.
+type importList struct {
+	plain map[string]*importSpec  // key is module name, not module path
+	dot []string
+	underscore []string
+}
+
+func parseImport(s string) (*importSpec, error) {
+	re, err := regexp.Compile("\\s*import\\s*([^\\s]*)?\\s*(.*)\\s*")
+	if err != nil { return nil, err }
+	ss := re.FindSubmatch([]byte(s))
+	k := ""
+	source := string(ss[1])
+	if len(ss[2]) > 0 {
+		k = string(ss[1])
+		source = string(ss[2])
+	}
+	source = strings.TrimSpace(source)
+	source = source[1:len(source)-1]
+	return &importSpec{k: k, source: source}, nil
 }
 
 func parseTemplate(name string, f io.Reader) (*template, error) {
@@ -76,7 +113,7 @@ func parseTemplate(name string, f io.Reader) (*template, error) {
 	if err != nil { return nil, err }
 	rend, err := regexp.Compile("^-->$")
 	modelSource := make([]string, 0)
-	modelImports := make([]string, 0)
+	modelImports := make([]*importSpec, 0)
 	viewSource := make([]string, 0)
 	readingModelDefinition := false
 	for item := range strings.SplitSeq(string(data), "\n") {
@@ -84,8 +121,8 @@ func parseTemplate(name string, f io.Reader) (*template, error) {
 		if readingModelDefinition {
 			if strings.HasPrefix(trimmed, "//") { continue }
 			if strings.HasPrefix(trimmed, "import") {
-				s := strings.Split(trimmed, " ")
-				modelImports = append(modelImports, s[1][1:len(s[1])-1])
+				imp, _ := parseImport(trimmed)
+				modelImports = append(modelImports, imp)
 			} else if rend.Match([]byte(trimmed)) {
 				readingModelDefinition = false
 			} else {
@@ -115,13 +152,13 @@ func parseModel(filename string, f io.Reader) (model, error) {
 	if err != nil { log.Fatal(err) }
 	content := make([]string, 0)
 	content = append(content, "// from " + filename)
-	imports := make([]string, 0)
+	imports := make([]*importSpec, 0)
 	for item := range strings.SplitSeq(string(data), "\n") {
 		if strings.HasPrefix(item, "//") { continue }
 		if strings.HasPrefix(item, "package") { continue }
 		if strings.HasPrefix(item, "import") {
-			s := strings.Split(item, " ")
-			imports = append(imports, s[1][1:len(s[1])-1])
+			imp, _ := parseImport(item)
+			imports = append(imports, imp)
 		} else {
 			content = append(content, item)
 		}
@@ -134,13 +171,13 @@ func parseFunc(filename string, f io.Reader) (templateFunc, error) {
 	if err != nil { log.Fatal(err) }
 	content := make([]string, 0)
 	content = append(content, "// from " + filename)
-	imports := make([]string, 0)
+	imports := make([]*importSpec, 0)
 	for item := range strings.SplitSeq(string(data), "\n") {
 		if strings.HasPrefix(item, "//") { continue }
 		if strings.HasPrefix(item, "package") { continue }
 		if strings.HasPrefix(item, "import") {
-			s := strings.Split(item, " ")
-			imports = append(imports, s[1][1:len(s[1])-1])
+			imp, _ := parseImport(item)
+			imports = append(imports, imp)
 		} else {
 			content = append(content, item)
 		}
@@ -152,11 +189,28 @@ func isTemporaryFile(s string) bool {
 	return strings.HasPrefix(s, ".#")
 }
 
-func collect(s map[string]bool, a []string) map[string]bool {
-	for _, item := range a {
-		s[item] = true
+func mkimportList() *importList {
+	return &importList{
+		plain: make(map[string]*importSpec, 0),
+		dot: make([]string, 0),
+		underscore: make([]string, 0),
 	}
-	return s
+}
+
+func collect(il *importList, a []*importSpec) *importList {
+	for _, item := range a {
+		if item.k == "_" {
+			il.underscore = append(il.underscore, item.source)
+		} else if item.k == "." {
+			il.dot = append(il.dot, item.source)
+		} else if len(item.k) > 0 {
+			il.plain[item.k] = item
+		} else {
+			base := path.Base(item.source)
+			il.plain[base] = item
+		}
+	}
+	return il
 }
 
 func main() {
@@ -166,7 +220,7 @@ func main() {
 	fileList, err := os.ReadDir(sourceDir)
 	if err != nil { log.Fatal(err) }
 
-	modelImport := make(map[string]bool, 0)
+	modelImport := mkimportList()
 	templateList := make([]*template, 0)
 	for _, item := range fileList {
 		fileName := item.Name()
@@ -220,7 +274,7 @@ func main() {
 		modelImport = collect(modelImport, thisModel.imports)
 	}
 
-	funcImport := make(map[string]bool, 0)
+	funcImport := mkimportList()
 	functionList := make(map[string]templateFunc, 0)
 	for _, item := range fileList {
 		fileName := item.Name()
@@ -257,7 +311,8 @@ func main() {
 	)
 	if err != nil { log.Panic(err) }
 	defer f.Close()
-	
+
+	// start writing templates.go
 	_, err = f.WriteString(`// generated by devtools/generate-template.go. DO NOT EDIT
 
 package ` + packageName + `
@@ -266,8 +321,14 @@ import (
   "html/template"
   "log"
 `)
-	for key, _ := range funcImport {
-		f.WriteString(fmt.Sprintf("  \"%s\"\n", key))
+	for _, spec := range funcImport.plain {
+		f.WriteString(fmt.Sprintf("  %s \"%s\"\n", spec.k, spec.source))
+	}
+	for _, item := range funcImport.dot {
+		f.WriteString(fmt.Sprintf("  . \"%s\"\n", item))
+	}
+	for _, item := range funcImport.underscore {
+		f.WriteString(fmt.Sprintf("  _ \"%s\"\n", item))
 	}
 
 	_, err = f.WriteString(`
@@ -306,7 +367,7 @@ func LoadTemplate() *template.Template {
 	_, err = f.WriteString("\n  return masterTemplate\n}\n")
 	if err != nil { log.Fatal(err) }
 
-
+	// start writing models.go
 	modelTargetFilePath := path.Join(sourceDir, "models.go")
 	os.Remove(modelTargetFilePath)
 	f2, err := os.OpenFile(
@@ -324,8 +385,14 @@ package ` + packageName + `
 import (
 `)
 	if err != nil { log.Panic(err) }
-	for key, _ := range modelImport {
-		f2.WriteString(fmt.Sprintf("  \"%s\"\n", key))
+	for _, spec := range modelImport.plain {
+		f2.WriteString(fmt.Sprintf("  %s \"%s\"\n", spec.k, spec.source))
+	}
+	for _, item := range modelImport.dot {
+		f2.WriteString(fmt.Sprintf("  . \"%s\"\n", item))
+	}
+	for _, item := range modelImport.underscore {
+		f2.WriteString(fmt.Sprintf("  _ \"%s\"\n", item))
 	}
 	_, err = f2.WriteString(`
 )

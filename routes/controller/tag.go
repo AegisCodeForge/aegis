@@ -207,6 +207,8 @@ func bindTagController(ctx *RouterContext) {
 				permaLink = fmt.Sprintf("/repo/%s/blob/%s", rfn, bobj.Id)
 			}
 			str := string(bobj.Data)
+			coloredStr, err := colorSyntax("", str)
+			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 				RepoHeaderInfo: repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{

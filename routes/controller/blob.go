@@ -62,6 +62,8 @@ func bindBlobController(ctx *RouterContext) {
 			return
 		}
 		str := string(bobj.Data)
+		coloredStr, err := colorSyntax("", str)
+		if err == nil { str = coloredStr }
 		permaLink := fmt.Sprintf("/repo/%s/blob/%s", rfn, blobId)
 
 		var loginInfo *templates.LoginInfoModel = nil

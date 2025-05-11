@@ -3,7 +3,9 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
@@ -45,6 +47,37 @@ func bindRepositoryController(ctx *RouterContext) {
 			return
 		}
 
+		readmeString := ""
+		// now we try to read the README file.
+		// the order would be: README - README.txt
+		//                     - any file that starts with "README."
+		// the branch order would be: master - main
+		// if any of the two cannot be found, it's considered without a readme.
+		var obj gitlib.GitObject
+		br, ok := s.Repository.BranchIndex["master"]
+		if !ok { br, ok = s.Repository.BranchIndex["main"] }
+		if !ok { goto findingReadmeDone; }
+		obj, err = s.Repository.ReadObject(br.HeadId)
+		if err != nil { goto findingReadmeDone; }
+		// i don't know if it would ever happen that a branch head would point to
+		// anything that's not a commit, but if we can't find it we treat it as
+		// no readme.
+		if !gitlib.IsCommitObject(obj) { goto findingReadmeDone; }
+		obj, err = s.Repository.ReadObject(obj.(*gitlib.CommitObject).TreeObjId)
+		if err != nil { goto findingReadmeDone; }
+		for _, item := range obj.(*gitlib.TreeObject).ObjectList {
+			if item.Name == "README" || item.Name == "README.txt" || strings.HasPrefix(item.Name, "README.") {
+				obj, err = s.Repository.ReadObject(item.Hash)
+				if err != nil { continue }
+				if !gitlib.IsBlobObject(obj) { continue }
+				obj, err = s.Repository.ReadObject(item.Hash)
+				readmeString = string(obj.(*gitlib.BlobObject).Data)
+				goto findingReadmeDone
+			}
+		}
+		
+	findingReadmeDone:
+
 		LogTemplateError(ctx.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
 			RepoName: rfn,
 			RepoObj: s.Repository,
@@ -59,6 +92,7 @@ func bindRepositoryController(ctx *RouterContext) {
 			},
 			BranchList: s.Repository.BranchIndex,
 			TagList: s.Repository.TagIndex,
+			ReadmeString: readmeString,
 		}))
 	}))
 }

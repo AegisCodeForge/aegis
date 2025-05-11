@@ -12,4 +12,5 @@ type RepositoryModel struct{
 	BranchList map[string]*gitlib.Branch
 	TagList map[string]*gitlib.Tag
 	LoginInfo *LoginInfoModel
+	ReadmeString string
 }

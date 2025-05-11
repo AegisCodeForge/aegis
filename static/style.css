@@ -122,9 +122,12 @@ hr {
 .file-source-line-number-item {
 	font-family: monospace;
 	font-size: 1rem;
+	padding: 0;
 	padding-right: 1rem;
 	padding-left: 1rem;
 	text-decoration: none;
+	white-space: pre;
+	display: block;
 }
 .file-source-line-number-item:target {
 	background-color: var(--foreground-color);

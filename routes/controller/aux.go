@@ -1,13 +1,21 @@
 package controller
+
 import (
 	"archive/zip"
+	"bytes"
 	"errors"
 	"fmt"
+	"html"
+	"math/rand"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
-	"math/rand"
 
+	"github.com/alecthomas/chroma/v2"
+	chromaHtml "github.com/alecthomas/chroma/v2/formatters/html"
+	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/bctnry/gitus/pkg/gitlib"
 )
 
@@ -83,5 +91,148 @@ func mkname(n int) string {
 		res = append(res, passchdict[rand.Intn(len(passchdict))])
 	}
 	return string(res)
+}
+
+// NOTE: Chroma's `Analyse` is basically useless if we don't discern
+// language type manually; it somehow can reach to the conclusion that
+// C, Nim and GAS Assembly are all GDScript 3. i'm tempted to make
+// my own syntax coloring engine here.
+func codeTypeDiscern(s string) string {
+	fmt.Println("discerning ", s)
+	switch s {
+	case ".as": return "ActionScript"
+	case ".antlr4": return "ANTLR"
+	case ".ads": fallthrough
+	case ".adb": return "Ada"
+	case ".awk": return "Awk"
+	case ".agda": return "Agda"
+	case ".sh": return "Bash"
+	case ".bibtex": return "BibTeX"
+	case ".bat": return "Batchfile"
+	case ".bf": return "Brainfuck"
+	case ".c": return "C"
+	case ".h": return "C"
+	case ".cpp": return "C++"
+	case ".hpp": return "C++"
+	case ".cs": return "C#"
+	case ".cbl": return "COBOL"
+	case ".crystal": return "Crystal"
+	case ".lisp": return "Common Lisp"
+	case ".clj": fallthrough
+	case ".cljs": return "Clojure"
+	case ".css": return "CSS"
+	case ".d": return "D"
+	case ".dart": return "Dart"
+	case ".dtd": return "DTD"
+	case ".elm": return "Elm"
+	case ".el": return "EmacsLisp"
+	case ".erl": return "Erlang"
+	case ".ex": fallthrough
+	case ".exs": return "Elixir"
+	case ".for": return "FortranFixed"
+	case ".f95": return "Fortran"
+	case ".fs": return "FSharp"
+	case ".fish": return "Fish"
+	case ".fth": fallthrough
+	case ".forth": return "Forth"
+	case ".factor": return "Factor"
+	case ".S": return "GAS"
+	case ".desktop": return "Desktop Entry"
+	case ".jinja": return "Django/Jinja"
+	case ".dylan": return "Dylan"
+	case ".diff": return "Diff"
+	case ".gleam": return "Gleam"
+	case ".groovy": return "Groovy"
+	case ".glsl": return "GLSL"
+	case ".go": return "Go"
+	case ".graphql": return "GraphQL"
+	case ".nim": return "Nim"
+	case ".md": return "Markdown"
+	case ".ws": return "APL"
+	case ".hs": return "Haskell"
+	case ".haxe": return "Haxe"
+	case ".HC": return "HolyC"
+	case ".shtml": fallthrough
+	case ".xhtml": fallthrough
+	case ".dhtml": fallthrough
+	case ".htm": fallthrough
+	case ".html": return "HTML"
+	case ".hy": return "Hy"
+	case ".idris": return "Idris"
+	case ".ini": return "INI"
+	case ".io": return "Io"
+	case ".j": return "J"
+	case ".java": return "Java"
+	case ".mjs": fallthrough
+	case ".js": return "JavaScript"
+	case ".json": return "JSON"
+	case ".julia": return "Julia"
+	case ".kt": return "Kotlin"
+	case ".lean": return "Lean"
+	case ".lua": return "Lua"
+	case ".nix": return "Nix"
+	case ".ml": return "OCaml"
+	case ".odin": return "Odin"
+	case ".org": return "Org Mode"
+	case ".php": return "PHP"
+	case ".ps1": return "PowerShell"
+	case ".py": return "Python"
+	case ".r": return "R"
+	case ".rkt": return "Racket"
+	case ".rst": return "reStructuredText"
+	case ".rexx": return "Rexx"
+	case ".rb": return "Ruby"
+	case ".rs": return "Rust"
+	case ".scala": return "Scala"
+	case ".scm": return "Scheme"
+	case ".scss": return "SCSS"
+	case ".solidity": return "Solidity"
+	case ".sql": return "SQL"
+	case ".sml": return "Standard ML"
+	case ".svelte": return "Svelte"
+	case ".swift": return "Swift"
+	case ".tcl": return "Tcl"
+	case ".tex": return "TeX"
+	case ".toml": return "TOML"
+	case ".ts": return "TypeScript"
+	case ".typst": return "Typst"
+	case ".vala": return "Vala"
+	case ".vue": return "Vue"
+	case ".xml": return "XML"
+	case ".yml": fallthrough
+	case ".yaml": return "YAML"
+	case ".zig": return "Zig"
+	case ".asm": return "NASM"
+	default: return ""
+	}
+}
+
+func colorSyntax(filename string, s string) (string, error) {
+	var lexer chroma.Lexer
+	switch filename {
+	case "Dockerfile": lexer = lexers.Get("Docker")
+	case "Makefile": lexer = lexers.Get("Makefile")
+	case "": lexer = lexers.Analyse(s)
+	default:
+		codeType := codeTypeDiscern(path.Ext(filename))
+		if codeType == "" {
+			lexer = lexers.Analyse(s)
+		} else {
+			lexer = lexers.Get(codeType)
+		}
+	}
+	if lexer == nil {
+		return fmt.Sprintf("<pre>%s</pre>", html.EscapeString(s)), nil
+	}
+	fmt.Println(lexer.Config().Name)
+	style := styles.Get("algol")
+	if style == nil { style = styles.Fallback }
+	formatter := chromaHtml.New(chromaHtml.PreventSurroundingPre(true))
+	iterator, err := lexer.Tokenise(nil, s)
+	if err != nil { return "", err }
+	buf := new(bytes.Buffer)
+	err = formatter.Format(buf, style, iterator)
+	if err != nil { return "", err }
+	return buf.String(), nil
 }
 

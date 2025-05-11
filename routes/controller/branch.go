@@ -168,6 +168,9 @@ func bindBranchController(ctx *RouterContext) {
 				return
 			}
 			str := string(bobj.Data)
+			filename := path.Base(treePath)
+			coloredStr, err := colorSyntax(filename, str)
+			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 				RepoHeaderInfo: repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{

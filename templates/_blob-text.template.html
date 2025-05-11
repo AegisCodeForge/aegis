@@ -5,7 +5,7 @@
 		<a id="L{{.}}" class="file-source-line-number-item" href="#L{{.}}">{{.}}</a>
 		{{end}}
 	  </div>
-	  <pre class="file-content">{{.FileContent}}</pre>
+	  <pre class="file-content">{{rawHTML .FileContent}}</pre>
 	</div>
 {{end}}
 
