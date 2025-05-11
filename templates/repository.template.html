@@ -28,7 +28,7 @@
 		</ul>
 	  </div>
 	  <div class="main-side">
-		{{if gt (len .ReadmeString) 0}}<pre>{{.ReadmeString}}</pre>{{else}}This repository has no README text.{{end}}</p>
+		{{if gt (len .ReadmeString) 0}}{{rawHTML .ReadmeString}}{{else}}This repository has no README text.{{end}}</p>
 	  </div>
 	</main>
 	

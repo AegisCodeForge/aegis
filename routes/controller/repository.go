@@ -3,12 +3,16 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/bctnry/gitus/pkg/gitlib"
 	"github.com/bctnry/gitus/routes"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
+	"github.com/gomarkdown/markdown"
+	"github.com/microcosm-cc/bluemonday"
+	"github.com/niklasfasching/go-org/org"
 )
 
 func bindRepositoryController(ctx *RouterContext) {
@@ -48,6 +52,7 @@ func bindRepositoryController(ctx *RouterContext) {
 		}
 
 		readmeString := ""
+		readmeType := ""
 		// now we try to read the README file.
 		// the order would be: README - README.txt
 		//                     - any file that starts with "README."
@@ -71,9 +76,42 @@ func bindRepositoryController(ctx *RouterContext) {
 				if err != nil { continue }
 				if !gitlib.IsBlobObject(obj) { continue }
 				obj, err = s.Repository.ReadObject(item.Hash)
+				readmeType = path.Ext(item.Name)
 				readmeString = string(obj.(*gitlib.BlobObject).Data)
-				goto findingReadmeDone
+				goto renderReadme
 			}
+		}
+		
+	renderReadme:
+		switch readmeType {
+		case ".md":
+			// NOTE: markdown is tricky. because people uses html in
+			// markdown file for things markdown does not support
+			// (e.g. <detail>) so it's a good idea to allow them
+			// instead of escaping all html (and also we're going to
+			// embed raw html anyway doe to how we currently do
+			// things), but if we allow arbitrary html then people are
+			// gonna do XSS attacks. i'd like to keep dependencies as
+			// minimal as possible, but i'm not ready to make a whole
+			// markdown-to-html renderer, at least not yet.
+			readmeString = string(markdown.ToHTML([]byte(readmeString), nil, nil))
+			readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
+		case ".org":
+			// NOTE: due to go-org having no documentations and I can't see
+			// a way to inject prefix into the rendering process, we might
+			// have to either make a better form or create an org-mode
+			// parser on our own.
+			doc := org.New().Parse(strings.NewReader(readmeString), "")
+			out, err := doc.Write(org.NewHTMLWriter())
+			if err != nil {
+				readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
+				readmeString = fmt.Sprintf("<pre>%s</pre>", readmeString)
+			} else {
+				readmeString = bluemonday.UGCPolicy().Sanitize(out)
+			}
+		default:
+			readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
+			readmeString = fmt.Sprintf("<pre>%s</pre>", readmeString)
 		}
 		
 	findingReadmeDone:
