@@ -13,7 +13,7 @@ import (
 func bindDiffController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", WithLog(func(w http.ResponseWriter, r *http.Request){
 		rfn := r.PathValue("repoName")
-		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -55,21 +55,14 @@ func bindDiffController(ctx *RouterContext) {
 		}
 		
 		LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{
-			RepoHeaderInfo: templates.RepoHeaderTemplateModel{
-				NamespaceName: namespaceName,
-				RepoName: rfn,
-				RepoDescription: repo.Description,
-				TypeStr: "commit",
-				NodeName: commitId,
-				RepoLabelList: nil,
-				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-			},
+			RepoHeaderInfo: *GenerateRepoHeader(ctx, repo, "commit", commitId),
 			CommitInfo: templates.CommitInfoTemplateModel{
 				RepoName: rfn,
 				Commit: cobj.(*gitlib.CommitObject),
 			},
 			Diff: diff,
 			LoginInfo: loginInfo,
+			Config: ctx.Config,
 		}))
 	}))
 }

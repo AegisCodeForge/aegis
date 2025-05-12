@@ -18,18 +18,17 @@ import (
 func bindRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, _, s, err := ctx.ResolveRepositoryFullName(rfn)
+		namespaceName, repoName, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
-			errCode := 500
 			if routes.IsRouteError(err) {
 				if err.(*RouteError).ErrorType == NOT_FOUND {
-					errCode = 404
+					ctx.ReportNotFound(repoName, "Repository", namespaceName, w, r)
+				} else {
+					ctx.ReportInternalError(err.Error(), w, r)
 				}
+			} else {
+				ctx.ReportInternalError(err.Error(), w, r)
 			}
-			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: errCode,
-				ErrorMessage: err.Error(),
-			}))
 			return
 		}
 		
@@ -115,21 +114,21 @@ func bindRepositoryController(ctx *RouterContext) {
 		
 	findingReadmeDone:
 
+		repoHeaderInfo := GenerateRepoHeader(ctx, s, "", "")
+
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, _ = GenerateLoginInfoModel(ctx, r)
+		}
 		LogTemplateError(ctx.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
+			Config: ctx.Config,
 			RepoName: rfn,
 			RepoObj: s.Repository,
-			RepoHeaderInfo: templates.RepoHeaderTemplateModel{
-				NamespaceName: namespaceName,
-				RepoName: rfn,
-				TypeStr: "",
-				NodeName: "",
-				RepoDescription: s.Description,
-				RepoLabelList: nil,
-				RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-			},
+			RepoHeaderInfo: *repoHeaderInfo,
 			BranchList: s.Repository.BranchIndex,
 			TagList: s.Repository.TagIndex,
 			ReadmeString: readmeString,
+			LoginInfo: loginInfo,
 		}))
 	}))
 }

@@ -36,7 +36,7 @@ func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string
 func bindTagController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tag/{tagId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -61,15 +61,7 @@ func bindTagController(ctx *RouterContext) {
 		//   into a tree or a blob.
 		// + by now we have a tagInfo/nil, a commitInfo/nil and a tree/blob/tag.
 		//   we thus display them accordingly.
-		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			NamespaceName: namespaceName,
-			RepoName: rfn,
-			RepoDescription: repo.Description,
-			TypeStr: "tag",
-			NodeName: tagName,
-			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-		}
+		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "tag", tagName)
 		
 		err = repo.Repository.SyncAllTagList()
 		if err != nil {
@@ -184,7 +176,7 @@ func bindTagController(ctx *RouterContext) {
 				return
 			}
 			LogTemplateError(ctx.LoadTemplate("tag").Execute(w, templates.TagTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				Tag: tobj,
 				TagInfo: tagInfo,
 				LoginInfo: loginInfo,
@@ -210,7 +202,7 @@ func bindTagController(ctx *RouterContext) {
 			coloredStr, err := colorSyntax("", str)
 			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{
 					FileLineCount: strings.Count(str, "\n"),
 					FileContent: str,
@@ -220,6 +212,7 @@ func bindTagController(ctx *RouterContext) {
 				CommitInfo: commitInfo,
 				TagInfo: tagInfo,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			}))
 
 		case gitlib.TREE:
@@ -247,7 +240,7 @@ func bindTagController(ctx *RouterContext) {
 				TreePathSegmentList: treePathSegmentList,
 			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
 					RootPath: rootPath,
@@ -259,6 +252,7 @@ func bindTagController(ctx *RouterContext) {
 				CommitInfo: commitInfo,
 				TagInfo: nil,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			}))
 			return
 		default:

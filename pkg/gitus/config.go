@@ -2,6 +2,8 @@ package gitus
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"slices"
@@ -67,11 +69,23 @@ type GitusConfig struct {
 	DepotName string `json:"depotName"`
 	StaticAssetDirectory string `json:"staticAssetDirectory"`
 
-	// http host name. (NOTE: no slash at the end.)
+	// http host name.
 	HttpHostName string `json:"hostName"`
+	properHttpHostName string
 
-	// ssh host name. (NOTE: no slash at the end.)
+	// ssh host name.
 	SshHostName string `json:"sshHostName"`
+	// NOTE: the following two fields are for internal use only.
+	// "proper" means the full URL with the scheme and no trailing slash.
+	// "git" means the kind of address that is shown to the user as cloning
+	// address. when a scheme part is necessary (i.e. in the case where
+	// the port isn't 22) it *would* have a trailing slash. when the port
+	// is 22 it *would* have a trailing colon `:`. this is setup this way
+	// for the convenience of string concatenation: doing this would allow
+	// us to directly concatenate it with the repository full name to get
+	// the "correct" address usable by Git client.
+	properSshHostName string
+	gitSshHostName string
 
 	BindAddress string `json:"bindAddress"`
 	BindPort int `json:"bindPort"`
@@ -123,6 +137,18 @@ type GitusConfig struct {
 	SessionURL string `json:"sessionUrl"`
 }
 
+func (cfg *GitusConfig) ProperHTTPHostName() string {
+	return cfg.properHttpHostName
+}
+
+func (cfg *GitusConfig) ProperSSHHostName() string {
+	return cfg.properSshHostName
+}
+
+func (cfg *GitusConfig) GitSSHHostName() string {
+	return cfg.gitSshHostName
+}
+
 func CreateConfigFile(p string) error {
 	f, err := os.OpenFile(
 		p,
@@ -165,6 +191,51 @@ func LoadConfigFile(p string) (*GitusConfig, error) {
 	err = json.Unmarshal(s, &c)
 	if err != nil { return nil, err }
 	c.filePath = p
+
+	// fix http host name & ssh host name...
+	c.properHttpHostName = c.HttpHostName
+	if strings.TrimSpace(c.HttpHostName) != "" {
+		if !strings.HasPrefix(c.properHttpHostName, "http://") && !strings.HasPrefix(c.properHttpHostName, "https://") {
+			c.properHttpHostName = "http://" + c.properHttpHostName
+		}
+		if strings.HasSuffix(c.properHttpHostName, "/") {
+			c.properHttpHostName = c.properHttpHostName[:len(c.properHttpHostName)-1]
+		}
+	} else { c.properHttpHostName = "" }
+	c.properSshHostName = c.SshHostName
+	if strings.TrimSpace(c.SshHostName) != "" {
+		if !strings.HasSuffix(c.properSshHostName, "ssh://") {
+			c.properSshHostName = "ssh://" + c.properSshHostName
+		}
+		if strings.HasSuffix(c.properSshHostName, "/") {
+			c.properSshHostName = c.properSshHostName[:len(c.properSshHostName)-1]
+		}
+		u, err := url.Parse(c.properSshHostName)
+		if err != nil { return nil, err }
+		// git username override.
+		actualU := &url.URL{
+			Scheme: "ssh",
+			User: url.User(c.GitUser),
+			Host: u.Host,
+			Path: "",
+			RawPath: "",
+			OmitHost: u.OmitHost,
+			ForceQuery: false,
+			RawQuery: "",
+			Fragment: "",
+			RawFragment: "",
+		}
+		c.properSshHostName = actualU.String()
+		if u.Port() == "" || u.Port() == "22" {
+			c.gitSshHostName = fmt.Sprintf("%s@%s:", c.GitUser, u.Host)
+		} else {
+			c.gitSshHostName = actualU.String()
+			if !strings.HasSuffix(c.gitSshHostName, "/") {
+				c.gitSshHostName = c.gitSshHostName + "/"
+			}
+		}
+	}
+	
 	return &c, nil
 }
 

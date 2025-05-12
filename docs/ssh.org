@@ -1,5 +1,15 @@
 * ssh
 
+** configuration
+
+You should change the value of =sshHostName= in the config file. Same as =hostName=, Gitus would try to complete it into a proper full URL before parsing, i.e. if there's no =ssh://= prefix, it would be added, and if there's trailing slash =/= present, it would be removed. You shouldn't specify the user in =sshHostName= - it wouldn't have any effect since it would got replaced by =gitUser= by Gitus automatically. All specified path would be ignored. You should specifiy the port just like any other URL (e.g. write ={your-domain}:2222= if for whatever reasons your SSH port is at =2222=).
+
+If you leave =sshHostName= to be empty, cloning & pushing through SSH would still be available even if it wouldn't display correctly from the web frontend. To stop any SSH activities you must remove the =gitus= executable from the Git user's =git-shell-commands= directory. It's not recommended to rely on hiding the SSH address as a safety measure either.
+
+Git supports a shorter version of SSH address if the port is at the typical number of 22; this shorter version of address would be of the form ={user_name}@{host_name}:{repo_path}= (e.g. =git@github.com:bctnry/gitus.git=) and is the norm for most Git hosting service. Gitus would provide this kind of address if the SSH port is not specified or determined to be 22.
+
+** how it works
+
 + By specifying a =command= argument in the =~/.ssh/authorized_keys= file, one could get the =git= user to run certain command automatically when logging in using certain keys.
 
   #+begin_src

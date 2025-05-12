@@ -1,6 +1,10 @@
 package model
 
-import "github.com/bctnry/gitus/pkg/gitlib"
+import (
+	"fmt"
+
+	"github.com/bctnry/gitus/pkg/gitlib"
+)
 
 type GitusRepositoryStatus int
 
@@ -31,5 +35,9 @@ func NewRepository(ns string, name string, localgr *gitlib.LocalGitRepository) (
 		Repository: localgr,
 		LocalPath: localgr.GitDirectoryPath,
 	}, nil
+}
+
+func (repo *Repository) FullName() string {
+	return fmt.Sprintf("%s:%s", repo.Namespace, repo.Name)
 }
 

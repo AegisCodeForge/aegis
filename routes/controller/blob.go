@@ -15,7 +15,7 @@ import (
 func bindBlobController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/blob/{blobId}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -30,16 +30,8 @@ func bindBlobController(ctx *RouterContext) {
 			return
 		}
 		blobId := r.PathValue("blobId")
-		
-		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			NamespaceName: namespaceName,
-			RepoName: repoName,
-			RepoDescription: repo.Description,
-			TypeStr: "blob",
-			NodeName: blobId,
-			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-		}
+
+		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "blob", blobId)
 
 		gobj, err := repo.Repository.ReadObject(blobId)
 		if err != nil {
@@ -76,7 +68,7 @@ func bindBlobController(ctx *RouterContext) {
 		}
 
 		LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
-			RepoHeaderInfo: repoHeaderInfo,
+			RepoHeaderInfo: *repoHeaderInfo,
 			File: templates.BlobTextTemplateModel{
 				FileLineCount: strings.Count(str, "\n"),
 				FileContent: str,

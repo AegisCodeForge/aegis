@@ -25,7 +25,7 @@ func handleCommitSnapshotRequest(repo *gitlib.LocalGitRepository, commitId strin
 func bindCommitController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/commit/{commitId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -42,15 +42,7 @@ func bindCommitController(ctx *RouterContext) {
 		commitId := r.PathValue("commitId")
 		treePath := r.PathValue("treePath")
 
-		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			NamespaceName: namespaceName,
-			RepoName: rfn,
-			RepoDescription: repo.Description,
-			TypeStr: "commit",
-			NodeName: commitId,
-			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-		}
+		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "commit", commitId)
 
 		gobj, err := repo.Repository.ReadObject(commitId)
 		if err != nil {
@@ -125,7 +117,7 @@ func bindCommitController(ctx *RouterContext) {
 				return
 			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
 					RootPath: rootPath,
@@ -137,6 +129,7 @@ func bindCommitController(ctx *RouterContext) {
 				CommitInfo: commitInfo,
 				TagInfo: nil,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			}))
 		case gitlib.BLOB:
 			baseUrl := fmt.Sprintf("/repo/%s/commit/%s", rfn, commitId)
@@ -160,7 +153,7 @@ func bindCommitController(ctx *RouterContext) {
 			coloredStr, err := colorSyntax(filename, str)
 			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{
 					FileLineCount: strings.Count(str, "\n"),
 					FileContent: str,
@@ -171,6 +164,7 @@ func bindCommitController(ctx *RouterContext) {
 				CommitInfo: commitInfo,
 				TagInfo: nil,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			}))
 		default:
 			ctx.ReportInternalError("", w, r)

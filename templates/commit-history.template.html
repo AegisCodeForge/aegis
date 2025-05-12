@@ -10,7 +10,10 @@
 	<title>history of {{$typeStr}}:{{$nodeName}} @ {{$repoName}} :: Gitus</title>
   </head>
   <body>
-	{{template "_repo-header" .RepoHeaderInfo}}
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .RepoHeaderInfo}}
+	</header>
 	
 	<div class="node-description">
 	  <div class="commit-info">

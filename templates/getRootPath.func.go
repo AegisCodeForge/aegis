@@ -3,7 +3,7 @@ package templates
 
 import "fmt"
 
-func(repoName string, typeStr string, nodeName string) string {
-	return fmt.Sprintf("/repo/%s/%s/%s", repoName, typeStr, nodeName)
+func(namespaceName string, repoName string, typeStr string, nodeName string) string {
+	return fmt.Sprintf("/repo/%s:%s/%s/%s", namespaceName, repoName, typeStr, nodeName)
 }
 

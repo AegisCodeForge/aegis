@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bctnry/gitus/pkg/gitus/model"
 	"github.com/bctnry/gitus/templates"
 )
 
@@ -94,4 +95,21 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		LoggedIn: res,
 		UserName: un,
 	}, nil
+}
+
+func GenerateRepoHeader(ctx *RouterContext, repo *model.Repository, typeStr string, nodeName string) *templates.RepoHeaderTemplateModel {
+	httpHostName := ctx.Config.ProperHTTPHostName()
+	gitSshHostName := ctx.Config.GitSSHHostName()
+	rfn := repo.FullName()
+	repoHeaderInfo := &templates.RepoHeaderTemplateModel{
+		NamespaceName: repo.Namespace,
+		RepoName: repo.Name,
+		RepoDescription: repo.Description,
+		TypeStr: typeStr,
+		NodeName: nodeName,
+		RepoLabelList: nil,
+		RepoURL: fmt.Sprintf("%s/repo/%s", httpHostName, rfn),
+		RepoSSH: fmt.Sprintf("%s%s", gitSshHostName, rfn),
+	}
+	return repoHeaderInfo
 }

@@ -196,7 +196,16 @@ hr {
 /* ======================================================== */
 /* component for displaying clone address. */
 .repo-clone-address-tf {
-	width: 100%; box-sizing: border-box;
+	width: 100%;
+	box-sizing: border-box;
+	display: none;
+}
+.repo-clone-address-tf:target {
+	display: inherit;
+}
+:target {
+	background-color: black;
+	color: white;;
 }
 .header-clone-address > input {
 	background-color: var(--background-color);

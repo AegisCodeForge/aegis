@@ -27,29 +27,22 @@ func bindBranchController(ctx *RouterContext) {
 		rfn := r.PathValue("repoName")
 		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
-			errCode := 500
 			if routes.IsRouteError(err) {
 				if err.(*RouteError).ErrorType == NOT_FOUND {
-					errCode = 404
+					ctx.ReportNotFound(repoName, "Repository", namespaceName, w, r)
+				} else {
+					ctx.ReportInternalError(err.Error(), w, r)
 				}
+			} else {
+				ctx.ReportInternalError(err.Error(), w, r)
 			}
-			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: errCode,
-				ErrorMessage: err.Error(),
-			}))
 			return
 		}
+		
 		branchName := r.PathValue("branchName")
+		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "branch", branchName)
+		
 		treePath := r.PathValue("treePath")
-		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			NamespaceName: namespaceName,
-			RepoName: rfn,
-			RepoDescription: repo.Description,
-			TypeStr: "branch",
-			NodeName: branchName,
-			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-		}
 
 		err = repo.Repository.SyncAllBranchList()
 		if err != nil {
@@ -142,7 +135,7 @@ func bindBranchController(ctx *RouterContext) {
 				return
 			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
 					RootPath: rootPath,
@@ -154,6 +147,7 @@ func bindBranchController(ctx *RouterContext) {
 				CommitInfo: commitInfo,
 				TagInfo: nil,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			}))
 		case gitlib.BLOB:
 			baseUrl := fmt.Sprintf("/repo/%s/branch/%s", rfn, branchName)
@@ -177,7 +171,7 @@ func bindBranchController(ctx *RouterContext) {
 			coloredStr, err := colorSyntax(filename, str)
 			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
-				RepoHeaderInfo: repoHeaderInfo,
+				RepoHeaderInfo: *repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{
 					FileLineCount: strings.Count(str, "\n"),
 					FileContent: str,
@@ -188,6 +182,7 @@ func bindBranchController(ctx *RouterContext) {
 				CommitInfo: commitInfo,
 				TagInfo: nil,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			}))
 		default:
 			ctx.ReportInternalError("", w, r)

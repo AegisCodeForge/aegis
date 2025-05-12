@@ -122,6 +122,7 @@ func bindTreeHandler(ctx *RouterContext) {
 			CommitInfo: commitInfo,
 			TagInfo: nil,
 			LoginInfo: loginInfo,
+			Config: ctx.Config,
 		}))
 	}))
 }

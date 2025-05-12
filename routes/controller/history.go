@@ -14,7 +14,7 @@ import (
 func bindHistoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/history/{nodeName}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -88,18 +88,11 @@ func bindHistoryController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("commit-history").Execute(
 			w,
 			templates.CommitHistoryModel{
-				RepoHeaderInfo: templates.RepoHeaderTemplateModel{
-					NamespaceName: namespaceName,
-					RepoName: rfn,
-					RepoDescription: repo.Description,
-					TypeStr: typeStr,
-					NodeName: nodeNameElem[1],
-					RepoLabelList: nil,
-					RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-				},
+				RepoHeaderInfo: *GenerateRepoHeader(ctx, repo, typeStr, nodeNameElem[1]),
 				Commit: *(cobj.(*gitlib.CommitObject)),
 				CommitHistory: h,
 				LoginInfo: loginInfo,
+				Config: ctx.Config,
 			},
 		))
 	}))

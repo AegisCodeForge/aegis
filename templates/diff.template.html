@@ -6,7 +6,10 @@
 	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.RepoHeaderInfo.RepoName}} :: Gitus</title>
   </head>
   <body>
-	{{template "_repo-header" .RepoHeaderInfo}}
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .RepoHeaderInfo}}
+	</header>
 	<div class="node-description">
 	  {{template "_commit-info" .CommitInfo}}
 	</div>
