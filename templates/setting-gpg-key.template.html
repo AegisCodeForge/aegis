@@ -16,10 +16,10 @@
 	</header>
 	<hr />
 
-	<div class="setting">
+	<main>
 	  {{template "_setting-sidebar"}}
 
-	  <div class="setting-main">
+	  <div class="setting-main main-side">
 		<h2>GPG Keys</h2>
 		{{if .ErrorMsg}}
 		<div class="error-msg">{{.ErrorMsg.Message}}</div>
@@ -55,7 +55,7 @@
 		</form>
 		
 	  </div>
-	</div>
+	</main>
 	
     <hr />
 	<footer>

@@ -1,0 +1,11 @@
+
+#namespace-setting-form {
+	width: 50%;
+}
+
+@media (max-width: 600px) {
+	#namespace-setting-form {
+		width: 100%;
+	}
+}
+

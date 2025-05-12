@@ -1,11 +1,14 @@
+/*
 .setting {
 	padding: 1rem;
 	padding-left: 0;
 	display: flex;
 }
 .setting-sidebar {
-	min-width: 30%;
+
+	max-width: 30%;
 }
+*/
 .setting-sidebar hr {
 	height: 2px;
 }
@@ -17,13 +20,6 @@
 	padding-top: 0;
 	width: 100%;
 }
-.setting-main select {
-	background-color: var(--background-color);
-    color: var(--foreground-color);
-    font-size: 1rem;
-    border: 2px black solid;
-    width: 100%;
-}
 .setting-main h2:first-child {
 	margin-top: 0;
 }
@@ -33,6 +29,7 @@
 		display: block;
 	}
 	.setting-sidebar {
+		width: 100%;
 		padding: 1rem;
 		padding-top: 0;
 		border-bottom: 2px var(--foreground-color) solid;

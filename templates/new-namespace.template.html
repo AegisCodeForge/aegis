@@ -16,10 +16,10 @@
 	</header>
 	<hr />
 
-	<div class="setting">
+	<main>
 	  {{template "_setting-sidebar"}}
 
-	  <div class="setting-main">
+	  <div class="setting-main left-side">
 		<h2>New namespace</h2>
 		{{if .ErrorMsg}}
 		<div class="error-msg">{{.ErrorMsg.Message}}</div>
@@ -31,7 +31,7 @@
 		</form>
 
 	  </div>
-	</div>
+	</main>
 
 	<hr />
 	<footer>

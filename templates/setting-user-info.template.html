@@ -16,10 +16,10 @@
 	</header>
 	<hr />
 
-	<div class="setting">
+	<main>
 	  {{template "_setting-sidebar"}}
 
-	  <div class="setting-main">
+	  <div class="setting-main main-side">
 		<h2>Change info</h2>
 		{{if .ErrorMsg}}
 		{{if eq .ErrorMsg.Type "info"}}
@@ -51,7 +51,7 @@
 		</form>
 		
 	  </div>
-	</div>
+	</main>
 	
     <hr />
 	<footer>
