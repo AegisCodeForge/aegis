@@ -2,7 +2,6 @@ package gitus
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 	"slices"

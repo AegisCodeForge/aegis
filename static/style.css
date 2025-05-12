@@ -29,39 +29,43 @@ a:hover {
 tr > th {
 	text-align: left;
 }
+code { font-size: 1rem; }
+pre { font-size: 1rem; }
 
-tr > td {
+
+header {
+	padding-bottom: 1rem;
 }
 
-.header-nav {
-	font-weight: bold;
-	font-style: 1rem;
-	letter-spacing: 0.5rem;
+
+hr {
+	height: 4px;
+	border: none;
+	background-color: var(--foreground-color);
 }
+
+/* ======================================================== */
+/* header. */
+/* header name. (for displaying namespace & repository names) */
 .header-name {
 	line-height: 100%;
 	font-size: 3rem;
 	margin-top: 1rem;
 	margin-bottom: 0.5rem;
 }
-
-code { font-size: 1rem; }
-pre { font-size: 1rem; }
+/* header node. (for displaying "node info", e.g. which branch */
 .header-node {
 	font-weight: bold;
 	font-size: 2rem;
 }
-header {
-	padding-bottom: 1rem;
-}
 .header-name > a {
 	text-decoration: none;
 }
+/* ======================================================== */
 
-.repo-branch-description {
-	margin-top: 1rem;
-}
 
+/* ======================================================== */
+/* commit history. */
 .commit-history-item {
 	padding: 1rem;
 	border-bottom: 2px var(--foreground-color) solid;
@@ -77,8 +81,17 @@ header {
 .commit-history-item-message {
 	margin-top: 1rem;
 }
+/* ======================================================== */
 
 
+/* ======================================================== */
+/* header nav, i.e. the top-most bar where normally things like the
+   login/logout link lives.  */
+.header-nav {
+	font-weight: bold;
+	font-style: 1rem;
+	letter-spacing: 0.5rem;
+}
 .header-nav {
 	background-color: var(--foreground-color);
 	color: var(--background-color);
@@ -97,20 +110,14 @@ header {
 .header-nav-left {
 	flex-grow: 2;
 }
-
 .header-nav a:hover {
 	color: var(--foreground-color);
 	background-color: var(--background-color);
 }
+/* ======================================================== */
 
-hr {
-	height: 4px;
-	border: none;
-	background-color: var(--foreground-color);
-}
-.footer-message {
-	margin-top: 3rem;
-}
+/* ======================================================== */
+/* file (source view) */
 .file-source-view {
 	display: flex;
 	flex-direction: row;
@@ -140,37 +147,56 @@ hr {
 	margin: 0;
 	margin-left: 1rem;
 }
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* file list (used when displaying tree object) */
 .file-list {
 	display: flex;
 	flex-direction: column;
 }
-
 .file-list-item {
 	display: flex;
 	flex-direction: row;
 	font-size: var(--file-list-height);
 }
-
 .file-list-item-icon {
 	width: var(--file-list-height);
 	height: var(--file-list-height);
 	fill: var(--foreground-color);
 }
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* things that goes on the top of source view (e.g. tree path,
+   raw/permalink) */
 .tree-path-segment {
 	flex-grow: 2;
 	font-weight: bold;
 	margin-bottom: 1rem;
 	display: inline-block;
 }
-
 .file-nav {
 	display: inline-block;
 }
-.commit-info {
-}
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* commit/tag info */
 .tag-info {
 	margin-top: 1rem;
 	margin-bottom: 1rem;
+}
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* component for displaying clone address. */
+.repo-clone-address-tf {
+	width: 100%; box-sizing: border-box;
 }
 .header-clone-address > input {
 	background-color: var(--background-color);
@@ -178,6 +204,11 @@ hr {
 	border: 2px var(--foreground-color) solid;
 	width: 100%;
 }
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* user profile.  */
 .user-profile {
 	padding: 1rem;
 	padding-left: 0;
@@ -201,6 +232,11 @@ hr {
 .user-profile-repository-list p {
 	margin: 0;
 }
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* main 2-column layout. */
 main {
 	display: flex;
 }
@@ -245,9 +281,65 @@ main {
 .main-side-top > div {
 	display: inline-block;
 }
+/* ======================================================== */
 
-.repo-clone-address-tf { width: 100%; box-sizing: border-box; }
 
+/* ======================================================== */
+/* file tree (used when displaying single file in the left-side) */
 .file-tree-item {
 	margin-left: 1rem;
 }
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* form. */
+.field {
+	margin-top: 0.5rem;
+}
+.field-label {
+	margin-bottom: 0.5rem;
+	margin-top: 0.5rem;
+	font-weight: bold;
+	width: 100%;
+	display: block;
+}
+.field-tf {
+	border: 2px var(--foreground-color) solid;
+	background-color: var(--background-color);;
+	color: var(--foreground-color);
+	font-size: 1rem;
+	scrollbar-color: white black;
+	box-sizing: border-box;
+	width: 100%;
+}
+form input {
+	background-color: var(--background-color);;
+	color: var(--foreground-color);
+}
+form textarea {
+	border: 2px var(--foreground-color) solid;
+	background-color: var(--background-color);;
+	color: var(--foreground-color);
+	width: 100%;
+	font-size: 1rem;
+	scrollbar-color: white black;
+	box-sizing: border-box;
+}
+form input[type="submit"], .form-submit {
+	font-family: inherit;
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+	margin-top: 0.5rem;
+	transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+	margin-top: 1rem;
+}
+form input[type="submit"]:hover, .form-submit:hover {
+	background-color: var(--background-color);;
+	color: var(--foreground-color);
+}
+/* ======================================================== */
+

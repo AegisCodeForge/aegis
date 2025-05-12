@@ -31,7 +31,7 @@
 		  {{range $k := .KeyList}}
 		  <div class="key-list-item">
 			<b>{{$k.KeyName}}</b>
-			<details><summary>Key Data</summary><pre>{{$k.KeyText}}</pre></details>
+			<details><summary>Key Data</summary><textarea readonly class="key-text">{{$k.KeyText}}</textarea></details>
 		  </div>
 		  {{end}}
 		</div>

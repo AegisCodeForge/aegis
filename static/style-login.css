@@ -1,41 +1,4 @@
 
-.field {
-	margin-top: 0.5rem;
-}
-.field-label {
-	margin-bottom: 0.5rem;
-	margin-top: 0.5rem;
-	font-weight: bold;
-	width: 100%;
-	display: block;
-}
-.field-tf {
-	border: 2px var(--foreground-color) solid;
-	background-color: var(--background-color);;
-	color: var(--foreground-color);
-	font-size: 1rem;
-	scrollbar-color: white black;
-	box-sizing: border-box;
-	width: 100%;
-}
-.form-submit {
-	font-family: inherit;
-	background-color: var(--foreground-color);
-	color: var(--background-color);
-	margin-top: 0.5rem;
-	transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-    -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-    -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-    -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-	margin-top: 1rem;
-	width: 100%;
-}
-
-.form-submit:hover {
-	background-color: var(--background-color);;
-	color: var(--foreground-color);
-}
-
 #login-form {
 	width: 50%;
 }

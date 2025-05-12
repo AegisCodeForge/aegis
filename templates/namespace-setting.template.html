@@ -5,6 +5,7 @@
     <meta charset="utf-8" />
     <title>settings of {{.Namespace.Name}} :: {{.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-namespace-setting.css">
   </head>
   <body>
 	<header>
@@ -21,11 +22,11 @@
 	<hr />
 
 	<h2>Change info</h2>
-	<form action="" method="POST">
-	  <label for="title">Title:</label> <input name="title" />
-	  <label for="email">Email:</label> <input name="email" />
-	  <label for="description">Description:</label> <textarea name="description"></textarea>
-	  <input type="submit" value="Change Info" />
+	<form id="namespace-setting-form" action="" method="POST">
+	  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" /></div>
+	  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" /></div>
+	  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description"></textarea></div>
+	  <input class="form-submit" type="submit" value="Change Info" />
 	</form>
 
 	<h2>Delete Namespace</h2>
