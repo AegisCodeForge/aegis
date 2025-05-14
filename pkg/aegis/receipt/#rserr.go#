@@ -1,0 +1,38 @@
+package receipt
+
+import "fmt"
+
+type GitusReceiptSystemErrorType int
+
+const (
+	DATABASE_NOT_SUPPORTED GitusReceiptSystemErrorType = 1
+)
+
+func (gdet GitusRec) String() string {
+	switch gdet {
+	case DATABASE_NOT_SUPPORTED: return "DATABASE_NOT_SUPPORTED"
+	}
+	return "UNKNOWN_ERROR"
+}
+
+type GitusReceiptSystemError struct {
+	ErrorType GitusReceiptSystemErrorType
+	ErrorMsg string
+}
+
+func IsGitusReceiptSystemError(e error) bool {
+	_, ok := e.(*GitusReceiptSystemError)
+	return ok
+}
+
+func (gde GitusReceiptSystemError) Error() string {
+	return fmt.Sprintf("%s: %s", gde.ErrorType, gde.ErrorMsg)
+}
+
+func NewGitusReceiptSystemError(t GitusReceiptSystemErrorType, msg string) *GitusReceiptSystemError {
+	return &GitusReceiptSystemError{
+		ErrorType: t,
+		ErrorMsg: msg,
+	}
+}
+
