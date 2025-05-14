@@ -11,8 +11,10 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.28 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/niklasfasching/go-org v1.7.0 // indirect
+	github.com/wneessen/go-mail v0.6.2 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 )

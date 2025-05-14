@@ -15,6 +15,8 @@ import (
 	"github.com/bctnry/gitus/pkg/gitus"
 	"github.com/bctnry/gitus/pkg/gitus/db"
 	dbinit "github.com/bctnry/gitus/pkg/gitus/db/init"
+	"github.com/bctnry/gitus/pkg/gitus/mail"
+	rsinit "github.com/bctnry/gitus/pkg/gitus/receipt/init"
 	ssinit "github.com/bctnry/gitus/pkg/gitus/session/init"
 	"github.com/bctnry/gitus/pkg/gitus/ssh"
 	"github.com/bctnry/gitus/pkg/passwd"
@@ -106,6 +108,30 @@ func main() {
 		}
 		context.SessionInterface = ssif
 
+		keyctx, err := ssh.ToContext(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create key managing context: %s\n", err.Error())
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or else you might not be able to clone/push through SSH.\n")
+			os.Exit(1)
+		}
+		context.SSHKeyManagingContext = keyctx
+
+		rs, err := rsinit.InitializeReceiptSystem(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create receipt system interface: %s\n", err.Error())
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or things like user registration & password resetting wouldn't work properly.\n")
+			os.Exit(1)
+		}
+		context.ReceiptSystem = rs
+
+		ml, err := mail.InitializeMailer(config)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create mailer interface: %s\n", err.Error())
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or things thar depends on sending emails wouldn't work properly.\n")
+			os.Exit(1)
+		}
+		context.Mailer = ml
+
 		ok, err := gitusReadyCheck(context)
 		if !ok {
 			InstallGitus(context)
@@ -127,14 +153,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		keyctx, err := ssh.ToContext(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create key managing context: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or else you might not be able to clone/push through SSH.\n")
-			os.Exit(1)
-		}
-		
-		context.SSHKeyManagingContext = keyctx
 		if len(mainCall) > 0 {
 			switch mainCall[0] {
 			case "install":

@@ -5,10 +5,11 @@ type GitusUserStatus int
 const (
 	NORMAL_USER GitusUserStatus = 1
 	NORMAL_USER_APPROVAL_NEEDED GitusUserStatus = 2
-	ADMIN GitusUserStatus = 3
-	SUPER_ADMIN GitusUserStatus = 4
-	DELETED GitusUserStatus = 5
-	BANNED GitusUserStatus = 6
+	NORMAL_USER_CONFIRM_NEEDED GitusUserStatus = 3
+	ADMIN GitusUserStatus = 4
+	SUPER_ADMIN GitusUserStatus = 5
+	DELETED GitusUserStatus = 6
+	BANNED GitusUserStatus = 7
 )
 
 type GitusUser struct {

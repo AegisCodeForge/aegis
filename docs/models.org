@@ -15,7 +15,7 @@
   	-- 2 - normal user (waiting for approval).
   	-- 3 - normal user (wait for confirmation).
   	-- 4 - admin
-  -- 5 - super admin.
+      -- 5 - super admin.
   	-- 6 - deleted. 7 - banned.
   	-- difference between admin & super admin: super admin can remove
   	-- admin status while admin can't.

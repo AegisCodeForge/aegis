@@ -8,7 +8,9 @@ import (
 
 	"github.com/bctnry/gitus/pkg/gitus"
 	"github.com/bctnry/gitus/pkg/gitus/db"
+	"github.com/bctnry/gitus/pkg/gitus/mail"
 	"github.com/bctnry/gitus/pkg/gitus/model"
+	"github.com/bctnry/gitus/pkg/gitus/receipt"
 	"github.com/bctnry/gitus/pkg/gitus/session"
 	"github.com/bctnry/gitus/pkg/gitus/ssh"
 	"github.com/bctnry/gitus/templates"
@@ -22,6 +24,8 @@ type RouterContext struct {
 	DatabaseInterface db.GitusDatabaseInterface
 	SessionInterface session.GitusSessionStore
 	SSHKeyManagingContext *ssh.SSHKeyManagingContext
+	ReceiptSystem receipt.GitusReceiptSystemInterface
+	Mailer mail.GitusMailerInterface
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {
@@ -36,6 +40,19 @@ func (ctx RouterContext) ReportNotFound(objName string, objType string, namespac
 			ErrorMessage: fmt.Sprintf(
 				"%s %s not found in %s",
 				objType, objName, namespace,
+			),
+		},
+	))
+}
+
+func (ctx RouterContext) ReportNormalError(msg string, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(400)
+	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
+		templates.ErrorTemplateModel{
+			ErrorCode: 400,
+			ErrorMessage: fmt.Sprintf(
+				"Error: %s",
+				msg,
 			),
 		},
 	))

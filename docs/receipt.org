@@ -1,0 +1,20 @@
+* receipt system
+
+i couldn't think of a better name so i'll call them receipt. basically it's the "confirmation link sent through email" thing. the core thing about receipts is that it's a one-time thing that triggers certain action and the user shouldn't have any method of creating one out of thin air.
+
+two main kinds of actions that would be triggered by a returned receipt would be:
+
++ registration confirmation
++ password reset
+
+(this would obviously better be implemented w/ kv-stores where you can set a timer in entries like Redis; using sqlite is just for the ease of business logic development).
+
+#+begin_src sql
+  CREATE TABLE IF NOT EXISTS receipt (
+    id TEXT UNIQUE,
+    command TEXT,
+    issue_time INT,
+    timeout_minute INT,
+  )
+#+end_src
+

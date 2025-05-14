@@ -60,6 +60,8 @@ type GitusConfig struct {
 	PlainMode bool `json:"plainMode"`
 	// when set to true, this field allow user registration.
 	AllowRegistration bool `json:"enableUserRegistration"`
+	// when set to true, email confirmation is required for registration.
+	EmailConfirmationRequired bool `json:"emailConfirmationRequired"`
 	// when set to true, all registration must be screened by the webmaster.
 	ManualApproval bool `json:"requireManualApproval"`
 
@@ -135,6 +137,33 @@ type GitusConfig struct {
 	SessionPath string `json:"sessionPath"`
 	// session path. valid only when session type is redis.
 	SessionURL string `json:"sessionUrl"`
+
+	Mailer AegisMailerConfig `json:"mailer"`
+	ReceiptSystem AegisReceiptSystemConfig `json:"receiptSystem"`
+}
+
+type AegisMailerConfig struct {
+	// email sender type. currently only "gmail-plain" is supported.
+	Type string `json:"type"`
+	// smtp server & smtp port. technically not used if type is gmail-plain.
+	// these fields are here for future use.
+	SMTPServer string `json:"smtpServer"`
+	SMTPPort int `json:"smtpPort"`	
+	User string `json:"user"`
+	// email sender password. this would be stored in plain-text so one
+	// should be using 
+	Password string `json:"password"`
+}
+
+type AegisReceiptSystemConfig struct {
+	// the type of the supporting implementation of the receipt system.
+	// currently only support "sqlite".
+	Type string `json:"type"`
+	// the path to the system database. valid only when Type is "sqlite".
+	Path string `json:"path"`
+	URL string `json:"url"`
+	User string `json:"user"`
+	Password string `json:"password"`
 }
 
 func (cfg *GitusConfig) ProperHTTPHostName() string {
@@ -164,6 +193,7 @@ func CreateConfigFile(p string) error {
 		UseNamespace: false,
 		PlainMode: true,
 		AllowRegistration: true,
+		EmailConfirmationRequired: true,
 		ManualApproval: true,
 		DepotName: "Gitus",
 		StaticAssetDirectory: "static/",
@@ -178,6 +208,19 @@ func CreateConfigFile(p string) error {
 		DatabaseName: "",
 		DatabasePassword: "",
 		DatabaseTablePrefix: "gitus_",
+		Mailer: AegisMailerConfig{
+			Type: "gmail-plain",
+			SMTPServer: "",
+			SMTPPort: 0,
+			User: "",
+			Password: "",
+		},
+		ReceiptSystem: AegisReceiptSystemConfig{
+			Type: "sqlite",
+			Path: "",
+			User: "",
+			Password: "",
+		},
 	}, "", "    ")
 	if err != nil { return err }
 	f.Write(marshalRes)

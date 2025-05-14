@@ -18,7 +18,7 @@ type GitusDatabaseInterface interface {
 	GetAllNamespace() (map[string]*model.Namespace, error)
 	GetAllNamespaceByOwner(name string) (map[string]*model.Namespace, error)
 	GetAllRepositoryFromNamespace(name string) (map[string]*model.Repository, error)
-	RegisterUser(name string, email string, passwordHash string) (*model.GitusUser, error)
+	RegisterUser(name string, email string, passwordHash string, status model.GitusUserStatus) (*model.GitusUser, error)
 	UpdateUserInfo(name string, uobj *model.GitusUser) error
 	UpdateUserPassword(name string, newPasswordHash string) error
 	// soft delete vs. hard delete:

@@ -49,6 +49,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -213,20 +214,45 @@ func collect(il *importList, a []*importSpec) *importList {
 	return il
 }
 
+func recursivelyCollectAllFile (base string, prefix string, suffix string) []string {
+	// returns all file with a certain suffix under a directory (recursively).
+	// the result would have no suffix.
+	readBase := path.Join(base, prefix)
+	s, err := os.ReadDir(readBase)
+	if err != nil {
+		log.Printf("Failed to read template dir: %s\n", base)
+		return nil
+	}
+	res := make([]string, 0)
+	dir := make([][]string, 0)
+	for _, item := range s {
+		p := path.Join(prefix, item.Name())
+		if item.IsDir() {
+			dir = append(dir, recursivelyCollectAllFile(base, p, suffix))
+		} else {
+			fileName := item.Name()
+			if !strings.HasSuffix(fileName, suffix) { continue }
+			if isTemporaryFile(fileName) { continue }
+			templateName := fileName[:len(fileName)-len(suffix)]
+			res = append(res, path.Join(prefix, templateName))
+		}
+	}
+	res = slices.Concat(res, slices.Concat(dir...))
+	return res
+}
+
+
 func main() {
 	if len(os.Args) < 2 { log.Fatal("Source directory required.") }
 	sourceDir := os.Args[1]
 	packageName := path.Base(sourceDir)
-	fileList, err := os.ReadDir(sourceDir)
-	if err != nil { log.Fatal(err) }
+	fileList := recursivelyCollectAllFile(sourceDir, "", ".template.html")
 
 	modelImport := mkimportList()
 	templateList := make([]*template, 0)
 	for _, item := range fileList {
-		fileName := item.Name()
-		if !strings.HasSuffix(fileName, ".template.html") { continue }
-		if isTemporaryFile(fileName) { continue }
-		templateName := fileName[:len(fileName)-len(".template.html")]
+		fileName := fmt.Sprintf("%s.template.html", item)
+		templateName := item
 		p := path.Join(sourceDir, fileName)
 		thisTemplateF, err := os.Open(p)
 		if err != nil {
@@ -240,7 +266,7 @@ func main() {
 		if err != nil {
 			log.Panicf(
 				"Failed to parse template file %s: %s\n",
-				item.Name(),
+				item,
 				err.Error(),
 			)
 		}
@@ -248,11 +274,11 @@ func main() {
 		templateList = append(templateList, thisTemplate)
 		modelImport = collect(modelImport, thisTemplate.modelImports)
 	}
+	
 	modelList := make([]model, 0)
+	fileList = recursivelyCollectAllFile(sourceDir, "", ".model.go")
 	for _, item := range fileList {
-		fileName := item.Name()
-		if !strings.HasSuffix(fileName, ".model.go") { continue }
-		if isTemporaryFile(fileName) { continue }
+		fileName := fmt.Sprintf("%s.model.go", item)
 		p := path.Join(sourceDir, fileName)
 		thisModelF, err := os.Open(p)
 		if err != nil {
@@ -262,11 +288,12 @@ func main() {
 				err.Error(),
 			)
 		}
+
 		thisModel, err := parseModel(fileName, thisModelF)
 		if err != nil {
 			log.Panicf(
 				"Failed to parse model file %s: %s\n",
-				item.Name(),
+				fileName,
 				err.Error(),
 			)
 		}
@@ -276,8 +303,9 @@ func main() {
 
 	funcImport := mkimportList()
 	functionList := make(map[string]templateFunc, 0)
+	fileList = recursivelyCollectAllFile(sourceDir, "", ".func.go")
 	for _, item := range fileList {
-		fileName := item.Name()
+		fileName := fmt.Sprintf("%s.func.go", item)
 		if !strings.HasSuffix(fileName, ".func.go") { continue }
 		if isTemporaryFile(fileName) { continue }
 		funcName := fileName[:len(fileName)-len(".func.go")]

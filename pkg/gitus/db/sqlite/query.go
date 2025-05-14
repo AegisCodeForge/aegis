@@ -202,7 +202,7 @@ WHERE user_name = ? AND key_name = ?
 	return nil
 }
 
-func (dbif *SqliteGitusDatabaseInterface) RegisterUser(name string, email string, passwordHash string) (*model.GitusUser, error) {
+func (dbif *SqliteGitusDatabaseInterface) RegisterUser(name string, email string, passwordHash string, status model.GitusUserStatus) (*model.GitusUser, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	t := time.Now().Unix()
 	tx, err := dbif.connection.Begin()
@@ -212,7 +212,7 @@ INSERT INTO %suser(user_name, user_title, user_email, user_bio, user_website, us
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt.Exec(name, name, email, "", "", passwordHash, t, model.NORMAL_USER)
+	_, err = stmt.Exec(name, name, email, "", "", passwordHash, t, status)
 	if err != nil { tx.Rollback(); return nil, err }
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return nil, err }
@@ -246,12 +246,12 @@ func (dbif *SqliteGitusDatabaseInterface) UpdateUserInfo(name string, uobj *mode
 UPDATE %suser
 SET
     user_title = ?, user_email = ?, user_bio = ?,
-    user_website = ?
+    user_website = ?, user_status = ?
 WHERE
     user_name = ?
 `, pfx))
 	if err != nil { tx.Rollback(); return err }
-	_, err = stmt.Exec(uobj.Title, uobj.Email, uobj.Bio, uobj.Website, name)
+	_, err = stmt.Exec(uobj.Title, uobj.Email, uobj.Bio, uobj.Website, uobj.Status, name)
 	if err != nil { tx.Rollback(); return err }
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return err }

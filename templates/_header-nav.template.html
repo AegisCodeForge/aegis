@@ -1,6 +1,7 @@
 {{define "_header-nav"}}
 <div class="header-nav">
   <div class="header-nav-left"><a href="/">HOME</a></div>
+  {{if .Config}}
   {{if not .Config.PlainMode}}
   <div class="header-nav-action">
 	{{if .LoginInfo}}
@@ -11,10 +12,11 @@
 	  {{else}}
 	  <span class="header-nav-item"><a href="/login">LOGIN</a></span>
 	    {{if .Config.AllowRegistration}}
-	    | <span class="header-nav-item"><a href="/signup">SIGN UP</a></span>
+	    | <span class="header-nav-item"><a href="/reg">SIGN UP</a></span>
 	    {{end}}
 	  {{end}}
-	{{end}}
+	  {{end}}
+	  {{end}}
   </div>
   {{end}}
 </div>

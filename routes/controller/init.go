@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/bctnry/gitus/routes"
+	"github.com/bctnry/gitus/routes/controller/admin"
 )
 
 func InitializeRoute(context *routes.RouterContext) {
@@ -29,6 +30,13 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindSettingGPGController(context)
 		bindNewNamespaceController(context)
 		bindNewRepositoryController(context)
+
+		bindRegisterController(context)
+		bindReceiptController(context)
+		bindConfirmRegistrationController(context)
+
+		// bind admin controller
+		admin.BindAdminIndexController(context)
 	}
 }
 

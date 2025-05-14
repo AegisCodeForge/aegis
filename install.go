@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/gitus/pkg/gitus/db"
+	"github.com/bctnry/gitus/pkg/gitus/model"
 	"github.com/bctnry/gitus/pkg/passwd"
 	"github.com/bctnry/gitus/routes"
 	"golang.org/x/crypto/bcrypt"
@@ -65,6 +66,9 @@ func gitusReadyCheck(ctx routes.RouterContext) (bool, error) {
 		return false, err
 	}
 	b, err = ssif.IsSessionStoreUsable()
+	if err != nil { return b, err }
+	if !b { return false, nil }
+	b, err = ctx.ReceiptSystem.IsReceiptSystemUsable()
 	if err != nil { return b, err }
 	if !b { return false, nil }
 	verdict, err := passwd.HasUser(ctx.Config.GitUser)
@@ -382,6 +386,23 @@ func InstallGitus(ctx routes.RouterContext) {
 		}
 	}
 
+	// setting up receipt system
+	fmt.Println("Setting up receipt system...")
+	if len(cfg.ReceiptSystem.Type) <= 0 {
+		fmt.Print("Cannot infer receipt system interface since type is empty in config. Please fix it and try again.")
+		os.Exit(1)
+	}
+	s, err = ctx.ReceiptSystem.IsReceiptSystemUsable()
+	if err != nil { log.Panic(err) }
+	if !s {
+		fmt.Println("Setting up receipt...")
+		err = ctx.ReceiptSystem.Install()
+		if err != nil {
+			log.Panic(err)
+		}
+	}
+	
+
 	// setting up admin user
 	fmt.Println("Setting up admin user...")
 	adminExists := false
@@ -413,7 +434,7 @@ func InstallGitus(ctx routes.RouterContext) {
 		if err != nil {
 			log.Panicf("Failed to generate password: %s\n", err.Error())
 		}
-		_, err = dbif.RegisterUser("admin", "", string(r))
+		_, err = dbif.RegisterUser("admin", "", string(r), model.SUPER_ADMIN)
 		if err != nil {
 			log.Panicf("Failed to register user: %s\n", err.Error())
 		}

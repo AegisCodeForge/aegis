@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/bctnry/gitus/pkg/gitus/model"
 	"github.com/bctnry/gitus/pkg/gitus/session"
 	. "github.com/bctnry/gitus/routes"
 	"github.com/bctnry/gitus/templates"
@@ -30,46 +31,73 @@ func bindLoginController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(ph))
-		if err == bcrypt.ErrMismatchedHashAndPassword {
+		switch u.Status {
+		case model.DELETED:
 			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 				Config: ctx.Config,
 				ErrorMsg: "Invalid username or password.",
 			}))
 			return
-		} else if err != nil {
+		case model.BANNED:
 			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 				Config: ctx.Config,
-				ErrorMsg: "Internal error: " + err.Error(),
+				ErrorMsg: "User suspended.",
 			}))
 			return
-		} else {
-			ss := session.NewSessionString()
-			err = ctx.SessionInterface.RegisterSession(un, ss)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
+		case model.NORMAL_USER_APPROVAL_NEEDED:
+			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+				Config: ctx.Config,
+				ErrorMsg: "User waiting for approval.",
+			}))
+			return
+		case model.NORMAL_USER_CONFIRM_NEEDED:
+			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+				Config: ctx.Config,
+				ErrorMsg: "Confirmation needed.",
+			}))
+			return
+		default:
+			err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(ph))
+			if err == bcrypt.ErrMismatchedHashAndPassword {
+				LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+					Config: ctx.Config,
+					ErrorMsg: "Invalid username or password.",
+				}))
 				return
+			} else if err != nil {
+				LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+					Config: ctx.Config,
+					ErrorMsg: "Internal error: " + err.Error(),
+				}))
+				return
+			} else {
+				ss := session.NewSessionString()
+				err = ctx.SessionInterface.RegisterSession(un, ss)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
+					return
+				}
+				
+				w.Header().Add("Set-Cookie", (&http.Cookie{
+					Name: COOKIE_KEY_SESSION,
+					Value: ss,
+					Path: "/",
+					MaxAge: 3600,
+					HttpOnly: true,
+					Secure: true,
+					SameSite: http.SameSiteDefaultMode,
+				}).String())
+				w.Header().Add("Set-Cookie", (&http.Cookie{
+					Name: "username",
+					Value: un,
+					Path: "/",
+					MaxAge: 3600,
+					HttpOnly: true,
+					Secure: true,
+					SameSite: http.SameSiteDefaultMode,
+				}).String())
+				FoundAt(w, "/")
 			}
-			
-			w.Header().Add("Set-Cookie", (&http.Cookie{
-				Name: COOKIE_KEY_SESSION,
-				Value: ss,
-				Path: "/",
-				MaxAge: 3600,
-				HttpOnly: true,
-				Secure: true,
-				SameSite: http.SameSiteDefaultMode,
-			}).String())
-			w.Header().Add("Set-Cookie", (&http.Cookie{
-				Name: "username",
-				Value: un,
-				Path: "/",
-				MaxAge: 3600,
-				HttpOnly: true,
-				Secure: true,
-				SameSite: http.SameSiteDefaultMode,
-			}).String())
-			FoundAt(w, "/")
 		}
 	}))
 }
