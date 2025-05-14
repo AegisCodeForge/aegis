@@ -2,11 +2,11 @@
 
 package templates
 
-import "github.com/bctnry/gitus/pkg/gitus"
-import "github.com/bctnry/gitus/pkg/gitus/model"
+import "github.com/bctnry/aegis/pkg/aegis"
+import "github.com/bctnry/aegis/pkg/aegis/model"
 
 type NewRepositoryTemplateModel struct {
-	Config *gitus.GitusConfig
+	Config *aegis.AegisConfig
 	LoginInfo *LoginInfoModel
 	ErrorMsg struct{
 		Type string

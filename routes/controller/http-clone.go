@@ -6,9 +6,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/bctnry/gitus/routes"
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/routes"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 )
 
 // info/refs

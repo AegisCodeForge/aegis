@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bctnry/gitus/pkg/gitus/receipt"
-	"github.com/bctnry/gitus/routes"
+	"github.com/bctnry/aegis/pkg/aegis/receipt"
+	"github.com/bctnry/aegis/routes"
 )
 
 func bindReceiptController(ctx *routes.RouterContext) {

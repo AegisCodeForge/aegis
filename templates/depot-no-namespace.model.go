@@ -2,10 +2,10 @@
 
 package templates
 
-import "github.com/bctnry/gitus/pkg/gitus"
+import "github.com/bctnry/aegis/pkg/aegis"
 
 type DepotNoNamespaceModel struct {
-	Config *gitus.GitusConfig
+	Config *aegis.AegisConfig
 	RepositoryList []struct{RelPath string; Description string}
 	DepotName string
 	LoginInfo *LoginInfoModel

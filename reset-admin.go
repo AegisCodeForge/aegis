@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	dbinit "github.com/bctnry/gitus/pkg/gitus/db/init"
-	"github.com/bctnry/gitus/routes"
+	dbinit "github.com/bctnry/aegis/pkg/aegis/db/init"
+	"github.com/bctnry/aegis/routes"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
 )

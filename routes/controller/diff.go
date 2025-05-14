@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
-	"github.com/bctnry/gitus/routes"
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/routes"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 )
 
 func bindDiffController(ctx *RouterContext) {

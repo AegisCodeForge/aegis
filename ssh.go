@@ -6,12 +6,12 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
-	"github.com/bctnry/gitus/pkg/shellparse"
-	"github.com/bctnry/gitus/routes"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/pkg/shellparse"
+	"github.com/bctnry/aegis/routes"
 )
 
-// `gitus ssh` handler.
+// `aegis ssh` handler.
 
 func printGitError(s string) {
 	fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR %s\n", s)))

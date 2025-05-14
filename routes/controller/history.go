@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
-	"github.com/bctnry/gitus/routes"
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/routes"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 )
 
 func bindHistoryController(ctx *RouterContext) {

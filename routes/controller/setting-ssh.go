@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 

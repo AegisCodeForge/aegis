@@ -1,6 +1,6 @@
 clean:
 	if [ -f "static.zip" ]; then rm ./static.zip; fi
-	if [ -f "gitus" ]; then rm ./gitus; fi
+	if [ -f "aegis" ]; then rm ./aegis; fi
 
 all:
 	go run ./devtools/pack-static.go ./static

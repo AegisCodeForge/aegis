@@ -10,7 +10,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/ini"
+	"github.com/bctnry/aegis/pkg/ini"
 )
 
 type LocalGitRepository struct {

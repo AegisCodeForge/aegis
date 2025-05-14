@@ -1,8 +1,8 @@
 package controller
 
 import (
-	"github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/routes/controller/admin"
+	"github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/routes/controller/admin"
 )
 
 func InitializeRoute(context *routes.RouterContext) {

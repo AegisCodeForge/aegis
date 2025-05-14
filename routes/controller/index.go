@@ -3,9 +3,9 @@ package controller
 import (
 	"net/http"
 
-	"github.com/bctnry/gitus/pkg/gitus/model"
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/aegis/model"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 )
 
 func bindIndexController(ctx *RouterContext) {

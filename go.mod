@@ -1,4 +1,4 @@
-module github.com/bctnry/gitus
+module github.com/bctnry/aegis
 
 go 1.24.1
 

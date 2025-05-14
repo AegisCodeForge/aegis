@@ -6,26 +6,26 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitus"
-	"github.com/bctnry/gitus/pkg/gitus/db"
-	"github.com/bctnry/gitus/pkg/gitus/mail"
-	"github.com/bctnry/gitus/pkg/gitus/model"
-	"github.com/bctnry/gitus/pkg/gitus/receipt"
-	"github.com/bctnry/gitus/pkg/gitus/session"
-	"github.com/bctnry/gitus/pkg/gitus/ssh"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/mail"
+	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/aegis/receipt"
+	"github.com/bctnry/aegis/pkg/aegis/session"
+	"github.com/bctnry/aegis/pkg/aegis/ssh"
+	"github.com/bctnry/aegis/templates"
 )
 
 type RouterContext struct {
-	Config *gitus.GitusConfig
+	Config *aegis.AegisConfig
 	MasterTemplate *template.Template
 	GitRepositoryList map[string]*model.Repository
 	GitNamespaceList map[string]*model.Namespace
-	DatabaseInterface db.GitusDatabaseInterface
-	SessionInterface session.GitusSessionStore
+	DatabaseInterface db.AegisDatabaseInterface
+	SessionInterface session.AegisSessionStore
 	SSHKeyManagingContext *ssh.SSHKeyManagingContext
-	ReceiptSystem receipt.GitusReceiptSystemInterface
-	Mailer mail.GitusMailerInterface
+	ReceiptSystem receipt.AegisReceiptSystemInterface
+	Mailer mail.AegisMailerInterface
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {

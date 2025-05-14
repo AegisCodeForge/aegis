@@ -7,11 +7,11 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
-	"github.com/bctnry/gitus/routes"
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/routes/controller/components"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/routes"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/routes/controller/components"
+	"github.com/bctnry/aegis/templates"
 )
 
 func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) {

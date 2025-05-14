@@ -12,10 +12,10 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitus/db"
-	"github.com/bctnry/gitus/pkg/gitus/model"
-	"github.com/bctnry/gitus/pkg/passwd"
-	"github.com/bctnry/gitus/routes"
+	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/passwd"
+	"github.com/bctnry/aegis/routes"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -53,7 +53,7 @@ func createOtherOwnedDirectory(p string, uid int, gid int) error {
 	return nil
 }
 
-func gitusReadyCheck(ctx routes.RouterContext) (bool, error) {
+func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 	dbif := ctx.DatabaseInterface
 	ssif := ctx.SessionInterface
 	cfg := ctx.Config
@@ -141,13 +141,13 @@ func unzipStaticAssets(targetBase string, zr *zip.ReadCloser) error {
 func gitUserSetupCheckPrompt() {
 	fmt.Println()
 	fmt.Printf("You need to check if the Git user is set up properly:\n")
-	fmt.Printf("1.  Make sure that both the Git user and the user running Gitus has full read/write permission of the Git Root specified in the config file\n")
-	fmt.Printf("2.  Make sure that the user running Gitus has full read/write permission of the `.ssh/authorized_keys` file under the home directory of the Git user. \n")
+	fmt.Printf("1.  Make sure that both the Git user and the user running Aegis has full read/write permission of the Git Root specified in the config file\n")
+	fmt.Printf("2.  Make sure that the user running Aegis has full read/write permission of the `.ssh/authorized_keys` file under the home directory of the Git user. \n")
 	fmt.Printf("3.  Make sure the git shell commands are properly set up. This includes:\n")
 	fmt.Printf("    1.  A `git-shell-command` directory exists under the home directory of the Git user.\n")
-	fmt.Printf("    2.  A `no-interactive-login` file exists under the `git-shell-command` directory. This file needs to be executable. This is used to stop the original git-shell from providing things. It can be a simple shell script that calls the command `gitus no-login`.\n")
-	fmt.Printf("    3.  The `gitus` executable should be under the `git-shell-command` directory as well.\n")
-	fmt.Printf("4.  Make sure that the Gitus user can access the static assets directory\n")
+	fmt.Printf("    2.  A `no-interactive-login` file exists under the `git-shell-command` directory. This file needs to be executable. This is used to stop the original git-shell from providing things. It can be a simple shell script that calls the command `aegis no-login`.\n")
+	fmt.Printf("    3.  The `aegis` executable should be under the `git-shell-command` directory as well.\n")
+	fmt.Printf("4.  Make sure that the Aegis user can access the static assets directory\n")
 }
 
 func gitUserCheck(ctx routes.RouterContext) bool {
@@ -262,33 +262,33 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 		gitUserSetupCheckPrompt(); return false
 	}
 
-	// copy gitus executable... for handling git over ssh.
+	// copy aegis executable... for handling git over ssh.
 	s, err := os.Executable()
 	if err != nil {
-		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 	f, err := os.Open(s)
 	if err != nil {
-		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 	defer f.Close()
-	gitusPath := path.Join(homeDir, "git-shell-command", "gitus")
-	fout, err := os.OpenFile(gitusPath, os.O_WRONLY|os.O_CREATE, 0754)
+	aegisPath := path.Join(homeDir, "git-shell-command", "aegis")
+	fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE, 0754)
 	if err != nil {
-		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 	defer fout.Close()
 	_, err = io.Copy(fout, f)
 	if err != nil {
-		fmt.Printf("Failed to copy Gitus executable: %s\n", err.Error())
+		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
-	err = os.Chown(gitusPath, gitUser.UID, gitUser.GID)
+	err = os.Chown(aegisPath, gitUser.UID, gitUser.GID)
 	if err != nil {
-		fmt.Printf("Failed to chown Gitus executable: %s\n", err.Error())
+		fmt.Printf("Failed to chown Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 	fmt.Printf("Done.\n")
@@ -298,7 +298,7 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 // NOTE: you shouldn't check for plain mode here (instead - check it
 // at the *caller* side!) since plain mode is fully "passive" and will
 // not involve any database setup.
-func InstallGitus(ctx routes.RouterContext) {
+func InstallAegis(ctx routes.RouterContext) {
 	if len(strings.TrimSpace(ctx.Config.GitUser)) <= 0 {
 		fmt.Printf("Plain mode disabled but empty Git user name... this won't do. We'll assume the name of the Git user is `git`.\n")
 		gitUserName := "git"
@@ -407,8 +407,8 @@ func InstallGitus(ctx routes.RouterContext) {
 	fmt.Println("Setting up admin user...")
 	adminExists := false
 	_, err = dbif.GetUserByName("admin")
-	if db.IsGitusDatabaseError(err) {
-		if err.(*db.GitusDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
+	if db.IsAegisDatabaseError(err) {
+		if err.(*db.AegisDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
 			adminExists = false
 		} else {
 			log.Panic(err)

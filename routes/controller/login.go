@@ -3,10 +3,10 @@ package controller
 import (
 	"net/http"
 
-	"github.com/bctnry/gitus/pkg/gitus/model"
-	"github.com/bctnry/gitus/pkg/gitus/session"
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/aegis/session"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 

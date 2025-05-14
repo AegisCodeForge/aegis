@@ -2,11 +2,11 @@
 
 package templates
 
-import "github.com/bctnry/gitus/pkg/gitus"
-import "github.com/bctnry/gitus/pkg/gitlib"
+import "github.com/bctnry/aegis/pkg/aegis"
+import "github.com/bctnry/aegis/pkg/gitlib"
 
 type DiffTemplateModel struct {
-	Config *gitus.GitusConfig
+	Config *aegis.AegisConfig
 	RepoHeaderInfo RepoHeaderTemplateModel
 	CommitInfo CommitInfoTemplateModel
 	Diff string

@@ -1,11 +1,15 @@
-* gitus
+* Aegis
 
 A web frontend for Git.
 
 ** Build
 
 #+begin_src
-go generate
-go build
+make all
 #+end_src
 
+** Usage
+
+#+begin_src
+  
+#+end_src

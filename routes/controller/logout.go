@@ -3,7 +3,7 @@ package controller
 import (
 	"net/http"
 
-	. "github.com/bctnry/gitus/routes"
+	. "github.com/bctnry/aegis/routes"
 )
 
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 )
 
 func bindNewRepositoryController(ctx *RouterContext) {

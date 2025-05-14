@@ -16,7 +16,7 @@ import (
 	chromaHtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/bctnry/gitus/pkg/gitlib"
+	"github.com/bctnry/aegis/pkg/gitlib"
 )
 
 func basicStringEscape(s string) string {

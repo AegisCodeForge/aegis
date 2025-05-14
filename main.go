@@ -11,24 +11,24 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
-	"github.com/bctnry/gitus/pkg/gitus"
-	"github.com/bctnry/gitus/pkg/gitus/db"
-	dbinit "github.com/bctnry/gitus/pkg/gitus/db/init"
-	"github.com/bctnry/gitus/pkg/gitus/mail"
-	rsinit "github.com/bctnry/gitus/pkg/gitus/receipt/init"
-	ssinit "github.com/bctnry/gitus/pkg/gitus/session/init"
-	"github.com/bctnry/gitus/pkg/gitus/ssh"
-	"github.com/bctnry/gitus/pkg/passwd"
-	"github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/routes/controller"
-	"github.com/bctnry/gitus/templates"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/db"
+	dbinit "github.com/bctnry/aegis/pkg/aegis/db/init"
+	"github.com/bctnry/aegis/pkg/aegis/mail"
+	rsinit "github.com/bctnry/aegis/pkg/aegis/receipt/init"
+	ssinit "github.com/bctnry/aegis/pkg/aegis/session/init"
+	"github.com/bctnry/aegis/pkg/aegis/ssh"
+	"github.com/bctnry/aegis/pkg/passwd"
+	"github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/routes/controller"
+	"github.com/bctnry/aegis/templates"
 )
 
 func main() {
-	argparse := flag.NewFlagSet("gitus", flag.ContinueOnError)
+	argparse := flag.NewFlagSet("aegis", flag.ContinueOnError)
 	argparse.Usage = func() {
-		fmt.Fprintf(argparse.Output(), "Usage: gitus [flags] [config]\n")
+		fmt.Fprintf(argparse.Output(), "Usage: aegis [flags] [config]\n")
 		argparse.PrintDefaults()
 	}
 	initFlag := argparse.Bool("init", false, "Create an initial configuration file at the location specified with [config].")
@@ -38,7 +38,7 @@ func main() {
 	configPath := *configArg
 
 	if *initFlag {
-		err := gitus.CreateConfigFile(configPath)
+		err := aegis.CreateConfigFile(configPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create configuration file: %s\n", err.Error())
 			os.Exit(1)
@@ -50,13 +50,13 @@ func main() {
 
 	mainCall := argparse.Args()
 
-	config, err := gitus.LoadConfigFile(configPath)
+	config, err := aegis.LoadConfigFile(configPath)
 	noConfig := err != nil
 	if noConfig && len(mainCall) > 0 && mainCall[0] == "ssh" {
 		// assumes that we have a clone/push through ssh and assumes the program to be
 		// in the git user's ~/git-shell-commands. go doc said os.Executable may return
 		// symlink path if the program is run through symlink, but in this case we
-		// don't care since `gitus ssh` is meant to be only run by git shell which
+		// don't care since `aegis ssh` is meant to be only run by git shell which
 		// means that whatever symlink it is it can only be in ~/git-shell-commands.
 		p, err := os.Executable()
 		if err != nil {
@@ -70,7 +70,7 @@ func main() {
 			os.Exit(1)
 		}
 		configPath = strings.TrimSpace(string(f))
-		config, err = gitus.LoadConfigFile(configPath)
+		config, err = aegis.LoadConfigFile(configPath)
 		if err != nil {
 			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
 			os.Exit(1)
@@ -90,7 +90,7 @@ func main() {
 		MasterTemplate: masterTemplate,
 	}
 	
-	var dbif db.GitusDatabaseInterface = nil
+	var dbif db.AegisDatabaseInterface = nil
 	
 	if !noConfig && !config.PlainMode {
 		// check db if plainmode is false.
@@ -111,7 +111,7 @@ func main() {
 		keyctx, err := ssh.ToContext(config)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create key managing context: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or else you might not be able to clone/push through SSH.\n")
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
 			os.Exit(1)
 		}
 		context.SSHKeyManagingContext = keyctx
@@ -119,7 +119,7 @@ func main() {
 		rs, err := rsinit.InitializeReceiptSystem(config)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create receipt system interface: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or things like user registration & password resetting wouldn't work properly.\n")
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things like user registration & password resetting wouldn't work properly.\n")
 			os.Exit(1)
 		}
 		context.ReceiptSystem = rs
@@ -127,21 +127,21 @@ func main() {
 		ml, err := mail.InitializeMailer(config)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create mailer interface: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or things thar depends on sending emails wouldn't work properly.\n")
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
 			os.Exit(1)
 		}
 		context.Mailer = ml
 
-		ok, err := gitusReadyCheck(context)
+		ok, err := aegisReadyCheck(context)
 		if !ok {
-			InstallGitus(context)
+			InstallAegis(context)
 			os.Exit(1)
 		}
 
 		u, err := passwd.GetUser(config.GitUser)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to read /etc/passwd while setting up last-config link: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or else you might not be able to clone/push through SSH.\n")
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
 			os.Exit(1)
 		}
 		
@@ -149,7 +149,7 @@ func main() {
 		err = os.WriteFile(lastConfigFilePath, []byte(configPath), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write last-config link: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Gitus again, or else you might not be able to clone/push through SSH.\n")
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
 			os.Exit(1)
 		}
 
@@ -159,7 +159,7 @@ func main() {
 				if noConfig {
 					fmt.Fprintf(os.Stderr, "No config file specified. Cannot continue.\n")
 				} else {
-					InstallGitus(context)
+					InstallAegis(context)
 				}
 				return
 			case "reset-admin":
@@ -171,7 +171,7 @@ func main() {
 				return
 			case "ssh":
 				if len(mainCall) < 3 {
-					fmt.Fprintf(os.Stderr, "Error format for `gitus ssh`.\n")
+					fmt.Fprintf(os.Stderr, "Error format for `aegis ssh`.\n")
 					return
 				}
 				HandleSSHLogin(&context, mainCall[1], mainCall[2])

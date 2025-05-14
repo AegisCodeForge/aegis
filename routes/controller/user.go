@@ -3,9 +3,9 @@ package controller
 import (
 	"net/http"
 
-	. "github.com/bctnry/gitus/routes"
-	"github.com/bctnry/gitus/templates"
-	"github.com/bctnry/gitus/pkg/gitus/db"
+	. "github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
+	"github.com/bctnry/aegis/pkg/aegis/db"
 )
 
 
@@ -14,8 +14,8 @@ func bindUserController(ctx *RouterContext) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		un := r.PathValue("userName")
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
-		if db.IsGitusDatabaseError(err) {
-			if err.(*db.GitusDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
+		if db.IsAegisDatabaseError(err) {
+			if err.(*db.AegisDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
 				ctx.ReportNotFound(un, "User", "depot", w, r)
 				return
 			}

@@ -6,8 +6,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bctnry/gitus/pkg/gitlib"
-	"github.com/bctnry/gitus/routes"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/routes"
 )
 
 func renderFileTreeFileItem(r *strings.Builder, ctx *routes.RouterContext, baseUrl string, ft *gitlib.TreeFileNode) error {
