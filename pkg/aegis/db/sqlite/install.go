@@ -67,6 +67,30 @@ CREATE TABLE IF NOT EXISTS %srepo_redirect (
 	redirect_timestamp INTEGER
 )`, pfx))
 	if err != nil { tx.Rollback(); return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE UNIQUE INDEX IF NOT EXISTS idx_%suser_user_name
+ON %suser (user_name)
+`, pfx, pfx))
+	if err != nil { tx.Rollback(); return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE INDEX IF NOT EXISTS idx_%suser_authkey_user_name
+ON %suser_authkey (user_name);
+`, pfx, pfx))
+	if err != nil { tx.Rollback(); return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE INDEX IF NOT EXISTS idx_%suser_signkey_user_name
+ON %suser_signkey (user_name);
+`, pfx, pfx))
+	if err != nil { tx.Rollback(); return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE INDEX IF NOT EXISTS idx_%snamespace_ns_name
+ON %snamespace (ns_name);
+`, pfx, pfx))
+	if err != nil { tx.Rollback(); return err }
 	
 	tx.Commit()
 	return nil

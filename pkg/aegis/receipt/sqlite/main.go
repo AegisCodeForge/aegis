@@ -78,7 +78,7 @@ WHERE id = ?
 	if err != nil { return nil, err }
 	return &receipt.Receipt{
 		Id: rid,
-		Command: strings.Split(cmd, ","),
+		Command: receipt.ParseReceiptCommand(cmd),
 		IssueTime: issueTime,
 		TimeoutMinute: timeoutMinute,
 	}, nil
@@ -114,4 +114,30 @@ func (rsif *AegisSqliteReceiptSystemInterface) CancelReceipt(rid string) error {
 	return nil
 }
 
+func (rsif *AegisSqliteReceiptSystemInterface) GetAllReceipt(pageNum int, pageSize int) ([]*receipt.Receipt, error) {
+	stmt, err := rsif.connection.Prepare(`
+SELECT id, command, issue_time, timeout_minute
+FROM receipt
+ORDER BY rowid ASC
+LIMIT ? OFFSET ?`)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(pageSize, pageNum * pageSize)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*receipt.Receipt, 0)
+	var id, command string
+	var issueTime, timeoutMinute int64
+	for r.Next() {
+		err = r.Scan(&id, &command, &issueTime, &timeoutMinute)
+		if err != nil { return nil, err }
+		res = append(res, &receipt.Receipt{
+			Id: id,
+			Command: receipt.ParseReceiptCommand(command),
+			IssueTime: issueTime,
+			TimeoutMinute: timeoutMinute,
+		})
+	}
+	return res, nil
+}
 

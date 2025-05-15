@@ -129,7 +129,7 @@ func unzipStaticAssets(targetBase string, zr *zip.ReadCloser) error {
 		sf, err := zr.Open(item.Name)
 		if err != nil { return err }
 		defer sf.Close()
-		tf, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY, 0644)
+		tf, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil { return err }
 		defer tf.Close()
 		_, err = io.Copy(tf, sf)
@@ -275,7 +275,7 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 	}
 	defer f.Close()
 	aegisPath := path.Join(homeDir, "git-shell-command", "aegis")
-	fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE, 0754)
+	fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0754)
 	if err != nil {
 		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false

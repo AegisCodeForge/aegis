@@ -36,6 +36,9 @@ type AegisDatabaseInterface interface {
 	UpdateRepositoryStatus(ns string, name string, status model.AegisRepositoryStatus) error
 	HardDeleteRepository(ns string, name string) error
 	MoveRepository(oldNs string, oldName string, newNs string, newName string) error
-	
+
+	GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error)
+	GetAllNamespaces(pageNum int, pageSize int) ([]*model.Namespace, error)
+	GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error)
 }
 

@@ -334,7 +334,7 @@ func main() {
 	os.Remove(templateTargetFilePath)
 	f, err := os.OpenFile(
 		templateTargetFilePath,
-		os.O_CREATE|os.O_WRONLY|os.O_EXCL,
+		os.O_CREATE|os.O_WRONLY|os.O_EXCL|os.O_TRUNC,
 	    0644,
 	)
 	if err != nil { log.Panic(err) }

@@ -52,7 +52,7 @@ func recursivelyWriteZip(w *zip.Writer, sourceBase string, prefix string) error 
 
 func main() {
 	staticDir := os.Args[1]
-	f, err := os.OpenFile("static.zip", os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile("static.zip", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil { log.Panicln(err) }
 	zipres := zip.NewWriter(f)
 	err = recursivelyWriteZip(zipres, staticDir, "static/")

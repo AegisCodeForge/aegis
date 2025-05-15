@@ -1,0 +1,31 @@
+.admin-sidebar hr {
+	height: 2px;
+}
+.admin-sidebar-item {
+	display: block;
+}
+.admin-main {
+	padding: 1rem; 
+	padding-top: 0;
+	width: 100%;
+}
+.admin-main h2:first-child {
+	margin-top: 0;
+}
+
+@media (max-width: 600px) {
+	.admin {
+		display: block;
+	}
+	.admin-sidebar {
+		width: 100%;
+		padding: 1rem;
+		padding-top: 0;
+		border-bottom: 2px var(--foreground-color) solid;
+	}
+	.admin-main {
+		padding-top: 1rem;
+		width: inherit;
+	}
+}
+

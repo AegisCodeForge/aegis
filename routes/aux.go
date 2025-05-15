@@ -91,9 +91,12 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 	}
 	res, err := ctx.SessionInterface.VerifySession(un, s.Value)
 	if err != nil { return nil, err }
+	u, err := ctx.DatabaseInterface.GetUserByName(un)
+	if err != nil { return nil, err }
 	return &templates.LoginInfoModel{
 		LoggedIn: res,
 		UserName: un,
+		IsAdmin: u.Status == model.ADMIN || u.Status == model.SUPER_ADMIN,
 	}, nil
 }
 

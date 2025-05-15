@@ -675,3 +675,96 @@ WHERE repo_namespace = ? AND repo_name = ?
 	return nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash
+FROM %suser
+ORDER BY rowid LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(pageSize, pageNum * pageSize)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.AegisUser, 0)
+	var username, title, email, bio, website, ph string
+	var status int
+	for r.Next() {
+		err = r.Scan(&username, &title, &email, &bio, &website, &status, &ph)
+		if err != nil { return nil, err }
+		res = append(res, &model.AegisUser{
+			Name: username,
+			Title: title,
+			Email: email,
+			Bio: bio,
+			Website: website,
+			Status: model.AegisUserStatus(status),
+			PasswordHash: ph,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize int) ([]*model.Namespace, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
+FROM %snamespace
+ORDER BY rowid LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(pageSize, pageNum * pageSize)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.Namespace, 0)
+	var name, title, desc, email, owner string
+	var reg_date int64
+	var status int
+	for r.Next() {
+		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status)
+		if err != nil { return nil, err }
+		res = append(res, &model.Namespace{
+			Name: name,
+			Title: title,
+			Description: desc,
+			Email: email,
+			Owner: owner,
+			RegisterTime: reg_date,
+			Status: model.AegisNamespaceStatus(status),
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+FROM %snamespace
+ORDER BY rowid LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(pageSize, pageNum * pageSize)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.Repository, 0)
+	var ns, name, title, desc, acl, owner string
+	var status int
+	for r.Next() {
+		err = r.Scan(&ns, &name, &title, &desc, &acl, &owner, &status)
+		if err != nil { return nil, err }
+		p := path.Join(dbif.config.GitRoot, ns, name)
+		res = append(res, &model.Repository{
+			Namespace: ns,
+			Name: name,
+			Description: desc,
+			AccessControlList: acl,
+			Status: model.AegisRepositoryStatus(status),
+			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+		})
+	}
+	return res, nil
+}

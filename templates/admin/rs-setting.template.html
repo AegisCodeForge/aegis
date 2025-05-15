@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Receipt System Settings :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>Receipt System Settings</h2>
+		<div>{{.ErrorMsg}}</div>
+		<form action="" method="POST">
+		  <div class="field">
+			<label class="field-label" for="type">Receipt System Type:</label>
+			<select name="type" id="type" value="{{.Config.ReceiptSystem.Type}}">
+			  <option value="sqlite">Sqlite3</option>
+			</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="path">Receipt System Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.ReceiptSystem.Path}}"/></div>
+		  <div class="field"><label class="field-label" for="url">Receipt System URL:</label><input name="url" id="url" class="field-tf" value="{{.Config.ReceiptSystem.URL}}"/></div>
+		  <div class="field"><label class="field-label" for="username">Receipt System Username:</label><input name="username" id="username" class="field-tf" value="{{.Config.ReceiptSystem.User}}"/></div>
+		  <div class="field"><label class="field-label" for="password">Receipt System Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.ReceiptSystem.Password}}"/></div>
+		  <input type="submit" value="Save Config" />
+		</form>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

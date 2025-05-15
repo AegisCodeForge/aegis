@@ -21,6 +21,8 @@
   	-- admin status while admin can't.
   	user_status INTEGER,
   );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_gitus_user_user_name
+  ON gitus_user (user_name);
   -- for the next two tables (for the keys) the pair `user_name`
   -- and `key_name` together should be unique (i.e. one user
   -- can have multiple keys and multiple user can have (different)
@@ -34,13 +36,16 @@
   	key_text TEXT,
       FOREIGN KEY (user_name) REFERENCES gitus_user(user_name)
   );
+  CREATE INDEX IF NOT EXISTS idx_gitus_user_authkey_user_name
+  ON gitus_user_authkey (user_name);
   CREATE TABLE IF NOT EXISTS gitus_user_signkey (
       user_name TEXT,
   	key_name TEXT,
   	key_text TEXT,
   	FOREIGN KEY (user_name) REFERENCES gitus_user(user_name)
   );
-
+  CREATE INDEX IF NOT EXISTS idx_gitus_user_signkey_user_name
+  ON gitus_user_signkey (user_name);
   CREATE TABLE IF NOT EXISTS gitus_namespace (
       ns_name TEXT UNIQUE,
   	ns_title TEXT,
@@ -54,7 +59,8 @@
   	ns_status INT
   	FOREIGN KEY (ns_owner) REFERENCES gitus_user(user_name)
   );
-
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_gitus_namespace_ns_name
+  ON gitus_namespace (ns_name);
   CREATE TABLE IF NOT EXISTS gitus_repository (
       -- this field is here for the constraint only, but you should
   	-- always kept it as `{namespace}:{name}`.

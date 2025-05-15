@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Site Config</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="setting-main main-side">
+		<h2>Basic settings</h2>
+		<form action="" method="POST">
+		  <input type="hidden" name="section" value="basic" />
+		  <div class="field"><label class="field-label"  for="depot-name">Depot name:</label><input name="depot-name" id="depot-name" class="field-tf" value="{{.Config.DepotName}}" /></div>
+		  <div class="field"><label class="field-label"  for="root">Root:</label><input name="root" id="root" required class="field-tf" value="{{.Config.GitRoot}}" /></div>
+		  <div class="field"><label class="field-label"  for="git-user">Git User:</label><input name="git-user" id="git-user" required class="field-tf" value="{{.Config.GitUser}}" /></div>
+		  <div class="field"><label class="field-label field-chkbox-label"  for="use-namespace">Use Namespace:</label><input type="checkbox" name="use-namespace" class="field-chkbox" {{if .Config.UseNamespace}}checked{{end}}/></div>
+		  <div class="field"><label class="field-label field-chkbox-label"  for="allow-registration">Allow Registration:</label><input type="checkbox" name="allow-registration" class="field-chkbox" {{if .Config.AllowRegistration}}checked{{end}}/></div>
+		  <div class="field"><label class="field-label field-chkbox-label"  for ="email-confirmation-required">Email Confirmation Required:</label><input type="checkbox" name="email-confirmation-required" class="field-chkbox" {{if .Config.EmailConfirmationRequired}}checked{{end}}/></div>
+		  <div class="field"><label class="field-label field-chkbox-label"  for="manual-approval">Manual Approval Required:</label><input type="checkbox" name="manual-approval" class="field-chkbox" {{if .Config.ManualApproval}}checked{{end}}/></div>
+		  <input type="submit" value="Save Config" />
+		</form>
+
+		<h2>Web Setting</h2>
+		<form action="" method="POST">
+		  <input type="hidden" name="section" value="web" />
+		  <div class="field"><label class="field-label" for="http-host-name">HTTP Host Name:</label><input name="http-host-name" id="http-host-name" class="field-tf" value="{{.Config.HttpHostName}}"/></div>
+		  <div class="field"><label class="field-label" for="ssh-host-name">SSH Host Name:</label><input name="ssh-host-name" id="ssh-host-name" class="field-tf" value="{{.Config.SshHostName}}"/></div>
+		  <div class="field"><label class="field-label" for="static-asset-directory">Static Asset Directory:</label><input name="static-asset-directory" id="static-asset-directory" class="field-tf" value="{{.Config.StaticAssetDirectory}}"/></div>
+		  <div class="field"><label class="field-label" for="bind-address">Bind Address:</label><input name="bind-address" id="bind-address" class="field-tf" value="{{.Config.BindAddress}}"/></div>
+		  <div class="field"><label class="field-label" for="bind-port">Bind Port:</label><input name="bind-port" id="bind-port" class="field-tf" value="{{.Config.BindPort}}"/></div>
+		  <input type="submit" value="Save Config" />
+		</form>
+
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

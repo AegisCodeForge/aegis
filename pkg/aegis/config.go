@@ -95,7 +95,7 @@ type AegisConfig struct {
 	// namespaces you need gitus to ignore during initial searching.
 	// only valid when plain mode is enabled. (when plain mode is
 	// disabled, all namespaces are visible by public by default,
-	// even if they don't have any public repository and/or member.
+	// even if they don't have any public repository and/or member.)
 	IgnoreNamespace []string `json:"ignoreNamespace"`
 	// repositories you need gitus to ignore during initial searching.
 	// only valid when plain mode is enabled. this option is valid
@@ -181,7 +181,7 @@ func (cfg *AegisConfig) GitSSHHostName() string {
 func CreateConfigFile(p string) error {
 	f, err := os.OpenFile(
 		p,
-		os.O_CREATE|os.O_EXCL|os.O_WRONLY,
+		os.O_CREATE|os.O_EXCL|os.O_WRONLY|os.O_TRUNC,
 		0644,
 	)
 	if err != nil { return err }
@@ -227,14 +227,7 @@ func CreateConfigFile(p string) error {
 	return nil
 }
 
-func LoadConfigFile(p string) (*AegisConfig, error) {
-	s, err := os.ReadFile(p)
-	if err != nil { return nil, err }
-	var c AegisConfig
-	err = json.Unmarshal(s, &c)
-	if err != nil { return nil, err }
-	c.filePath = p
-
+func (c *AegisConfig) RecalculateProperHostName() error {
 	// fix http host name & ssh host name...
 	c.properHttpHostName = c.HttpHostName
 	if strings.TrimSpace(c.HttpHostName) != "" {
@@ -245,6 +238,7 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 			c.properHttpHostName = c.properHttpHostName[:len(c.properHttpHostName)-1]
 		}
 	} else { c.properHttpHostName = "" }
+	
 	c.properSshHostName = c.SshHostName
 	if strings.TrimSpace(c.SshHostName) != "" {
 		if !strings.HasSuffix(c.properSshHostName, "ssh://") {
@@ -254,7 +248,7 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 			c.properSshHostName = c.properSshHostName[:len(c.properSshHostName)-1]
 		}
 		u, err := url.Parse(c.properSshHostName)
-		if err != nil { return nil, err }
+		if err != nil { return err }
 		// git username override.
 		actualU := &url.URL{
 			Scheme: "ssh",
@@ -278,13 +272,24 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 			}
 		}
 	}
-	
+	return nil
+}
+
+func LoadConfigFile(p string) (*AegisConfig, error) {
+	s, err := os.ReadFile(p)
+	if err != nil { return nil, err }
+	var c AegisConfig
+	err = json.Unmarshal(s, &c)
+	if err != nil { return nil, err }
+	c.filePath = p
+	err = c.RecalculateProperHostName()
+	if err != nil { return nil, err }
 	return &c, nil
 }
 
 func (cfg *AegisConfig) Sync() error {
 	p := cfg.filePath
-	s, err := json.Marshal(cfg)
+	s, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil { return err }
 	st, err := os.Stat(p)
 	if err != nil { return err }

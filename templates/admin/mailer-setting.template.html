@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mailer Settings :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>Mailer Settings</h2>
+		<div>{{.ErrorMsg}}</div>
+		<form action="" method="POST">
+		  <div class="field">
+			<label class="field-label" for="type">Mailer Type:</label>
+			<select name="type" id="type" value="{{.Config.Mailer.Type}}">
+			  <option value="gmail-plain">Gmail (w/ App Password)</option>
+			</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="server">Mailer SMTP Server:</label><input name="server" id="server" class="field-tf" value="{{.Config.Mailer.SMTPServer}}"/></div>
+		  <div class="field"><label class="field-label" for="port">Mailer SMTP Port:</label><input name="port" id="port" class="field-tf" value="{{.Config.Mailer.SMTPPort}}"/></div>
+		  <div class="field"><label class="field-label" for="username">Mailer User Name:</label><input name="username" id="username" class="field-tf" value="{{.Config.Mailer.User}}"/></div>
+		  <div class="field"><label class="field-label" for="password">Mailer User Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Mailer.Password}}"/></div>
+		  <input type="submit" value="Save Config" />
+		</form>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

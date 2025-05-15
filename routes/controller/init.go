@@ -36,7 +36,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindConfirmRegistrationController(context)
 
 		// bind admin controller
-		admin.BindAdminIndexController(context)
+		admin.BindAllAdminControllers(context)
 	}
 }
 

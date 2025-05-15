@@ -313,6 +313,11 @@ main {
 	width: 100%;
 	display: block;
 }
+.field-chkbox-label {
+	width: inherit;
+	display: inline;
+	margin-right: 0.5rem;
+}
 .field-tf {
 	border: 2px var(--foreground-color) solid;
 	background-color: var(--background-color);;
