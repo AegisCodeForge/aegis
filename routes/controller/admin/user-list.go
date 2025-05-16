@@ -17,7 +17,19 @@ func bindAdminUserListController(ctx *routes.RouterContext) {
 		if err != nil { routes.FoundAt(w, "/") }
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
-		userList, err := ctx.DatabaseInterface.GetAllUsers(0, 50)
+		i, err := ctx.DatabaseInterface.CountAllUser()
+		p := r.URL.Query().Get("p")
+		if len(p) <= 0 { p = "1" }
+		s := r.URL.Query().Get("s")
+		if len(s) <= 0 { s = "50" }
+		pageNum, err := strconv.ParseInt(p, 10, 32)
+		pageSize, err := strconv.ParseInt(s, 10, 32)
+		totalPage := i / pageSize
+		fmt.Println(pageNum, pageSize, totalPage)
+		if i % pageSize != 0 { totalPage += 1 }
+		if pageNum > totalPage { pageNum = totalPage }
+		if pageNum <= 1 { pageNum = 1 }
+		userList, err := ctx.DatabaseInterface.GetAllUsers(int(pageNum-1), int(pageSize))
 		if err != nil {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/user-list").Execute(w, &templates.AdminUserListTemplateModel{
 				Config: ctx.Config,
@@ -26,17 +38,6 @@ func bindAdminUserListController(ctx *routes.RouterContext) {
 			}))
 			return
 		}
-		i, err := ctx.DatabaseInterface.CountAllUser()
-		p := r.URL.Query().Get("p")
-		if len(p) <= 0 { p = "0" }
-		s := r.URL.Query().Get("s")
-		if len(s) <= 0 { s = "50" }
-		pageNum, err := strconv.ParseInt(p, 10, 32)
-		pageSize, err := strconv.ParseInt(s, 10, 32)
-		totalPage := i / pageSize
-		if i % pageSize != 0 { totalPage += 1 }
-		if pageNum >= totalPage { pageNum = totalPage - 1 }
-		if pageNum <= 0 { pageNum = 0 }
 		routes.LogTemplateError(ctx.LoadTemplate("admin/user-list").Execute(w, &templates.AdminUserListTemplateModel{
 			Config: ctx.Config,
 			LoginInfo: loginInfo,

@@ -26,17 +26,20 @@
 		</div>
 		<div class="admin-list-nav">
 		  <div class="admin-list-page-nav">
-			{{if gt .PageInfo.PageNum 0}}
+			{{if gt .PageInfo.PageNum 1}}
 			<a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&lt;&lt;</a>
 			{{end}}
-			{{add .PageInfo.PageNum 1}} / {{.PageInfo.TotalPage}}
+			{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}
 			{{if lt .PageInfo.PageNum (sub .PageInfo.TotalPage 1)}}
 			<a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&gt;&gt;</a>
 			{{end}}
 			<form class="admin-list-page-nav-form" action="" method="GET">
+			  <input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
 			  <label for="p">Page:</label> <input class="admin-list-page-nav-form-tf" name="p" id="p" />
 			  <input type="submit" value="Go" />
 			</form>
+
+			(<a href="?s=10">10</a> <a href="?s=25">25</a> <a href="?s=50">50</a>)
 		  </div>
 		  <div class="admin-list-search">
 			<form class="admin-list-search-form" action="" method="GET">
