@@ -46,5 +46,17 @@ type AegisDatabaseInterface interface {
 	CountAllUser() (int64, error)
 	CountAllNamespace() (int64, error)
 	CountAllRepositories() (int64, error)
+
+	// search user name & title containing the string `k`, case
+	// insensitive.
+	SearchForUser(k string, pageNum int, pageSize int) ([]*model.AegisUser, error)
+
+	// search namespce name & title containing the string `k`, case
+	// insensitive.
+	SearchForNamespace(k string, pageNum int, pageSize int) ([]*model.Namespace, error)
+
+	// search repo namespace name & repository name & title containing
+	// the string `k`, case insensitive.
+	SearchForRepository(k string, pageNum int, pageSize int) ([]*model.Repository, error)
 }
 

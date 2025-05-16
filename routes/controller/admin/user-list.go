@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
@@ -22,6 +23,7 @@ func bindAdminUserListController(ctx *routes.RouterContext) {
 		if len(p) <= 0 { p = "1" }
 		s := r.URL.Query().Get("s")
 		if len(s) <= 0 { s = "50" }
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		pageNum, err := strconv.ParseInt(p, 10, 32)
 		pageSize, err := strconv.ParseInt(s, 10, 32)
 		totalPage := i / pageSize
@@ -29,7 +31,12 @@ func bindAdminUserListController(ctx *routes.RouterContext) {
 		if i % pageSize != 0 { totalPage += 1 }
 		if pageNum > totalPage { pageNum = totalPage }
 		if pageNum <= 1 { pageNum = 1 }
-		userList, err := ctx.DatabaseInterface.GetAllUsers(int(pageNum-1), int(pageSize))
+		var userList []*model.AegisUser
+		if len(q) > 0 {
+			userList, err = ctx.DatabaseInterface.SearchForUser(q, int(pageNum-1), int(pageSize))
+		} else {
+			userList, err = ctx.DatabaseInterface.GetAllUsers(int(pageNum-1), int(pageSize))
+		}
 		if err != nil {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/user-list").Execute(w, &templates.AdminUserListTemplateModel{
 				Config: ctx.Config,
