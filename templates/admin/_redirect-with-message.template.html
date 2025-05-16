@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+	<meta http-equiv="refresh" content="{{.Timeout}}; url={{.RedirectUrl}}" />
+    <title>{{.MessageTitle}} :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>{{.MessageTitle}}</h2>
+		<p>{{.MessageText}}</p>
+		<p>This page would be redirected to {{.RedirectUrl}} in {{.Timeout}} seconds. If this didn't happen, please click <a href="{{.RedirectUrl}}">here</a> manually.</p>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

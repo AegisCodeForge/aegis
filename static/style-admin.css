@@ -29,3 +29,29 @@
 	}
 }
 
+.admin-table {
+	border-collapse: collapse;
+	border-top: 2px black solid;
+	border-bottom: 2px black solid;
+	width: 100%;
+}
+.admin-table thead {
+	border-top: 1px black solid;
+	border-bottom: 1px black solid;
+}
+.admin-list-nav {
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+	display: flex;
+}
+.admin-list-page-nav {
+	flex-grow: 2;
+}
+.admin-list-page-nav-form {
+	display: inline;
+}
+.admin-list-page-nav-form-tf { width: 3rem; }
+.admin-list-search {
+	display: inline;
+}
+

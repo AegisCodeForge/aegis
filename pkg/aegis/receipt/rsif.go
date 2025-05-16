@@ -20,7 +20,6 @@ type AegisReceiptSystemInterface interface {
 	IssueReceipt(timeoutMinute int64, command []string) (string, error)
 	CancelReceipt(rid string) error
 	GetAllReceipt(pageNum int, pageSize int) ([]*Receipt, error)
-	CountAllReceipt(
 }
 
 const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -80,6 +81,20 @@ We wish you all the best in your future endeavours.
 				return
 			}
 			succeedMsg = "Registered. You should be able to use your account after email confirmation."
+		} else {
+			status := model.NORMAL_USER
+			if ctx.Config.ManualApproval {
+				status = model.NORMAL_USER_APPROVAL_NEEDED
+			}
+			_, err = ctx.DatabaseInterface.RegisterUser(userName, email, string(passwordHash), status)
+			if err != nil {
+				routes.LogTemplateError(ctx.LoadTemplate("registration").Execute(w, &templates.RegistrationTemplateModel{
+					Config: ctx.Config,
+					LoginInfo: nil,
+					ErrorMsg: fmt.Sprintf("Error while registering: %s. Please try again.", err.Error()),
+				}))
+				return
+			}
 		}
 		if ctx.Config.ManualApproval {
 			succeedMsg = "Registered. You should be able to use your account after admin approval."

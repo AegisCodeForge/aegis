@@ -19,6 +19,8 @@ type AegisDatabaseInterface interface {
 	GetAllNamespaceByOwner(name string) (map[string]*model.Namespace, error)
 	GetAllRepositoryFromNamespace(name string) (map[string]*model.Repository, error)
 	RegisterUser(name string, email string, passwordHash string, status model.AegisUserStatus) (*model.AegisUser, error)
+	// update user info. NOTE THAT any implementers MUST update the
+	// status field as well if that has changed.
 	UpdateUserInfo(name string, uobj *model.AegisUser) error
 	UpdateUserPassword(name string, newPasswordHash string) error
 	// soft delete vs. hard delete:
@@ -40,5 +42,9 @@ type AegisDatabaseInterface interface {
 	GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error)
 	GetAllNamespaces(pageNum int, pageSize int) ([]*model.Namespace, error)
 	GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error)
+
+	CountAllUser() (int64, error)
+	CountAllNamespace() (int64, error)
+	CountAllRepositories() (int64, error)
 }
 

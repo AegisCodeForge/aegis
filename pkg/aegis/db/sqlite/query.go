@@ -768,3 +768,49 @@ ORDER BY rowid LIMIT ? OFFSET ?
 	}
 	return res, nil
 }
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllUser() (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(
+		fmt.Sprintf(`SELECT COUNT(*) FROM %suser`, pfx),
+	)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	r := stmt.QueryRow()
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllNamespace() (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(
+		fmt.Sprintf(`SELECT COUNT(*) FROM %snamespace`, pfx),
+	)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	r := stmt.QueryRow()
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllRepositories() (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(
+		fmt.Sprintf(`SELECT COUNT(*) FROM %srepository`, pfx),
+	)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	r := stmt.QueryRow()
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+

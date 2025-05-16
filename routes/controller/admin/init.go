@@ -11,4 +11,6 @@ func BindAllAdminControllers(context *routes.RouterContext) {
 	bindAdminSessionSettingController(context)
 	bindAdminMailerSettingController(context)
 	bindAdminReceiptSystemSettingController(context)
+	bindAdminUserListController(context)
+	bindAdminEditUserController(context)
 }

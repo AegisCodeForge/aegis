@@ -79,6 +79,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		return &templates.LoginInfoModel{
 			LoggedIn: loggedIn,
 			UserName: "",
+			IsAdmin: false,
+			IsSuperAdmin: false,
 		}, nil
 	}
 	s, err := r.Cookie(COOKIE_KEY_SESSION)
@@ -87,6 +89,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		return &templates.LoginInfoModel{
 			LoggedIn: loggedIn,
 			UserName: "",
+			IsAdmin: false,
+			IsSuperAdmin: false,
 		}, nil
 	}
 	res, err := ctx.SessionInterface.VerifySession(un, s.Value)
@@ -97,6 +101,7 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		LoggedIn: res,
 		UserName: un,
 		IsAdmin: u.Status == model.ADMIN || u.Status == model.SUPER_ADMIN,
+		IsSuperAdmin: u.Status == model.SUPER_ADMIN,
 	}, nil
 }
 

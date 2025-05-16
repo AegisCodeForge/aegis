@@ -8,10 +8,9 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-func bindAdminDatabaseSettingController(ctx *routes.RouterContext) {
+func bindAdminReceiptSystemSettingController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /admin/db", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, err := routes.GenerateLoyes
-		ginInfoModel(ctx, r)
+		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil { routes.FoundAt(w, "/") }
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }

@@ -73,7 +73,7 @@ func ToContext(cfg *aegis.AegisConfig) (*SSHKeyManagingContext, error) {
 }
 
 func (ctx *SSHKeyManagingContext) Sync() error {
-	f, err := os.OpenFile(ctx.keyFilePath, os.O_WRONLY|os.O_CREATE|O_TRUNC, 0644)
+	f, err := os.OpenFile(ctx.keyFilePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil { return err }
 	for userName, pack := range ctx.Managed {
 		for keyName, key := range pack {

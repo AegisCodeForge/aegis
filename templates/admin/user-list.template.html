@@ -1,0 +1,90 @@
+{{$loginInfo := .LoginInfo}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>User List :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>User List</h2>
+		<div>{{.ErrorMsg}}</div>
+		<div class="admin-action">
+		  <a class="admin-action-item" href="/admin/new-user">New User</a>
+		</div>
+		<div class="admin-list-nav">
+		  <div class="admin-list-page-nav">
+			{{if gt .PageInfo.PageNum 0}}
+			<a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&lt;&lt;</a>
+			{{end}}
+			{{add .PageInfo.PageNum 1}} / {{.PageInfo.TotalPage}}
+			{{if lt .PageInfo.PageNum (sub .PageInfo.TotalPage 1)}}
+			<a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&gt;&gt;</a>
+			{{end}}
+			<form class="admin-list-page-nav-form" action="" method="GET">
+			  <label for="p">Page:</label> <input class="admin-list-page-nav-form-tf" name="p" id="p" />
+			  <input type="submit" value="Go" />
+			</form>
+		  </div>
+		  <div class="admin-list-search">
+			<form class="admin-list-search-form" action="" method="GET">
+			  <label for="q">Search User:</label> <input class="admin-list-search-tf" name="q" id="q" />
+			  <input type="submit" value="Search" />
+			</form>
+		  </div>
+		</div>
+		<table class="admin-table">
+		  <thead>
+			<tr><th>User Name</th><th>Title</th><th>Email</th><th>Status</th><th>Edit</th><th>Delete</th></tr>
+		  </thead>
+		  <tbody>
+			{{range .UserList}}
+			<tr><td><a target="_blank" href="/u/{{.Name}}">{{.Name}}</a></td><td>{{.Title}}</td><td>{{.Email}}</td>
+			  <td><span class="user-status-tag">
+				  {{if eq .Status 2}}
+				  Approval Needed
+				  {{else if eq .Status 3}}
+				  Confirmation Needed
+				  {{else if eq .Status 4}}
+				  Admin
+				  {{else if eq .Status 5}}
+				  Super Admin
+				  {{else if eq .Status 6}}
+				  Soft Deleted
+				  {{else if eq .Status 7}}
+				  Banned
+				  {{end}}
+				</span>
+			  </td>
+			  <td>
+				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/edit">Edit</a>{{end}}</td>
+			  <td>
+				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/soft-delete">Soft</a>{{end}}
+				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/hard-delete">Hard</a>{{end}}
+			  </td>
+			</tr>
+			{{end}}
+		  </tbody>
+		</table>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

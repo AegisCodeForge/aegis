@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>User Edit :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>Change info</h2>
+		{{if .ErrorMsg}}
+		{{if eq .ErrorMsg.Type "info"}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		{{end}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" value="info" />
+		  <input type="hidden" name="username" value="{{.User.Name}}" />
+		  <div class="field">
+			<label class="field-label" for="status">Status:</label>
+			<select class="field-select" name="status" id="status" value="{{.User.Status}}">
+			  <option value="1">Normal User</option>
+			  <option value="2">Approval Needed</option>
+			  <option value="3">Confirmation Needed</option>
+			  {{if .LoginInfo.IsAdmin}}
+			  <option value="4">Admin</option>
+			  {{end}}
+			  {{if .LoginInfo.IsSuperAdmin}}
+			  <option value="5">Super Admin</option>
+			  {{end}}
+			  <option value="6">Soft Deleted</option>
+			  <option value="7">Banned</option>
+			</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="title">Title:</label> <input name="title" value="{{.User.Title}}"/></div>
+		  <div class="field"><label class="field-label" for="email">Email:</label> <input name="email" value="{{.User.Email}}" /></div>
+		  <div class="field"><label class="field-label" for="website">Website:</label> <input name="website" value="{{.User.Website}}" /></div>
+		  <div class="field"><label class="field-label" for="bio">Bio:</label> <textarea name="bio">{{.User.Bio}}</textarea></div> 
+		  <input type="submit" value="Change Info" />
+		</form>
+		
+		<h2>Change password</h2>
+		{{if .ErrorMsg}}
+		{{if eq .ErrorMsg.Type "password"}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		{{end}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" value="password" />
+		  <input type="hidden" name="username" value="{{.User.Name}}" />
+		  <div class="field"><label class="field-label" for="old-password">Old Password:</label> <input name="old-password" type="password" required/></div>
+		  <div class="field"><label class="field-label" for="new-password">New Password:</label> <input name="new-password" type="password" required /></div>
+		  <div class="field"><label class="field-label" for="confirm-new-password">Confirm new password:</label> <input name="confirm-new-password" type="password" required /></div>
+		  <input type="submit" value="Change Password" />
+		</form>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+
