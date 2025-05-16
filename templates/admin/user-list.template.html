@@ -29,7 +29,7 @@
 			{{if gt .PageInfo.PageNum 1}}
 			<a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&lt;&lt;</a>
 			{{end}}
-			{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}
+			<span class="admin-list-page-nav-page-indicator">{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}</span>
 			{{if lt .PageInfo.PageNum (sub .PageInfo.TotalPage 1)}}
 			<a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&gt;&gt;</a>
 			{{end}}
@@ -74,8 +74,7 @@
 			  <td>
 				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/edit">Edit</a>{{end}}</td>
 			  <td>
-				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/soft-delete">Soft</a>{{end}}
-				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/hard-delete">Hard</a>{{end}}
+				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/delete">Delete</a>{{end}}
 			  </td>
 			</tr>
 			{{end}}

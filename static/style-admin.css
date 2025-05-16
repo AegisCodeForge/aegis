@@ -46,9 +46,16 @@
 }
 .admin-list-page-nav {
 	flex-grow: 2;
+	display: flex;
+	align-item: center;
 }
-.admin-list-page-nav-form {
-	display: inline;
+.admin-list-page-nav-form, .admin-list-search-form {
+	display: inline-flex;
+	align-items: center;
+}
+.admin-list-page-nav-form input[type="submit"],
+.admin-list-search-form input[type="submit"] {
+	margin-top: 0;
 }
 .admin-list-page-nav-form-tf { width: 3rem; }
 .admin-list-search {
