@@ -32,6 +32,7 @@ type AegisDatabaseInterface interface {
 	UpdateNamespaceInfo(name string, nsobj *model.Namespace) error
 	UpdateNamespaceOwner(name string, newOwner string) error
 	UpdateNamespaceStatus(name string, newStatus model.AegisNamespaceStatus) error
+	// the implementer should remove the directory as well.
 	HardDeleteNamespaceByName(name string) error
 	CreateRepository(ns string, name string) (*model.Repository, error)
 	UpdateRepositoryInfo(ns string, name string, robj *model.Repository) error

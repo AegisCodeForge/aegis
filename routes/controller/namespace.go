@@ -138,7 +138,7 @@ func bindNamespaceController(ctx *RouterContext) {
 			ctx.ReportForbidden("Not owner", w, r)
 			return
 		}
-		err = ctx.DatabaseInterface.UpdateNamespaceStatus(namespaceName, model.NAMESPACE_DELETED)
+		err = ctx.DatabaseInterface.HardDeleteNamespaceByName(namespaceName)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return

@@ -11,7 +11,6 @@ type AegisRepositoryStatus int
 const (
 	REPO_NORMAL_PUBLIC AegisRepositoryStatus = 1
 	REPO_NORMAL_PRIVATE AegisRepositoryStatus = 2
-	REPO_DELETED AegisRepositoryStatus = 3
 	REPO_ARCHIVED AegisRepositoryStatus = 4
 )
 

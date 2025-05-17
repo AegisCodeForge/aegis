@@ -23,9 +23,15 @@
 
 	<h2>Change info</h2>
 	<form id="namespace-setting-form" action="" method="POST">
-	  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" /></div>
-	  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" /></div>
-	  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description"></textarea></div>
+	  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></div>
+	  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></div>
+	  <div class="field"><label class="field-label" for="status">Status:</label>
+		<select class="field-select" name="status" id="status" value="{{.Name.Status}}">
+		  <option value="1">Public</option>
+		  <option value="2">Private</option>
+		</select>
+	  </div>
+	  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description">{{.Namespace.Description}}</textarea></div>
 	  <input class="form-submit" type="submit" value="Change Info" />
 	</form>
 

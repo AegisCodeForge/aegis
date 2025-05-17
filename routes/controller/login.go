@@ -32,12 +32,6 @@ func bindLoginController(ctx *RouterContext) {
 			return
 		}
 		switch u.Status {
-		case model.DELETED:
-			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
-				Config: ctx.Config,
-				ErrorMsg: "Invalid username or password.",
-			}))
-			return
 		case model.BANNED:
 			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 				Config: ctx.Config,

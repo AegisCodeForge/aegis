@@ -14,7 +14,6 @@ type AegisNamespaceStatus int
 const (
 	NAMESPACE_NORMAL_PUBLIC AegisNamespaceStatus = 1
 	NAMESPACE_NORMAL_PRIVATE AegisNamespaceStatus = 2
-	NAMESPACE_DELETED AegisNamespaceStatus = 3
 	NAMESPACE_REDIRECTED AegisNamespaceStatus = 4
 )
 

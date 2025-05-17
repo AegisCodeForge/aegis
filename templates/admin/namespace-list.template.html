@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>User List :: Admin :: {{.Config.DepotName}}</title>
+    <title>Namespace List :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
@@ -19,10 +19,10 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="admin-main main-side">
-		<h2>User List</h2>
+		<h2>Namespace List</h2>
 		<div>{{.ErrorMsg}}</div>
 		<div class="admin-action">
-		  <a class="admin-action-item" href="/admin/new-user">New User</a>
+		  <a class="admin-action-item" href="/admin/new-namespace">New Namespace</a>
 		</div>
 		<div class="admin-list-nav">
 		  <div class="admin-list-page-nav">
@@ -45,38 +45,35 @@
 		  </div>
 		  <div class="admin-list-search">
 			<form class="admin-list-search-form" action="" method="GET">
-			  <label for="q">Search User:</label> <input class="admin-list-search-tf" name="q" id="q" />
+			  <label for="q">Search Namespace:</label> <input class="admin-list-search-tf" name="q" id="q" />
 			  <input type="submit" value="Search" />
 			</form>
 		  </div>
 		</div>
 		<table class="admin-table">
 		  <thead>
-			<tr><th>User Name</th><th>Title</th><th>Email</th><th>Status</th><th>Edit</th><th>Delete</th></tr>
+			<tr><th>Name</th><th>Title</th><th>Email</th><th>Owner</th><th>Status</th><th>Edit</th><th>Delete</th></tr>
 		  </thead>
 		  <tbody>
-			{{range .UserList}}
-			<tr><td><a target="_blank" href="/u/{{.Name}}">{{.Name}}</a></td><td>{{.Title}}</td><td>{{.Email}}</td>
-			  <td><span class="user-status-tag">
-				  {{if eq .Status 2}}
-				  Approval Needed
+			{{range .NamespaceList}}
+			<tr>
+			  <td><a target="_blank" href="/s/{{.Name}}">{{.Name}}</a></td>
+			  <td>{{.Title}}</td>
+			  <td>{{.Email}}</td>
+			  <td>{{.Owner}}</td>
+			  <td><span class="namespace-status-tag">
+				  {{if eq .Status 1}}
+				  Public
+				  {{else if eq .Status 2}}
+				  Private
 				  {{else if eq .Status 3}}
-				  Confirmation Needed
-				  {{else if eq .Status 4}}
-				  Admin
-				  {{else if eq .Status 5}}
-				  Super Admin
-				  {{else if eq .Status 6}}
 				  Soft Deleted
-				  {{else if eq .Status 7}}
-				  Banned
 				  {{end}}
 				</span>
 			  </td>
+			  <td><a href="/admin/namespace/{{.Name}}/edit">Edit</a></td>
 			  <td>
-				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/edit">Edit</a>{{end}}</td>
-			  <td>
-				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/delete">Delete</a>{{end}}
+				<a href="/admin/namespace/{{.Name}}/delete">Delete</a>
 			  </td>
 			</tr>
 			{{end}}

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -19,6 +20,18 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
+		if err != nil {
+			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{
+				Config: ctx.Config,
+				LoginInfo: loginInfo,
+				ErrorMsg: "",
+				Timeout: 0,
+				RedirectUrl: "/admin/user-list",
+				MessageTitle: "Error",
+				MessageText: fmt.Sprintf("Failed to fetch user: %s", err.Error()),
+			}))
+			return
+		}
 		if !loginInfo.IsSuperAdmin && u.Status == model.SUPER_ADMIN {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{
 				Config: ctx.Config,

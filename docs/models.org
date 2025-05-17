@@ -16,7 +16,7 @@
   	-- 3 - normal user (wait for confirmation).
   	-- 4 - admin
       -- 5 - super admin.
-  	-- 6 - deleted. 7 - banned.
+  	-- 7 - banned.
   	-- difference between admin & super admin: super admin can remove
   	-- admin status while admin can't.
   	user_status INTEGER,
@@ -55,7 +55,6 @@
   	ns_reg_datetime INTEGER,
   	-- should be tinyint.
   	-- 1 - normal (public). 2 - normal (private).
-  	-- 3 - deleted.
   	ns_status INT
   	FOREIGN KEY (ns_owner) REFERENCES gitus_user(user_name)
   );
@@ -72,7 +71,7 @@
   	repo_acl TEXT,
   	-- status.
   	-- 1 - normal (public). 2 - normal (private).
-  	-- 3 - deleted. 4 - archived.
+      -- 4 - archived.
   	repo_status INTEGER
   );
 

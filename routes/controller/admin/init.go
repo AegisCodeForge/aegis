@@ -14,4 +14,6 @@ func BindAllAdminControllers(context *routes.RouterContext) {
 	bindAdminUserListController(context)
 	bindAdminEditUserController(context)
 	bindAdminNewUserController(context)
+	bindAdminNamespaceListController(context)
+	bindAdminEditNamespaceController(context)
 }

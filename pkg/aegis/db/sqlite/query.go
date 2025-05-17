@@ -520,9 +520,8 @@ DELETE FROM %snamespace WHERE ns_name = ?
 	_, err = stmt.Exec(name)
 	if err != nil { tx.Rollback(); return err }
 	nsPath := path.Join(dbif.config.GitRoot, name)
-	err = os.Mkdir(nsPath, os.ModeDir|0755)
+	err = os.RemoveAll(nsPath)
 	if err != nil { tx.Rollback(); return err }
-	// TODO: chown.
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return err }
 	return nil
@@ -857,6 +856,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum i
 	pattern = strings.ReplaceAll(pattern, "%", "\\%")
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
+	fmt.Println("pattern", pattern)
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
 FROM %snamespace
@@ -865,7 +865,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
 	defer stmt.Close()
-	r, err := stmt.Query(pattern, "%", pattern, "%", pageSize, pageNum * pageSize)
+	r, err := stmt.Query(pattern, "\\", pattern, "\\", pageSize, pageNum * pageSize)
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Namespace, 0)
@@ -903,7 +903,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
 	defer stmt.Close()
-	r, err := stmt.Query(pattern, "%", pattern, "%", pageSize, pageNum * pageSize)
+	r, err := stmt.Query(pattern, "\\", pattern, "\\", pageSize, pageNum * pageSize)
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)

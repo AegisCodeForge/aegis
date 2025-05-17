@@ -8,7 +8,6 @@ const (
 	NORMAL_USER_CONFIRM_NEEDED AegisUserStatus = 3
 	ADMIN AegisUserStatus = 4
 	SUPER_ADMIN AegisUserStatus = 5
-	DELETED AegisUserStatus = 6
 	BANNED AegisUserStatus = 7
 )
 
