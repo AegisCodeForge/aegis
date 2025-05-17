@@ -62,4 +62,9 @@
 	display: inline;
 }
 .admin-list-page-nav-l { margin-left: 2px; margin-right: 2px; }
+@media (max-width: 1024px) {
+	.admin-list-nav {
+		display: block;
+	}
+}
 
