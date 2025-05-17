@@ -9,7 +9,7 @@ import (
 )
 
 func bindAdminReceiptSystemSettingController(ctx *routes.RouterContext) {
-	http.HandleFunc("GET /admin/db", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /admin/rs-setting", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil { routes.FoundAt(w, "/") }
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
@@ -20,7 +20,7 @@ func bindAdminReceiptSystemSettingController(ctx *routes.RouterContext) {
 			ErrorMsg: "",
 		}))
 	}))
-	http.HandleFunc("POST /admin/db", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("POST /admin/rs-setting", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil { routes.FoundAt(w, "/") }
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
