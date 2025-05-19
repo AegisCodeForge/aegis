@@ -42,7 +42,7 @@ func (dbif *SqliteAegisDatabaseInterface) Close() {
 }
 
 func NewSqliteAegisDatabaseInterface(cfg *aegis.AegisConfig) (*SqliteAegisDatabaseInterface, error) {
-	db, err := sql.Open("sqlite3", cfg.DatabasePath)
+	db, err := sql.Open("sqlite3", cfg.ProperDatabasePath())
 	if err != nil { return nil, err }
 	return &SqliteAegisDatabaseInterface{
 		config: cfg,

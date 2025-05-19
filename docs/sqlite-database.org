@@ -1,4 +1,10 @@
-* go sqlite3 "database is locked" error
+* sqlite3
+
+** resolving path specified in config
+
+All db path, when they're relative path (currently determined by `path.IsAbs` in go), are resolved against the residing directory of *the config file*.
+
+** "database is locked" error
 
 See:
 

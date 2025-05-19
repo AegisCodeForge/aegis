@@ -29,6 +29,8 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 		os.Exit(1)
 	}
 	origCmd := os.Getenv("SSH_ORIGINAL_COMMAND")
+	printGitError(origCmd)
+	os.Exit(1)
 	// one might be tempted to think that one can just pass SSH_ORIGINAL_COMMAND
 	// to exec.Command, but things don't work that way...
 	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)

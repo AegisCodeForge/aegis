@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -59,21 +60,21 @@ func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 	cfg := ctx.Config
 	b, err := dbif.IsDatabaseUsable()
 	if err != nil { return b, err }
-	if !b { return false, nil }
+	if !b { return false, errors.New("Database not usable") }
 	_, err = os.ReadDir(cfg.GitRoot)
 	if err != nil {
-		if os.IsNotExist(err) { return false, nil }
+		if os.IsNotExist(err) { return false, errors.New("Git root does not exist") }
 		return false, err
 	}
 	b, err = ssif.IsSessionStoreUsable()
 	if err != nil { return b, err }
-	if !b { return false, nil }
+	if !b { return false, errors.New("Session store not usable") }
 	b, err = ctx.ReceiptSystem.IsReceiptSystemUsable()
 	if err != nil { return b, err }
-	if !b { return false, nil }
+	if !b { return false, errors.New("Receipt system not usable") }
 	verdict, err := passwd.HasUser(ctx.Config.GitUser)
 	if err != nil { return verdict, err }
-	if !verdict { return false, nil }
+	if !verdict { return false, errors.New(fmt.Sprintf("%s cannot be found in passwd", ctx.Config.GitUser))  }
 	return true, nil
 }
 
@@ -274,7 +275,7 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 		gitUserSetupCheckPrompt(); return false
 	}
 	defer f.Close()
-	aegisPath := path.Join(homeDir, "git-shell-command", "aegis")
+	aegisPath := path.Join(homeDir, "git-shell-commands", "aegis")
 	fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0754)
 	if err != nil {
 		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())

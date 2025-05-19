@@ -26,6 +26,11 @@ Git supports a shorter version of SSH address if the port is at the typical numb
 + And because we made it so that you provide the location of the config file to the Gitus server process when you starts it, a different process cannot get that info unless we have a designated place for the info beforehand.
 + Thus the following scheme is currently used: when run with a config specified, Gitus will write a file =last-config= directly under the home directory of the specified git user. The content of the file would be the absolute path of the config file.
 
+** issued command
+
+=git-receive-pack= is issued by the client (the user, not the Aegis instance) when doing =git push=. One could imagine =git-upload-pack= and =git-upload-archive= are issued during =git clone=.
+
+
 ** "dubious ownership" and the problem of permission
 
 Newer version of Git have this "dubious ownership" thing that stops things from working if the SSH user is not the same as the owner of the Git directory. For this reason, whoever creates the directory by calling =git= (i.e. the user that runs Gitus) must transfer the ownership to the configured Git user.

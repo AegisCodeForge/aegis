@@ -112,6 +112,8 @@ type AegisConfig struct {
 	// path to the database file. valid only when dbtype is sqlite;
 	// has no effect otherwise.
 	DatabasePath string `json:"dbPath"`
+	// TODO: this should be basing on the dir of the config file.
+	properDatabasePath string
 	// url to the database. valid only when dbtype is something that
 	// is "hosted" as a server (unlike sqlite which is just one file).
 	// has no effect when dbtype is sqlite.
@@ -135,6 +137,8 @@ type AegisConfig struct {
 	SessionType string `json:"sessionType"`
 	// session path. valid only when sessiontype is sqlite.
 	SessionPath string `json:"sessionPath"`
+	// TODO: this should be basing on the dir of the config file.
+	properSessionPath string
 	// session path. valid only when session type is redis.
 	SessionURL string `json:"sessionUrl"`
 
@@ -161,6 +165,8 @@ type AegisReceiptSystemConfig struct {
 	Type string `json:"type"`
 	// the path to the system database. valid only when Type is "sqlite".
 	Path string `json:"path"`
+	// TODO: this should be basing on the dir of the config file.
+	properPath string
 	URL string `json:"url"`
 	User string `json:"user"`
 	Password string `json:"password"`
@@ -172,6 +178,18 @@ func (cfg *AegisConfig) ProperHTTPHostName() string {
 
 func (cfg *AegisConfig) ProperSSHHostName() string {
 	return cfg.properSshHostName
+}
+
+func (cfg *AegisConfig) ProperDatabasePath() string {
+	return cfg.properDatabasePath
+}
+
+func (cfg *AegisConfig) ProperSessionPath() string {
+	return cfg.properSessionPath
+}
+
+func (cfg *AegisConfig) ProperReceiptSystemPath() string {
+	return cfg.ReceiptSystem.properPath
 }
 
 func (cfg *AegisConfig) GitSSHHostName() string {
@@ -227,7 +245,7 @@ func CreateConfigFile(p string) error {
 	return nil
 }
 
-func (c *AegisConfig) RecalculateProperHostName() error {
+func (c *AegisConfig) RecalculateProperPath() error {
 	// fix http host name & ssh host name...
 	c.properHttpHostName = c.HttpHostName
 	if strings.TrimSpace(c.HttpHostName) != "" {
@@ -272,6 +290,20 @@ func (c *AegisConfig) RecalculateProperHostName() error {
 			}
 		}
 	}
+
+	configDir := path.Dir(c.filePath)
+	rp := path.Join(configDir, c.DatabasePath)
+	if path.IsAbs(c.DatabasePath) { rp = c.DatabasePath }
+	c.properDatabasePath = rp
+
+	sp := path.Join(configDir, c.SessionPath)
+	if path.IsAbs(c.SessionPath) { sp = c.SessionPath }
+	c.properSessionPath = sp
+
+	rsp := path.Join(configDir, c.ReceiptSystem.Path)
+	if path.IsAbs(c.ReceiptSystem.Path) { rsp = c.ReceiptSystem.Path }
+	c.ReceiptSystem.properPath = rsp
+	
 	return nil
 }
 
@@ -282,7 +314,7 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 	err = json.Unmarshal(s, &c)
 	if err != nil { return nil, err }
 	c.filePath = p
-	err = c.RecalculateProperHostName()
+	err = c.RecalculateProperPath()
 	if err != nil { return nil, err }
 	return &c, nil
 }

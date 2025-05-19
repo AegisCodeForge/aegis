@@ -20,7 +20,7 @@ var requiredTableList = []string{
 }
 
 func NewSqliteReceiptSystemInterface(cfg *aegis.AegisConfig) (*AegisSqliteReceiptSystemInterface, error) {
-	db, err := sql.Open("sqlite3", cfg.ReceiptSystem.Path)
+	db, err := sql.Open("sqlite3", cfg.ProperReceiptSystemPath())
 	if err != nil { return nil, err }
 	return &AegisSqliteReceiptSystemInterface{
 		config: cfg,

@@ -14,7 +14,7 @@ type AegisSqliteSessionStore struct {
 }
 
 func NewAegisSqliteSessionStore(cfg *aegis.AegisConfig) (*AegisSqliteSessionStore, error) {
-	db, err := sql.Open("sqlite3", cfg.SessionPath)
+	db, err := sql.Open("sqlite3", cfg.ProperSessionPath())
 	if err != nil { return nil, err }
 	return &AegisSqliteSessionStore{
 		config: cfg,

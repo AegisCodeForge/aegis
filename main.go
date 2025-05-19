@@ -36,6 +36,14 @@ func main() {
 	argparse.Parse(os.Args[1:])
 	
 	configPath := *configArg
+	root, err := os.Executable()
+	if err != nil {
+		fmt.Printf("Failed to resolve absolute path for config file: %s\n", err.Error())
+		os.Exit(1)
+	}
+	if !path.IsAbs(configPath) {
+		configPath = path.Join(path.Dir(root), configPath)
+	}
 
 	if *initFlag {
 		err := aegis.CreateConfigFile(configPath)
@@ -134,6 +142,7 @@ func main() {
 
 		ok, err := aegisReadyCheck(context)
 		if !ok {
+			fmt.Fprintf(os.Stderr, "Aegis Ready Check failed: %s\n", err.Error())
 			InstallAegis(context)
 			os.Exit(1)
 		}
@@ -159,6 +168,7 @@ func main() {
 				if noConfig {
 					fmt.Fprintf(os.Stderr, "No config file specified. Cannot continue.\n")
 				} else {
+					fmt.Println(mainCall)
 					InstallAegis(context)
 				}
 				return
@@ -171,7 +181,7 @@ func main() {
 				return
 			case "ssh":
 				if len(mainCall) < 3 {
-					fmt.Fprintf(os.Stderr, "Error format for `aegis ssh`.\n")
+					fmt.Print(gitlib.ToPktLine("Error format for `aegis ssh`."))
 					return
 				}
 				HandleSSHLogin(&context, mainCall[1], mainCall[2])
