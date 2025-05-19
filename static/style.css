@@ -198,7 +198,6 @@ hr {
 .repo-clone-address-tf {
 	width: 100%;
 	box-sizing: border-box;
-	display: none;
 }
 .repo-clone-address-tf:target {
 	display: inherit;
@@ -297,6 +296,14 @@ main {
 /* file tree (used when displaying single file in the left-side) */
 .file-tree-item {
 	margin-left: 1rem;
+}
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* repository readme. */
+.repo-readme {
+	overflow: auto;
 }
 /* ======================================================== */
 

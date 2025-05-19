@@ -330,7 +330,7 @@ func (cfg *AegisConfig) GetAllRepositoryPlain() (map[string]*model.Repository, e
 			Namespace: k.Namespace,
 			Name: k.Name,
 			Description: k.Description,
-			AccessControlList: "",
+			AccessControlList: nil,
 			Status: model.REPO_NORMAL_PUBLIC,
 			Repository: k,
 		}
@@ -362,7 +362,7 @@ func (cfg *AegisConfig) GetAllRepositoryByNamespacePlain(ns string) (map[string]
 			Namespace: k.Namespace,
 			Name: k.Name,
 			Description: k.Description,
-			AccessControlList: "",
+			AccessControlList: nil,
 			Status: model.REPO_NORMAL_PUBLIC,
 			Repository: k,
 		}

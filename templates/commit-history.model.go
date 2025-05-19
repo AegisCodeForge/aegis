@@ -11,5 +11,6 @@ type CommitHistoryModel struct {
 	Commit gitlib.CommitObject
 	CommitHistory []gitlib.CommitObject
 	LoginInfo *LoginInfoModel
+	NextPageCommitId string
 }
 

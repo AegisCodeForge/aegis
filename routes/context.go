@@ -102,45 +102,26 @@ func (ctx RouterContext) ReportObjectTypeMismatch(objid string, expectedType str
 	)
 }
 
-func (ctx *RouterContext) SyncAllNamespace() error {
-	if ctx.Config.PlainMode {
-		if ctx.Config.UseNamespace {
-			rp, err := ctx.Config.GetAllNamespacePlain()
-			if err != nil { return err }
-			ctx.GitNamespaceList = rp
-		} else {
-			ns, err := model.NewNamespace("", ctx.Config.GitRoot)
-			if err != nil { return err }
-			if ctx.GitNamespaceList == nil {
-				ctx.GitNamespaceList = make(map[string]*model.Namespace, 0)
-			}
-			ctx.GitNamespaceList[""] = ns
-		}
+func (ctx *RouterContext) SyncAllNamespacePlain() error {
+	if ctx.Config.UseNamespace {
+		rp, err := ctx.Config.GetAllNamespacePlain()
+		if err != nil { return err }
+		ctx.GitNamespaceList = rp
 	} else {
-		if ctx.Config.UseNamespace {
-			ns, err := ctx.DatabaseInterface.GetAllNamespace()
-			if err != nil { return err }
-			ctx.GitNamespaceList = ns
-		} else {
-			ns, err := ctx.DatabaseInterface.GetNamespaceByName("")
-			if err != nil { return err }
-			ctx.GitNamespaceList[""] = ns
+		ns, err := model.NewNamespace("", ctx.Config.GitRoot)
+		if err != nil { return err }
+		if ctx.GitNamespaceList == nil {
+			ctx.GitNamespaceList = make(map[string]*model.Namespace, 0)
 		}
+		ctx.GitNamespaceList[""] = ns
 	}
 	return nil
 }
 
-func (ctx *RouterContext) SyncNamespace(ns *model.Namespace) error {
-	if ctx.Config.PlainMode {
-		a, err := ctx.Config.GetAllRepositoryByNamespacePlain(ns.Name)
-		
-		if err != nil { return err }
-		ns.RepositoryList = a
-	} else {
-		a, err := ctx.DatabaseInterface.GetAllRepositoryFromNamespace(ns.Name)
-		if err != nil { return err }
-		ns.RepositoryList = a
-	}
+func (ctx *RouterContext) SyncNamespacePlain(ns *model.Namespace) error {
+	a, err := ctx.Config.GetAllRepositoryByNamespacePlain(ns.Name)
+	if err != nil { return err }
+	ns.RepositoryList = a
 	return nil
 }
 
@@ -155,28 +136,37 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 		namespaceName = np[0]
 		repoName = np[1]
 	}
-	s, ok := ctx.GitNamespaceList[namespaceName]
-	if !ok {
-		err := ctx.SyncAllNamespace()
+	var rp *model.Repository
+	var ok bool
+	var err error
+	if ctx.Config.PlainMode {
+		var ns *model.Namespace
+		ns, ok = ctx.GitNamespaceList[namespaceName]
+		if !ok {
+			err := ctx.SyncAllNamespacePlain()
+			if err != nil { return "", "", nil, err }
+			ns, ok = ctx.GitNamespaceList[namespaceName]
+			if !ok {
+				return "", "", nil, NewRouteError(
+					NOT_FOUND, fmt.Sprintf(
+						"Namespace %s not found.", namespaceName,
+					),
+				)
+			}
+		}
+		err = ctx.SyncNamespacePlain(ns)
 		if err != nil { return "", "", nil, err }
-		s, ok = ctx.GitNamespaceList[namespaceName]
+		rp, ok = ns.RepositoryList[repoName]
 		if !ok {
 			return "", "", nil, NewRouteError(
-				NOT_FOUND, fmt.Sprintf(
-					"Namespace %s not found.", namespaceName,
-				),
+					NOT_FOUND, fmt.Sprintf(
+						"Repository %s not found in %s.", repoName, namespaceName,
+					),
 			)
 		}
-	}
-	err := ctx.SyncNamespace(s)
-	if err != nil { return "", "", nil, err }
-	rp, ok := s.RepositoryList[repoName]
-	if !ok {
-		return "", "", nil, NewRouteError(
-			NOT_FOUND, fmt.Sprintf(
-				"Repository %s not found.", repoName,
-			),
-		)
+	} else {
+		rp, err = ctx.DatabaseInterface.GetRepositoryByName(namespaceName, repoName)
+		if err != nil { return "", "", nil, err }
 	}
 	return namespaceName, repoName, rp, nil
 }

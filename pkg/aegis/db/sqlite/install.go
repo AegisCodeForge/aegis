@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS %snamespace (
   	ns_email TEXT,
   	ns_owner TEXT,
   	ns_reg_datetime TEXT,
+    ns_acl TEXT,
   	ns_status INTEGER,
       FOREIGN KEY (ns_owner) REFERENCES %suser(user_name)
 )`, pfx, pfx))
@@ -52,8 +53,9 @@ CREATE TABLE IF NOT EXISTS %srepository (
       repo_namespace TEXT,
       repo_name TEXT,
       repo_description TEXT,
-  	repo_acl TEXT,
-  	repo_status INTEGER,
+      repo_owner TEXT,
+  	  repo_acl TEXT,
+  	  repo_status INTEGER,
       FOREIGN KEY (repo_namespace) REFERENCES %snamespace(ns_name)
 )`, pfx, pfx))
 	if err != nil { tx.Rollback(); return err }

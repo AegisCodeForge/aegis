@@ -2,7 +2,7 @@
 	<div class="file-source-view">
 	  <div class="file-source-line-number-panel">
 		{{range .FileLineCount}}
-		<a id="L{{.}}" class="file-source-line-number-item" href="#L{{.}}">{{.}}</a>
+		<a id="L{{add . 1}}" class="file-source-line-number-item" href="#L{{add . 1}}">{{add . 1}}</a>
 		{{end}}
 	  </div>
 	  <pre class="file-content">{{rawHTML .FileContent}}</pre>

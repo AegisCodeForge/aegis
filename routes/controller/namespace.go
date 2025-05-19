@@ -19,7 +19,7 @@ func bindNamespaceController(ctx *RouterContext) {
 		if ctx.Config.PlainMode {
 			ns, ok = ctx.GitNamespaceList[namespaceName]
 			if !ok {
-				err = ctx.SyncAllNamespace()
+				err = ctx.SyncAllNamespacePlain()
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
@@ -72,8 +72,8 @@ func bindNamespaceController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if ns.Owner != userInfo.UserName {
-			ctx.ReportForbidden("Not owner", w, r)
+		if !userInfo.IsAdmin && ns.Owner != userInfo.UserName {
+			ctx.ReportForbidden("Not enough permission", w, r)
 			return
 		}
 		LogTemplateError(ctx.LoadTemplate("namespace-setting").Execute(w, templates.NamespaceSettingTemplateModel{
@@ -99,8 +99,8 @@ func bindNamespaceController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if ns.Owner != userInfo.UserName {
-			ctx.ReportForbidden("Not owner", w, r)
+		if !userInfo.IsAdmin && ns.Owner != userInfo.UserName {
+			ctx.ReportForbidden("Not enough permission", w, r)
 			return
 		}
 		err = r.ParseForm()

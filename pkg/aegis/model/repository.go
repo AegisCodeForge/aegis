@@ -18,7 +18,8 @@ type Repository struct {
 	Namespace string `json:"namespace"`
 	Name string `json:"name"`
 	Description string `json:"description"`
-	AccessControlList string `json:"acl"`
+	AccessControlList *ACL `json:"acl"`
+	Owner string `json:"owner"`
 	Status AegisRepositoryStatus `json:"status"`
 	Repository *gitlib.LocalGitRepository `json:"localGitRepo"`
 	LocalPath string `json:"localPath"`
@@ -29,7 +30,7 @@ func NewRepository(ns string, name string, localgr *gitlib.LocalGitRepository) (
 		Namespace: ns,
 		Name: name,
 		Description: localgr.Description,
-		AccessControlList: "",
+		AccessControlList: nil,
 		Status: REPO_NORMAL_PUBLIC,
 		Repository: localgr,
 		LocalPath: localgr.GitDirectoryPath,
@@ -37,6 +38,10 @@ func NewRepository(ns string, name string, localgr *gitlib.LocalGitRepository) (
 }
 
 func (repo *Repository) FullName() string {
-	return fmt.Sprintf("%s:%s", repo.Namespace, repo.Name)
+	if len(repo.Namespace) > 0 {
+		return fmt.Sprintf("%s:%s", repo.Namespace, repo.Name)
+	} else {
+		return repo.Name
+	}
 }
 

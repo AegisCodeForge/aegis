@@ -72,6 +72,7 @@ func CheckUserSession(ctx *RouterContext, r *http.Request) (bool, error) {
 }
 
 func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.LoginInfoModel, error) {
+	if ctx.Config.PlainMode { return nil, nil }
 	loggedIn := false
 	un, err := GetUsernameFromCookie(r)
 	if err != nil {
@@ -108,16 +109,15 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 func GenerateRepoHeader(ctx *RouterContext, repo *model.Repository, typeStr string, nodeName string) *templates.RepoHeaderTemplateModel {
 	httpHostName := ctx.Config.ProperHTTPHostName()
 	gitSshHostName := ctx.Config.GitSSHHostName()
+	sshfn := fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
 	rfn := repo.FullName()
 	repoHeaderInfo := &templates.RepoHeaderTemplateModel{
-		NamespaceName: repo.Namespace,
-		RepoName: repo.Name,
-		RepoDescription: repo.Description,
 		TypeStr: typeStr,
 		NodeName: nodeName,
 		RepoLabelList: nil,
 		RepoURL: fmt.Sprintf("%s/repo/%s", httpHostName, rfn),
-		RepoSSH: fmt.Sprintf("%s%s", gitSshHostName, rfn),
+		RepoSSH: fmt.Sprintf("%s%s", gitSshHostName, sshfn),
+		Repository: repo,
 	}
 	return repoHeaderInfo
 }

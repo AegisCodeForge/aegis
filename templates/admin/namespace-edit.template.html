@@ -26,6 +26,7 @@
 		{{end}}
 		<form id="namespace-setting-form" action="" method="POST">
 		  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></div>
+		  <div class="field"><label class="field-label" for="owner">Owner:</label> <input class="field-tf" name="owner" id="owner" value="{{.Namespace.Owner}}" /></div>
 		  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></div>
 		  <div class="field"><label class="field-label" for="status">Status:</label>
 			<select class="field-select" name="status" id="status" value="{{.Namespace.Status}}">

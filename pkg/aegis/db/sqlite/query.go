@@ -314,17 +314,25 @@ DELETE FROM %suser WHERE user_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetNamespaceByName(name string) (*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
+SELECT ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
 WHERE ns_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(name)
 	if r.Err() != nil { return nil, r.Err() }
-	var title, desc, email, owner string
+	var title, desc, email, owner, acl string
 	var reg_date int64
 	var status int
-	err = r.Scan(&title, &desc, &email, &owner, &reg_date, &status)
+	err = r.Scan(&title, &desc, &email, &owner, &reg_date, &status, &acl)
+	if err == sql.ErrNoRows {
+		return nil, db.NewAegisDatabaseError(
+			db.ENTITY_NOT_FOUND,
+			fmt.Sprintf("Could not find namespace %s", name),
+		)
+	}
+	if err != nil { return nil, err }
+	a, err := model.ParseACL(acl)
 	if err != nil { return nil, err }
 	return &model.Namespace{
 		Name: name,
@@ -333,8 +341,35 @@ WHERE ns_name = ?
 		Email: email,
 		Owner: owner,
 		RegisterTime: reg_date,
+		ACL: a,
 		Status: model.AegisNamespaceStatus(status),
 	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRepositoryByName(nsName string, repoName string) (*model.Repository, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_description, repo_owner, repo_acl, repo_status
+FROM %srepository
+WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(nsName, repoName)
+	if r.Err() != nil {
+		if r.Err() == sql.ErrNoRows {
+			return nil, db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("Repository %s not found in %s", repoName, nsName))
+		}
+		return nil, r.Err()
+	}
+	var desc, owner, acl string
+	var status int
+	r = stmt.QueryRow(nsName, repoName)
+	if r.Err() != nil { return nil, r.Err() }
+	err = r.Scan(&desc, &owner, &acl, &status)
+	if err != nil { return nil, err }
+	p := path.Join(dbif.config.GitRoot, nsName, repoName)
+	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
+	return res, nil
 }
 
 func (dbif *SqliteAegisDatabaseInterface) RegisterNamespace(name string, ownerUsername string) (*model.Namespace, error) {
@@ -342,11 +377,11 @@ func (dbif *SqliteAegisDatabaseInterface) RegisterNamespace(name string, ownerUs
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %snamespace(ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status)
-VALUES (?,?,?,?,?,?,?)
+INSERT INTO %snamespace(ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl)
+VALUES (?,?,?,?,?,?,?, ?)
 `, pfx))
 	if err != nil { tx.Rollback(); return nil, err }
-	_, err = stmt.Exec(name, name, "", "", ownerUsername, time.Now().Unix(), model.NAMESPACE_NORMAL_PUBLIC)
+	_, err = stmt.Exec(name, name, "", "", ownerUsername, time.Now().Unix(), model.NAMESPACE_NORMAL_PUBLIC, "")
 	if err != nil { tx.Rollback(); return nil, err }
 	nsPath := path.Join(dbif.config.GitRoot, name)
 	err = os.RemoveAll(nsPath)
@@ -367,7 +402,7 @@ VALUES (?,?,?,?,?,?,?)
 func (dbif *SqliteAegisDatabaseInterface) GetAllNamespace() (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
 WHERE ns_status != 3 AND ns_status != 4
 `, pfx))
@@ -377,10 +412,12 @@ WHERE ns_status != 3 AND ns_status != 4
 	defer rs.Close()
 	res := make(map[string]*model.Namespace, 0)
 	for rs.Next() {
-		var name, title, desc, email, owner string
+		var name, title, desc, email, owner, acl string
 		var regtime int64
 		var status int64
-		err = rs.Scan(&name, &title, &desc, &email, &owner, &regtime, &status)
+		err = rs.Scan(&name, &title, &desc, &email, &owner, &regtime, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		res[name] = &model.Namespace{
 			Name: name,
@@ -389,6 +426,7 @@ WHERE ns_status != 3 AND ns_status != 4
 			Email: email,
 			Owner: owner,
 			RegisterTime: regtime,
+			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
 		}
 	}
@@ -398,7 +436,7 @@ WHERE ns_status != 3 AND ns_status != 4
 func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaceByOwner(name string) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
 WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 `, pfx))
@@ -408,10 +446,12 @@ WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 	defer rs.Close()
 	res := make(map[string]*model.Namespace, 0)
 	for rs.Next() {
-		var name, title, desc, email, owner string
+		var name, title, desc, email, owner, acl string
 		var regtime int64
 		var status int64
-		err = rs.Scan(&name, &title, &desc, &email, &owner, &regtime, &status)
+		err = rs.Scan(&name, &title, &desc, &email, &owner, &regtime, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		res[name] = &model.Namespace{
 			Name: name,
@@ -420,6 +460,7 @@ WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 			Email: email,
 			Owner: owner,
 			RegisterTime: regtime,
+			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
 		}
 	}
@@ -428,29 +469,29 @@ WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryFromNamespace(ns string) (map[string]*model.Repository, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	tx, err := dbif.connection.Begin()
-	if err != nil { return nil, err }
-	stmt, err := tx.Prepare(fmt.Sprintf(`
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_name, repo_description, repo_acl, repo_status
 FROM %srepository
 WHERE repo_namespace = ?
 `, pfx))
 	if err != nil { return nil, err }
-	r, err := stmt.Query(ns)
+	rs, err := stmt.Query(ns)
 	if err != nil { return nil, err }
-	defer r.Close()
+	defer rs.Close()
 	res := make(map[string]*model.Repository, 0)
-	for r.Next() {
+	for rs.Next() {
 		var name, desc, acl string
 		var status int64
-		err = r.Scan(&name, &desc, &acl, &status)
+		err = rs.Scan(&name, &desc, &acl, &status)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		res[name] = &model.Repository{
 			Namespace: ns,
 			Name: name,
 			Description: desc,
-			AccessControlList: acl,
+			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
 		}
@@ -464,11 +505,11 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateNamespaceInfo(name string, nsobj
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
 UPDATE %snamespace
-SET ns_title = ?, ns_description = ?, ns_email = ?
+SET ns_title = ?, ns_description = ?, ns_email = ?, ns_owner = ?
 WHERE ns_name = ?
 `, pfx))
 	if err != nil { tx.Rollback(); return err }
-	_, err = stmt.Exec(nsobj.Title, nsobj.Description, nsobj.Email, name)
+	_, err = stmt.Exec(nsobj.Title, nsobj.Description, nsobj.Email, nsobj.Owner, name)
 	if err != nil { tx.Rollback(); return err }
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return err }
@@ -534,11 +575,11 @@ func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name strin
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status)
-VALUES (?,?,?,?,?,?)
+INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner)
+VALUES (?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(fullName, ns, name, "", "", model.REPO_NORMAL_PUBLIC)
+	_, err = stmt1.Exec(fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, new(string))
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	err = os.RemoveAll(p)
@@ -574,11 +615,11 @@ SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	if err != nil { tx.Rollback(); return err }
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
 UPDATE %srepository
-SET repo_description = ?, repo_acl = ?
+SET repo_description = ?, repo_owner = ?
 WHERE rowid = ?
 `, pfx))
 	if err != nil { tx.Rollback(); return err }
-	_, err = stmt2.Exec(robj.Description, robj.AccessControlList, rowid)
+	_, err = stmt2.Exec(robj.Description, robj.Owner, rowid)
 	if err != nil { tx.Rollback(); return err }
 	// TODO: maybe we should change the description stored as file in git dir
 	// as well...
@@ -709,7 +750,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize int) ([]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -719,11 +760,13 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Namespace, 0)
-	var name, title, desc, email, owner string
+	var name, title, desc, email, owner, acl string
 	var reg_date int64
 	var status int
 	for r.Next() {
-		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status)
+		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		res = append(res, &model.Namespace{
 			Name: name,
@@ -732,6 +775,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Email: email,
 			Owner: owner,
 			RegisterTime: reg_date,
+			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
 		})
 	}
@@ -756,12 +800,14 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	for r.Next() {
 		err = r.Scan(&ns, &name, &title, &desc, &acl, &owner, &status)
 		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: name,
 			Description: desc,
-			AccessControlList: acl,
+			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
 		})
@@ -858,7 +904,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum i
 	pattern = "%" + pattern + "%"
 	fmt.Println("pattern", pattern)
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
 WHERE ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -869,11 +915,13 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Namespace, 0)
-	var name, title, desc, email, owner string
+	var name, title, desc, email, owner, acl string
 	var reg_date int64
 	var status int
 	for r.Next() {
-		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status)
+		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		res = append(res, &model.Namespace{
 			Name: name,
@@ -882,12 +930,12 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Email: email,
 			Owner: owner,
 			RegisterTime: reg_date,
+			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
 		})
 	}
 	return res, nil
 }
-
 
 func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.DatabaseTablePrefix
@@ -896,7 +944,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum 
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_acl
 FROM %srepository
 WHERE repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -910,18 +958,156 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	var ns, name, title, desc, acl, owner string
 	var status int
 	for r.Next() {
-		err = r.Scan(&ns, &name, &title, &desc, &acl, &owner, &status)
+		err = r.Scan(&ns, &name, &title, &desc, &acl, &owner, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: name,
 			Description: desc,
-			AccessControlList: acl,
+			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
 		})
 	}
 	return res, nil
 }
+
+func (dbif *SqliteAegisDatabaseInterface) SetNamespaceACL(actionUserName string, nsName string, targetUserName string, aclt *model.ACLTuple) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_owner, ns_acl FROM %snamespace WHERE ns_name = ?
+`, pfx))
+	if err != nil { return err }
+	r := stmt1.QueryRow(nsName)
+	if r.Err() != nil { stmt1.Close(); return r.Err() }
+	var nsOwner, aclStr string
+	err = r.Scan(&nsOwner, &aclStr)
+	if err != nil { stmt1.Close(); return err }
+	acl, err := model.ParseACL(aclStr)
+	if err != nil { return err }
+	v, ok := acl.ACL[actionUserName]
+	if !ok && nsOwner != actionUserName { return db.ErrNotEnoughPermission }
+	v2, ok := acl.ACL[targetUserName]
+	if !ok {  // requires addMember
+		if aclt == nil {
+			// if the caller attemps to delete the target user but the
+			// target user isn't even in the member list in the first
+			// place, we don't report error.
+			return nil
+		}
+		if !v.AddMember { return db.ErrNotEnoughPermission }
+		if !v.DeleteMember && aclt.DeleteMember { return db.ErrNotEnoughPermission }
+		if !v.EditMember && aclt.EditMember { return db.ErrNotEnoughPermission }
+		if !v.AddRepository && aclt.AddRepository { return db.ErrNotEnoughPermission }
+		if !v.EditRepository && aclt.EditRepository { return db.ErrNotEnoughPermission }
+		if !v.PushToRepository && aclt.PushToRepository { return db.ErrNotEnoughPermission }
+		if !v.ArchiveRepository && aclt.ArchiveRepository { return db.ErrNotEnoughPermission }
+		if !v.DeleteRepository && aclt.DeleteRepository { return db.ErrNotEnoughPermission }
+	} else {
+		if aclt == nil {
+			// calls for deleting target user - requires deleteMember
+			if !v.DeleteMember { return db.ErrNotEnoughPermission }
+		} else {
+			// calls for editing target user - requires editMember.
+			c1 := v2.AddMember != aclt.AddMember
+			c2 := v2.DeleteMember != aclt.DeleteMember
+			c3 := v2.EditMember != aclt.EditMember
+			c4 := v2.AddRepository != aclt.AddRepository
+			c5 := v2.EditRepository != aclt.EditRepository
+			c6 := v2.PushToRepository != aclt.PushToRepository
+			c7 := v2.ArchiveRepository != aclt.ArchiveRepository
+			c8 := v2.DeleteRepository != aclt.DeleteRepository
+			if c1 || c2 || c3 || c4 || c5 || c6 || c7 || c8 {
+				if !v.EditMember { return db.ErrNotEnoughPermission }
+			}
+		}
+	}
+	acl.ACL[targetUserName] = aclt
+	acls, err := acl.SerializeACL()
+	if err != nil { return err }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %snamespace SET ns_acl = ? WHERE ns_name = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt2.Exec(acls, nsName)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SetRepositoryACL(actionUserName string, nsName string, repoName string, targetUserName string, aclt *model.ACLTuple) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_owner, repo_acl FROM %srepository WHERE repo_name = ? AND repo_namespace = ?
+`, pfx))
+	if err != nil { return err }
+	r := stmt1.QueryRow(repoName, nsName)
+	if r.Err() != nil { stmt1.Close(); return r.Err() }
+	var owner, aclStr string
+	err = r.Scan(&owner, &aclStr)
+	if err != nil { stmt1.Close(); return err }
+	acl, err := model.ParseACL(aclStr)
+	if err != nil { return err }
+	v, ok := acl.ACL[actionUserName]
+	if !ok && owner != actionUserName { return db.ErrNotEnoughPermission }
+	v2, ok := acl.ACL[targetUserName]
+	if !ok {  // requires addMember
+		if aclt == nil {
+			// if the caller attemps to delete the target user but the
+			// target user isn't even in the member list in the first
+			// place, we don't report error.
+			return nil
+		}
+		if !v.AddMember { return db.ErrNotEnoughPermission }
+		if !v.DeleteMember && aclt.DeleteMember { return db.ErrNotEnoughPermission }
+		if !v.EditMember && aclt.EditMember { return db.ErrNotEnoughPermission }
+		if !v.AddRepository && aclt.AddRepository { return db.ErrNotEnoughPermission }
+		if !v.EditRepository && aclt.EditRepository { return db.ErrNotEnoughPermission }
+		if !v.PushToRepository && aclt.PushToRepository { return db.ErrNotEnoughPermission }
+		if !v.ArchiveRepository && aclt.ArchiveRepository { return db.ErrNotEnoughPermission }
+		if !v.DeleteRepository && aclt.DeleteRepository { return db.ErrNotEnoughPermission }
+	} else {
+		if aclt == nil {
+			// calls for deleting target user - requires deleteMember
+			if !v.DeleteMember { return db.ErrNotEnoughPermission }
+		} else {
+			// calls for editing target user - requires editMember.
+			c1 := v2.AddMember != aclt.AddMember
+			c2 := v2.DeleteMember != aclt.DeleteMember
+			c3 := v2.EditMember != aclt.EditMember
+			c4 := v2.AddRepository != aclt.AddRepository
+			c5 := v2.EditRepository != aclt.EditRepository
+			c6 := v2.PushToRepository != aclt.PushToRepository
+			c7 := v2.ArchiveRepository != aclt.ArchiveRepository
+			c8 := v2.DeleteRepository != aclt.DeleteRepository
+			if c1 || c2 || c3 || c4 || c5 || c6 || c7 || c8 {
+				if !v.EditMember { return db.ErrNotEnoughPermission }
+			}
+		}
+	}
+	acl.ACL[targetUserName] = aclt
+	acls, err := acl.SerializeACL()
+	if err != nil { return err }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %srepository SET repo_acl = ? WHERE repo_name = ? AND repo_namespace = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt2.Exec(acls, repoName, nsName)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+
 

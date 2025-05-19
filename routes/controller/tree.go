@@ -22,7 +22,7 @@ func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, o
 func bindTreeHandler(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tree/{treeId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -44,13 +44,11 @@ func bindTreeHandler(ctx *RouterContext) {
 			return
 		}
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
-			NamespaceName: namespaceName,
-			RepoName: rfn,
-			RepoDescription: repo.Description,
 			TypeStr: "tree",
 			NodeName: treeId,
 			RepoLabelList: nil,
 			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
+			Repository: repo,
 		}
 
 		gobj, err := repo.Repository.ReadObject(treeId)

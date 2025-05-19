@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>New Namespace :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>New Namespace</h2>
+		<div>{{.ErrorMsg}}</div>
+		
+		<div id="reg-form">
+		  <form id="namespace-setting-form" action="" method="POST">
+			<div class="field"><label class="field-label" for="name">Name:</label> <input class="field-tf" name="name" id="name" /></div>
+			<div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" /></div>
+			<div class="field"><label class="field-label" for="owner">Owner:</label> <input class="field-tf" name="owner" id="owner" /></div>
+			<div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" /></div>
+			<div class="field"><label class="field-label" for="status">Status:</label>
+			  <select class="field-select" name="status" id="status" >
+				<option value="1">Public</option>
+				<option value="2">Private</option>
+			  </select>
+			</div>
+			<div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description"></textarea></div>
+			<input class="form-submit" type="submit" value="Change Info" />
+		  </form>
+		</div>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

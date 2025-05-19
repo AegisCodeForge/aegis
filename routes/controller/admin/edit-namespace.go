@@ -72,6 +72,7 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 			return
 		}
 		title := r.Form.Get("title")
+		owner := r.Form.Get("owner")
 		email := r.Form.Get("email")
 		i, err := strconv.Atoi(r.Form.Get("status"))
 		if err != nil {
@@ -89,6 +90,7 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 		description := r.Form.Get("description")
 		ns.Title = title
 		ns.Email = email
+		ns.Owner = owner
 		ns.Status = model.AegisNamespaceStatus(i)
 		ns.Description = description
 		err = ctx.DatabaseInterface.UpdateNamespaceInfo(nsn, ns)

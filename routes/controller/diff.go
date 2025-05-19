@@ -57,7 +57,7 @@ func bindDiffController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{
 			RepoHeaderInfo: *GenerateRepoHeader(ctx, repo, "commit", commitId),
 			CommitInfo: templates.CommitInfoTemplateModel{
-				RepoName: rfn,
+				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj.(*gitlib.CommitObject),
 			},
 			Diff: diff,

@@ -29,6 +29,7 @@ type Namespace struct {
 	Owner string `json:"owner"`
 	RegisterTime int64 `json:"regTime"`
 	Status AegisNamespaceStatus `json:"status"`
+	ACL *ACL
 	RepositoryList map[string]*Repository `json:"repoList"`
 	LocalPath string `json:"localPath"`
 }
@@ -83,6 +84,7 @@ func NewNamespace(name string, p string) (*Namespace, error) {
 		Title: name,
 		Description: "",
 		RepositoryList: repoMap,
+		ACL: nil,
 		LocalPath: p,
 	}
 	return res, nil

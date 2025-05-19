@@ -103,13 +103,13 @@ func bindRepositoryController(ctx *RouterContext) {
 			out, err := doc.Write(org.NewHTMLWriter())
 			if err != nil {
 				readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
-				readmeString = fmt.Sprintf("<pre>%s</pre>", readmeString)
+				readmeString = fmt.Sprintf("<pre class=\"repo-readme\">>%s</pre>", readmeString)
 			} else {
 				readmeString = bluemonday.UGCPolicy().Sanitize(out)
 			}
 		default:
 			readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
-			readmeString = fmt.Sprintf("<pre>%s</pre>", readmeString)
+			readmeString = fmt.Sprintf("<pre class=\"repo-readme\">%s</pre>", readmeString)
 		}
 		
 	findingReadmeDone:

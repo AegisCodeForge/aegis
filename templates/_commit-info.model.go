@@ -5,7 +5,7 @@ package templates
 import "github.com/bctnry/aegis/pkg/gitlib"
 
 type CommitInfoTemplateModel struct {
-	RepoName string
+	RootPath string
 	Commit *gitlib.CommitObject
 }
 

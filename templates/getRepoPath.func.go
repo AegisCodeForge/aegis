@@ -4,6 +4,8 @@ package templates
 import "fmt"
 
 func(namespaceName string, repoName string) string {
-	return fmt.Sprintf("/repo/%s:%s", namespaceName, repoName)
+	rfn := repoName
+	if len(namespaceName) > 0 { rfn = namespaceName + ":" + repoName }
+	return fmt.Sprintf("/repo/%s", rfn)
 }
 

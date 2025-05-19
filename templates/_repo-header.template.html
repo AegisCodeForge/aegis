@@ -1,9 +1,11 @@
 {{define "_repo-header"}}
+{{$namespaceName := .Repository.Namespace}}
+{{$repoName := .Repository.Name}}
 <h1 class="header-name" style="margin-bottom: 0">
-  <a href="{{getNamespacePath .NamespaceName}}">{{.NamespaceName}}</a>:<a href="{{getRepoPath .NamespaceName .RepoName}}">{{.RepoName}}</a>
+  <a href="{{getNamespacePath $namespaceName}}">{{$namespaceName}}</a>:<a href="{{getRepoPath $namespaceName $repoName}}">{{$repoName}}</a>
   </h1>
   {{if gt (len .TypeStr) 0}}
-  <div class="header-node">@{{.TypeStr}}:<a href="{{getRootPath .RepoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
+  <div class="header-node">@{{.TypeStr}}:<a href="{{getRootPath $namespaceName $repoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
   {{end}}
   <div class="header-repo-label-list">
 	{{if .RepoLabelList}}
@@ -13,11 +15,11 @@
 	{{end}}
   </div>
   <div class="header-clone-address">
-	<span class="repo-clone-address-label">Clone URL</span>:
-	<a href="#http">HTTP (Read-only)</a> <a href="#ssh">SSH</a>
-	<input id="http" class="repo-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoURL}}" readonly/>
+	<span class="repo-clone-address-label">Clone URL:</span><br />
+	<span>HTTP (Read-only):</span> <input id="http" class="repo-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoURL}}" readonly/>
+	<span>SSH:</span>
 	<input id="ssh" class="repo-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoSSH}}" readonly/>
   </div>
-  <div class="repo-description">{{.RepoDescription}}</div>
+  <div class="repo-description">{{.Repository.Description}}</div>
 {{end}}
 

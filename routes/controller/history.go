@@ -63,7 +63,7 @@ func bindHistoryController(ctx *RouterContext) {
 			}))
 			return
 		}
-		h, err := repo.Repository.GetCommitHistory(cid)
+		h, err := repo.Repository.GetCommitHistoryN(cid, 11)
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -90,9 +90,10 @@ func bindHistoryController(ctx *RouterContext) {
 			templates.CommitHistoryModel{
 				RepoHeaderInfo: *GenerateRepoHeader(ctx, repo, typeStr, nodeNameElem[1]),
 				Commit: *(cobj.(*gitlib.CommitObject)),
-				CommitHistory: h,
+				CommitHistory: h[:len(h)-1],
 				LoginInfo: loginInfo,
 				Config: ctx.Config,
+				NextPageCommitId: h[len(h)-1].Id,
 			},
 		))
 	}))

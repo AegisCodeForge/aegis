@@ -15,6 +15,7 @@ type AegisDatabaseInterface interface {
 	RegisterSignKey(username string, keyname string, keytext string) error
 	RemoveSignKey(username string, keyname string) error
 	GetNamespaceByName(name string) (*model.Namespace, error)
+	GetRepositoryByName(nsName string, repoName string) (*model.Repository, error)
 	GetAllNamespace() (map[string]*model.Namespace, error)
 	GetAllNamespaceByOwner(name string) (map[string]*model.Namespace, error)
 	GetAllRepositoryFromNamespace(name string) (map[string]*model.Repository, error)
@@ -59,5 +60,11 @@ type AegisDatabaseInterface interface {
 	// search repo namespace name & repository name & title containing
 	// the string `k`, case insensitive.
 	SearchForRepository(k string, pageNum int, pageSize int) ([]*model.Repository, error)
+
+	// check the permission of `actionUserName` and set ACL as specified.
+	// implementer should remove permissions of `targetUserName` when
+	// `acl` is nil,
+	SetNamespaceACL(actionUserName string, nsName string, targetUserName string, acl *model.ACLTuple) error
+	SetRepositoryACL(actionUserName string, nsName string, repoName string, targetUserName string, acl *model.ACLTuple) error
 }
 

@@ -128,7 +128,7 @@ func bindTagController(ctx *RouterContext) {
 				return
 			}
 			commitInfo = &templates.CommitInfoTemplateModel{
-				RepoName: rfn,
+				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj,
 			}
 			subject, err = repo.Repository.ReadObject(cobj.TreeObjId)

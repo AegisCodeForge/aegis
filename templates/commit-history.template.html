@@ -1,7 +1,8 @@
-{{$repoName := .RepoHeaderInfo.RepoName}}
+{{$namespaceName := .RepoHeaderInfo.Repository.Namespace}}
+{{$repoName := .RepoHeaderInfo.Repository.Name}}
 {{$typeStr := .RepoHeaderInfo.TypeStr}}
 {{$nodeName := .RepoHeaderInfo.NodeName}}
-{{$repoPath := getRepoPath $repoName}}
+{{$repoPath := getRepoPath $namespaceName $repoName}}
 <!DOCTYPE html>
 <html>
   <head>
@@ -36,6 +37,9 @@
 	<hr />
 
 	<div class="commit-history-container">
+	  {{if eq (len .CommitHistory) 0}}
+	  There are no older commits.
+	  {{else}}
 	  {{range .CommitHistory}}
 	  <div class="commit-history-item commit-info">
 		<b>Commit</b> <a href="{{$repoPath}}/commit/{{.Id}}">{{.Id}}</a> (<a href="{{$repoPath}}/diff/{{.Id}}">Diff</a>) (<a href="{{$repoPath}}/commit/{{.Id}}">Tree</a>) (<a href="{{$repoPath}}/history/commit:{{.Id}}">Full History</a>)<br />
@@ -52,8 +56,10 @@
 		<details><summary><b>Commit Signature</b></summary><pre>{{.Signature}}</pre></details>
 		{{end}}
 	  </div>
-	{{end}}
+  	  {{end}}
+	  {{end}}
 	</div>
+	<div><a href="{{$repoPath}}/history/commit:{{.NextPageCommitId}}">Older commit</div>
 	<hr />
 	<footer>
 	  <a href="/repo/{{$repoName}}/{{$typeStr}}/{{$nodeName}}">Back</a>

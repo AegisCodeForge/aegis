@@ -72,7 +72,7 @@ func bindBranchController(ctx *RouterContext) {
 
 		cobj := gobj.(*gitlib.CommitObject)
 		commitInfo := &templates.CommitInfoTemplateModel{
-			RepoName: rfn,
+			RootPath: fmt.Sprintf("/repo/%s", rfn),
 			Commit: cobj,
 		}
 		gobj, err = repo.Repository.ReadObject(cobj.TreeObjId)

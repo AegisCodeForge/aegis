@@ -53,6 +53,16 @@
   	ns_email TEXT,
   	ns_owner TEXT,
   	ns_reg_datetime INTEGER,
+  	-- currently the acl is a json string with the format:
+  	--   { "ver": 0,
+  	--     "acl": {
+  	--       "{username1}": [true, false, true, ...],
+  	--       "{username1}": [true, false, true, ...],
+  	--       "{username1}": [true, false, true, ...], }
+  	--   }
+  	-- the "[true, false, true, ...]" part is the 6-tuple described in
+  	-- the documentation (acl.org). 
+  	ns_acl TEXT,
   	-- should be tinyint.
   	-- 1 - normal (public). 2 - normal (private).
   	ns_status INT
@@ -67,6 +77,7 @@
   	repo_namespace TEXT,
       repo_name TEXT,
   	repo_description TEXT,
+  	repo_owner TEXT,
   	-- access control list
   	repo_acl TEXT,
   	-- status.

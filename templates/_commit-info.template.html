@@ -1,7 +1,6 @@
 {{define "_commit-info"}}
-{{$repoPath := getRepoPath .RepoName}}
 <div class="commit-info">
-  <b>Commit</b> <a href="{{$repoPath}}/commit/{{.Commit.Id}}">{{slice .Commit.Id 0 8}}...</a> (<a href="{{$repoPath}}/diff/{{.Commit.Id}}">Diff</a>) (<a href="{{$repoPath}}/commit/{{.Commit.Id}}">Tree</a>) (<a href="{{$repoPath}}/history/commit:{{.Commit.Id}}">Full History</a>)<br />
+  <b>Commit</b> <a href="{{.RootPath}}/commit/{{.Commit.Id}}">{{slice .Commit.Id 0 8}}...</a> (<a href="{{.RootPath}}/diff/{{.Commit.Id}}">Diff</a>) (<a href="{{.RootPath}}/commit/{{.Commit.Id}}">Tree</a>) (<a href="{{.RootPath}}/history/commit:{{.Commit.Id}}">Full History</a>)<br />
   <b>Author</b>:
   <span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
   (<span class="author-email commit-author-email"><a href="mailto:{{.Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)

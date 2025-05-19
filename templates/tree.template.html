@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
 	<link rel="stylesheet" href="/static/style.css">
-	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.RepoHeaderInfo.RepoName}} :: Gitus</title>
+	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.RepoHeaderInfo.Repository.Name}} :: Gitus</title>
   </head>
   <body>
 	<header>
@@ -32,7 +32,7 @@
 	
 	<hr />
 	<footer>
-	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>
+	  <a href="{{getRepoPath .RepoHeaderInfo.Repository.Namespace .RepoHeaderInfo.Repository.Name}}">Back (Repository)</a>
 	  <a href="/">Back (Depot)</a>
 	  {{template "_footer"}}
 	</footer>

@@ -1,0 +1,42 @@
+* acl
+
+You can add ACL to namespaces *and* repositories. The reason why this is the case is the fact that we plan to support not having namespaces.
+
+The following 6 permissions can be granted:
+
++ =addMember=: change the ACL by adding a new member.
++ =deleteMember=: change the ACL by removing a new member.
++ =editMember=: change the specific setting for an existing member.
++ =addRepo=: add a repository. (ignored in repo ACL)
++ =editRepo=: edit a repository's settings (excluding ACL & status setting)
++ =pushToRepo=: push to repository through SSH.
++ =archiveRepo=: edit a repository's status
++ =deleteRepo=: delete a repository
+
+The ACL is conceptually a map from a user name to a 8 boolean tuple. Unless the overall design has changed, code that implements ACL-related logic should interpret and maintain the order of the values within the 8 boolean tuple as listed above. =cloneRepo= is not added in this list, since HTTP read-only clone is always available for public repositories and SSH clone is always available for users specified in the ACL. The ability to transfer the ownership of a namespace/repository is solely reserved for the owner.
+
+The owner can move a namespace/repository to a different user, giving them the owner status.
+
+The owner of a namespace/repository has all the listed permissions at all time despite the possible configuration. If the config of repository conflicts with the config of namespace, the config of repository takes precedence. If a repository does not specify a 7-tuple for a specific user, the config of its residing namespace is used. If both a repository and its residing namespace have no specification for a specific user, it's considered that that user has no permission to perform any of the listed operation on the repository.
+
+Users who have the =archiveRepo= permission can toggle a repository's archive status. When a repository is set at "archived" state, all push to this repo is forbidden, even if they come from the owner of the repo.
+
+Users who have the =addMember= / =deleteMember= permission are allowed to modify the ACL of the corresponding namespace / repository. Users with =addMember= permission cannot add new members that has more permission than himself, e.g. if a member only has =addMember= and =pushToRepo=, he can only grant =addMember= and =pushToRepo= when adding a new member.
+
+** representation
+
+Currently every field containing the ACL would have the ACL in JSON. The JSON would be of the following form:
+
+#+begin_src json
+{ "ver": 0,
+  "acl": {
+    "{username1}": [true, false, true, ...],
+    "{username1}": [true, false, true, ...],
+    "{username1}": [true, false, true, ...]
+  }
+}
+#+end_src
+
+The =[true, false, true, ...]= part is the 7-tuple described above.
+
+
