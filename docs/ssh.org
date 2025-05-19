@@ -30,7 +30,6 @@ Git supports a shorter version of SSH address if the port is at the typical numb
 
 =git-receive-pack= is issued by the client (the user, not the Aegis instance) when doing =git push=. One could imagine =git-upload-pack= and =git-upload-archive= are issued during =git clone=.
 
-
 ** "dubious ownership" and the problem of permission
 
 Newer version of Git have this "dubious ownership" thing that stops things from working if the SSH user is not the same as the owner of the Git directory. For this reason, whoever creates the directory by calling =git= (i.e. the user that runs Gitus) must transfer the ownership to the configured Git user.

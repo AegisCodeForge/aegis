@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/shellparse"
@@ -18,6 +19,10 @@ func printGitError(s string) {
 }
 
 func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) {
+	if ctx.Config.PlainMode {
+		printGitError("This instance of Aegis is in Plain Mode which does not allow Git over SSH.")
+		os.Exit(1)
+	}
 	m, err := ctx.DatabaseInterface.GetAuthKeyByName(username, keyname)
 	if err != nil {
 		printGitError(err.Error())
@@ -29,18 +34,68 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 		os.Exit(1)
 	}
 	origCmd := os.Getenv("SSH_ORIGINAL_COMMAND")
-	printGitError(origCmd)
-	os.Exit(1)
 	// one might be tempted to think that one can just pass SSH_ORIGINAL_COMMAND
 	// to exec.Command, but things don't work that way...
 	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
+	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
+	if relPath[0] == '~' || relPath[0] == '/' { relPath = relPath[1:] }
+	relPathSegment := strings.SplitN(relPath, "/", 2)
+	namespaceName := ""
+	repositoryName := ""
+	if ctx.Config.UseNamespace {
+		if len(relPathSegment) <= 1 {
+			relPathSegment = strings.SplitN(relPath, ":", 2)
+			if len(relPathSegment) <= 1 {
+				printGitError("Invalid repository path specification.")
+				os.Exit(1)
+			}
+			namespaceName = relPathSegment[0]
+			repositoryName = relPathSegment[1]
+		}
+		namespaceName = relPathSegment[0]
+		repositoryName = relPathSegment[1]
+	} else {
+		if len(relPathSegment) > 1 {
+			printGitError("Invalid repository path specification.")
+			os.Exit(1)
+		}
+		namespaceName = ""
+		repositoryName = relPathSegment[0]
+	}
+
+	// check acl.
+	r, err := ctx.DatabaseInterface.GetRepositoryByName(namespaceName, repositoryName)
+	if err != nil {
+		printGitError(fmt.Sprintf("Failed while reading ACL: %s.", err.Error()))
+		os.Exit(1)
+	}
+	ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
+	if err != nil {
+		printGitError(fmt.Sprintf("Failed while reading namespace: %s.", err.Error()))
+		os.Exit(1)
+	}
+	if r.Owner != username && ns.Owner != username {
+		aclt, ok := r.AccessControlList.ACL[username]
+		if !ok {
+			aclt, ok = ns.ACL.ACL[username]
+			if !ok {
+				printGitError("Not enough permission.")
+				os.Exit(1)
+			}
+		}
+		if !aclt.PushToRepository && parsedOrigCmd[0] == "git-receive-pack" {
+			printGitError("Not enough permission.")
+			os.Exit(1)
+		}
+	}
+	
 	// see also:
 	//     https://git-scm.com/docs/git-receive-pack
 	//     https://git-scm.com/docs/git-upload-pack
 	//     https://git-scm.com/docs/git-upload-archive
 	// all commands have the git dir path at the end of the call, so we resolve it
 	// with ctx.Config.
-	realGitPath := path.Join(ctx.Config.GitRoot, parsedOrigCmd[len(parsedOrigCmd)-1])
+	realGitPath := path.Join(ctx.Config.GitRoot, r.Namespace, r.Name)
 	parsedOrigCmd[len(parsedOrigCmd)-1] = realGitPath
 	cmdobj := exec.Command(parsedOrigCmd[0], parsedOrigCmd[1:]...)
 

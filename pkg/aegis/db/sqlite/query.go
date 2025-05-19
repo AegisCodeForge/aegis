@@ -355,18 +355,16 @@ WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(nsName, repoName)
-	if r.Err() != nil {
-		if r.Err() == sql.ErrNoRows {
-			return nil, db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("Repository %s not found in %s", repoName, nsName))
-		}
-		return nil, r.Err()
-	}
+	if r.Err() != nil { return nil, r.Err() }
 	var desc, owner, acl string
 	var status int
-	r = stmt.QueryRow(nsName, repoName)
-	if r.Err() != nil { return nil, r.Err() }
 	err = r.Scan(&desc, &owner, &acl, &status)
-	if err != nil { return nil, err }
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("Repository %s not found in %s", repoName, nsName))
+		}
+		return nil, err
+	}
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
 	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
 	return res, nil
