@@ -15,6 +15,7 @@ func InitializeRoute(context *routes.RouterContext) {
 	bindRepositoryController(context)
 	bindTagController(context)
 	bindTreeHandler(context)
+	bindAllController(context)
 
 	bindHttpCloneController(context)
 	if context.Config.UseNamespace {

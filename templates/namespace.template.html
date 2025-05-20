@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>{{.Namespace.Name}} :: {{.DepotName}}</title>
+    <title>{{.Namespace.Name}} :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
   </head>
   <body>
@@ -13,7 +13,9 @@
 	  {{if gt (len (.Namespace.Owner)) 0}}
 	  <div>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></div>
 	  {{end}}
-	  {{if eq .Namespace.Owner .LoginInfo.UserName}}
+	  {{if or (eq .Namespace.Owner .LoginInfo.UserName)
+	  (.LoginInfo.IsSettingMember)
+	  (.LoginInfo.IsAdmin)}}
 	  <div class="namespace-nav"><a href="/s/{{.Namespace.Name}}/setting">Settings</a> <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a></div>
 	  {{end}}
 	  <div class="namespace-description">{{.Namespace.Description}}</div>

@@ -7,13 +7,21 @@ The following 6 permissions can be granted:
 + =addMember=: change the ACL by adding a new member.
 + =deleteMember=: change the ACL by removing a new member.
 + =editMember=: change the specific setting for an existing member.
++ =editInfo=: edit a namespace/repository's settings (excluding ACL & status setting)
 + =addRepo=: add a repository. (ignored in repo ACL)
-+ =editRepo=: edit a repository's settings (excluding ACL & status setting)
 + =pushToRepo=: push to repository through SSH.
 + =archiveRepo=: edit a repository's status
 + =deleteRepo=: delete a repository
 
-The ACL is conceptually a map from a user name to a 8 boolean tuple. Unless the overall design has changed, code that implements ACL-related logic should interpret and maintain the order of the values within the 8 boolean tuple as listed above. =cloneRepo= is not added in this list, since HTTP read-only clone is always available for public repositories and SSH clone is always available for users specified in the ACL. The ability to transfer the ownership of a namespace/repository is solely reserved for the owner.
+The ACL is conceptually a map from a user name to a 8 boolean tuple. Unless the overall design has changed, code that implements ACL-related logic should interpret and maintain the order of the values within the 8 boolean tuple as listed above.
+
+=cloneRepo= is not added in this list, since HTTP read-only clone is always available for public repositories and SSH clone is always available for users specified in the ACL. The ability to transfer the ownership of a namespace/repository is solely reserved for the owner.
+
+The ability to add repository to a namespace is solely reserved for the members, the admins and the owner of the namespace. In an instance with namespace disabled, this is ignored - everyone can create a repository.
+
+The ability to delete namespace is solely reserved for the owner of the namespace.
+
+=deleteRepo= does not work when set at repository level - it's a solely namespace level setting.
 
 The owner can move a namespace/repository to a different user, giving them the owner status.
 

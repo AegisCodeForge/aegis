@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/shellparse"
 	"github.com/bctnry/aegis/routes"
@@ -37,6 +38,7 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 	// one might be tempted to think that one can just pass SSH_ORIGINAL_COMMAND
 	// to exec.Command, but things don't work that way...
 	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
+	isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
 	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
 	if relPath[0] == '~' || relPath[0] == '/' { relPath = relPath[1:] }
 	relPathSegment := strings.SplitN(relPath, "/", 2)
@@ -69,6 +71,10 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 		printGitError(fmt.Sprintf("Failed while reading ACL: %s.", err.Error()))
 		os.Exit(1)
 	}
+	if r.Status == model.REPO_ARCHIVED && isPushingToRemote {
+		printGitError(fmt.Sprint("The repository %s is ARCHIVED; no push to remote is allowed. "))
+		os.Exit(1)
+	}
 	ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
 	if err != nil {
 		printGitError(fmt.Sprintf("Failed while reading namespace: %s.", err.Error()))
@@ -83,7 +89,7 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 				os.Exit(1)
 			}
 		}
-		if !aclt.PushToRepository && parsedOrigCmd[0] == "git-receive-pack" {
+		if !aclt.PushToRepository && isPushingToRemote {
 			printGitError("Not enough permission.")
 			os.Exit(1)
 		}

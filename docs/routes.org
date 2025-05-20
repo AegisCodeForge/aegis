@@ -3,7 +3,9 @@
 (very early draft; subject to change)
 
 + ={hostname}/s/{namespace}=: The front page of the namespace.
-  + ={hostname}/s/{namespace}/setting=: Namespace settings.
+  + ={hostname}/s/{namespace}/setting=: Namespace settings. (change info)
+  + ={hostname}/s/{namespace}/delete=: Delete namespace.
+  + ={hostname}/s/{namespace}/member=: Namespace settings. (change member)
 + ={hostname}/repo/{reponame}=: The front page of the repository.
   + =reponame= has the format of ={namespace}:{name}= if namespaces are used.
 + ={hostname}/repo/{reponame}/branch/{branchName}=:
@@ -19,5 +21,3 @@
 + ={hostname}/new/namespace=: New namespace page.
 + ={hostname}/new/repo=: New repository page.
   + ={hostname}/new/repo?ns={namespace}=: New repository page (with pre-set namespace)
-  
-

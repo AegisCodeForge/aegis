@@ -5,10 +5,10 @@ package templates
 import "github.com/bctnry/aegis/pkg/aegis"
 import "github.com/bctnry/aegis/pkg/aegis/model"
 
-type NamespaceSettingTemplateModel struct {
+type AllRepositoryListModel struct {
 	Config *aegis.AegisConfig
+	RepositoryList map[string]*model.Repository
 	DepotName string
-	Namespace *model.Namespace
 	LoginInfo *LoginInfoModel
 }
 

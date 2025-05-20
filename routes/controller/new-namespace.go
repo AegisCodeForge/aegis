@@ -18,7 +18,7 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 
-		LogTemplateError(ctx.LoadTemplate("new-namespace").Execute(w, templates.NewNamespaceTemplateModel{
+		LogTemplateError(ctx.LoadTemplate("new/namespace").Execute(w, templates.NewNamespaceTemplateModel{
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
 		}))

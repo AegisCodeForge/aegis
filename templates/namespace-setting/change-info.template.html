@@ -1,0 +1,62 @@
+{{$namespaceName := .Namespace.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>settings of {{.Namespace.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-namespace-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+      <h1 class="header-name index-header-name"><a href="/s/{{.Namespace.Name}}">{{.Namespace.Title}}</a> ({{.Namespace.Name}})</h1>
+	  {{if gt (len (.Namespace.Owner)) 0}}
+	  <div>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></div>
+	  {{end}}
+	  {{if eq .Namespace.Owner .LoginInfo.UserName}}
+	  <div class="namespace-nav"><a href="/s/{{.Namespace.Name}}/setting">Settings</a> <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a></div>
+	  {{end}}
+	  <div class="namespace-description">{{.Namespace.Description}}</div>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "namespace-setting/_sidebar" .}}
+
+	  <div class="main-side">
+		
+		<h2>Change info</h2>
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		<form id="namespace-setting-form" action="" method="POST">
+		  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></div>
+		  <div class="field"><label class="field-label" for="owner">Owner:</label> <input class="field-tf" name="owner" id="owner" value="{{.Namespace.Owner}}" /></div>
+		  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></div>
+		  <div class="field"><label class="field-label" for="status">Status:</label>
+			<select class="field-select" name="status" id="status" value="{{.Namespace.Status}}">
+		  <option value="1" {{if eq .Namespace.Status 1}}selected{{end}}>Public</option>
+		  <option value="2" {{if eq .Namespace.Status 2}}selected{{end}}>Private</option>
+		</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description">{{.Namespace.Description}}</textarea></div>
+		  <input class="form-submit" type="submit" value="Change Info" />
+		</form>
+
+		
+		<h2>Delete Namespace</h2>
+		<a href="/s/{{.Namespace.Name}}/delete">Click here to delete this namespace</a>
+
+	  </div>
+	</main>
+
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

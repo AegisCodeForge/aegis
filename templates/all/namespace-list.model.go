@@ -5,9 +5,10 @@ package templates
 import "github.com/bctnry/aegis/pkg/aegis"
 import "github.com/bctnry/aegis/pkg/aegis/model"
 
-type NamespaceTemplateModel struct {
+type AllNamespaceListModel struct {
 	Config *aegis.AegisConfig
-	Namespace *model.Namespace
+	DepotName string
+	NamespaceList map[string]*model.Namespace
 	LoginInfo *LoginInfoModel
 }
 

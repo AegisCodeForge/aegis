@@ -27,7 +27,6 @@ func bindAdminUserListController(ctx *routes.RouterContext) {
 		pageNum, err := strconv.ParseInt(p, 10, 32)
 		pageSize, err := strconv.ParseInt(s, 10, 32)
 		totalPage := i / pageSize
-		fmt.Println(pageNum, pageSize, totalPage)
 		if i % pageSize != 0 { totalPage += 1 }
 		if pageNum > totalPage { pageNum = totalPage }
 		if pageNum <= 1 { pageNum = 1 }

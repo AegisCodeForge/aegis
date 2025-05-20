@@ -5,14 +5,12 @@ package templates
 import "github.com/bctnry/aegis/pkg/aegis"
 import "github.com/bctnry/aegis/pkg/aegis/model"
 
-type NewRepositoryTemplateModel struct {
+type NamespaceSettingMemberListTemplateModel struct {
 	Config *aegis.AegisConfig
+	Namespace *model.Namespace
 	LoginInfo *LoginInfoModel
-	ErrorMsg struct{
-		Type string
-		Message string
-	}
-	NamespaceList map[string]*model.Namespace
-	Selected string
+	ErrorMsg string
+	ACL map[string]*model.ACLTuple
+	PageInfo *PageInfoModel
 }
 

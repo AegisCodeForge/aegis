@@ -8,6 +8,10 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
+// since we've decided that admin have full power, should we list all
+// namespace when the user is an admin? the answer should be no -
+// admin should go to the respective page to find the new repository
+// link when the namespace does not explicitly have them as a member.
 func bindNewRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /new/repo", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		if ctx.Config.PlainMode { FoundAt(w, "/"); return }
@@ -17,12 +21,12 @@ func bindNewRepositoryController(ctx *RouterContext) {
 			return
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
-		l, err := ctx.DatabaseInterface.GetAllNamespaceByOwner(loginInfo.UserName)
+		l, err := ctx.DatabaseInterface.GetAllComprisingNamespace(loginInfo.UserName)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		LogTemplateError(ctx.LoadTemplate("new-repository").Execute(w, templates.NewRepositoryTemplateModel{
+		LogTemplateError(ctx.LoadTemplate("new/repository").Execute(w, templates.NewRepositoryTemplateModel{
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
 			NamespaceList: l,
@@ -48,8 +52,11 @@ func bindNewRepositoryController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if ns.Owner != userName {
-			ctx.ReportForbidden("Not owner", w, r)
+		isOwner := ns.Owner == userName
+		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
+		isPrivilegedMember := priv != nil && priv.AddRepository
+		if !loginInfo.IsAdmin && !isOwner && !isPrivilegedMember {
+			ctx.ReportForbidden("Not enough privilege", w, r)
 			return
 		}
 		newRepoName := r.Form.Get("name")

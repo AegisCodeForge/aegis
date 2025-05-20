@@ -1,0 +1,17 @@
+//go:build ignore
+
+package templates
+
+import "github.com/bctnry/gitus/pkg/gitus"
+import "github.com/bctnry/gitus/pkg/gitus/model"
+
+type NewNamespaceTemplateModel struct {
+	Config *gitus.GitusConfig
+	LoginInfo *LoginInfoModel
+	ErrorMsg struct{
+		Type string
+		Message string
+	}
+		
+}
+

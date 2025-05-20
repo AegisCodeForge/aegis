@@ -5,6 +5,7 @@ package templates
 type AdminRedirectWithMessageModel struct {
 	Config *aegis.AegisConfig
 	LoginInfo *LoginInfoModel
+	SideBarName string
 	ErrorMsg string
 	Timeout int
 	RedirectUrl string
