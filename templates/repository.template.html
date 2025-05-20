@@ -31,7 +31,15 @@
 		</ul>
 	  </div>
 	  <div class="main-side">
-		{{if gt (len .ReadmeString) 0}}{{rawHTML .ReadmeString}}{{else}}This repository has no README text.{{end}}</p>
+		{{if gt (len .ReadmeString) 0}}{{rawHTML .ReadmeString}}{{else}}
+		{{if and (eq (len .RepoObj.BranchIndex) 0) (eq (len .RepoObj.TagIndex) 0)}}
+		<p>
+		  This repository seems to be completely empty. If you've just created this repository, you can follow the instructions below to upload a local Git repository here:
+		</p>
+		<pre>git remote add origin {{.RepoHeaderInfo.RepoSSH}}
+git push -u origin</pre>
+		{{else}}<p>This repository has no README text.</p>{{end}}
+        {{end}}
 	  </div>
 	</main>
 	

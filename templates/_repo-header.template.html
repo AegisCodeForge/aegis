@@ -15,10 +15,11 @@
 	{{end}}
   </div>
   <div class="header-clone-address">
-	<span class="repo-clone-address-label">Clone URL:</span><br />
-	<span>HTTP (Read-only):</span> <input id="http" class="repo-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoURL}}" readonly/>
-	<span>SSH:</span>
-	<input id="ssh" class="repo-clone-address-tf" name="clone-address" value="{{htmlEscape .RepoSSH}}" readonly/>
+	<table style="width:100%">
+	  <tr><td></td><td><b>Clone address (click to copy)</b></td></tr>	  
+	  <tr><td><b>HTTP (Read-only):</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape .RepoURL)}}')" >{{.RepoURL}}</a></td></tr>
+	  <tr><td><b>SSH:</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape .RepoSSH)}}')">{{.RepoSSH}}</a></td></tr>
+	</table>
   </div>
   <div class="repo-description">{{.Repository.Description}}</div>
 {{end}}

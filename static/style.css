@@ -206,11 +206,10 @@ hr {
 	background-color: black;
 	color: white;;
 }
-.header-clone-address > input {
+.header-clone-address input {
 	background-color: var(--background-color);
 	color: var(--foreground-color);
 	border: 2px var(--foreground-color) solid;
-	width: 100%;
 }
 /* ======================================================== */
 
