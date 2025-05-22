@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/routes/controller/admin"
+	"github.com/bctnry/aegis/routes/controller/all"
 )
 
 func InitializeRoute(context *routes.RouterContext) {
@@ -15,7 +16,7 @@ func InitializeRoute(context *routes.RouterContext) {
 	bindRepositoryController(context)
 	bindTagController(context)
 	bindTreeHandler(context)
-	bindAllController(context)
+	all.BindAllController(context)
 
 	bindHttpCloneController(context)
 	if context.Config.UseNamespace {

@@ -7,8 +7,10 @@ import "github.com/bctnry/aegis/pkg/aegis/model"
 
 type AllRepositoryListModel struct {
 	Config *aegis.AegisConfig
-	RepositoryList map[string]*model.Repository
+	RepositoryList []*model.Repository
 	DepotName string
 	LoginInfo *LoginInfoModel
+	PageInfo *PageInfoModel
+	Query string
 }
 

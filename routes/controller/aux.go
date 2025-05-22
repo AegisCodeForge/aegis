@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"strconv"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2"
@@ -18,7 +17,6 @@ import (
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/bctnry/aegis/pkg/gitlib"
-	"github.com/bctnry/aegis/templates"
 )
 
 func basicStringEscape(s string) string {
@@ -234,25 +232,5 @@ func colorSyntax(filename string, s string) (string, error) {
 	err = formatter.Format(buf, style, iterator)
 	if err != nil { return "", err }
 	return buf.String(), nil
-}
-
-func GeneratePageInfo(r *http.Request) (*templates.PageInfoModel, error) {
-	// set up a base pageInfo obj.  the TotalPage is left empty since
-	// it depends on the result of actual query. a default of p=1 and
-	// s=50 is set for the resulting value.  one shall change the
-	// value of the resulting obj as needed.
-	p := r.URL.Query().Get("p")
-	if len(p) <= 0 { p = "1" }
-	s := r.URL.Query().Get("s")
-	if len(s) <= 0 { s = "50" }
-	pageNum, err := strconv.Atoi(p)
-	if err != nil { return nil, err }
-	pageSize, err := strconv.Atoi(s)
-	if err != nil { return nil, err }
-	return &templates.PageInfoModel{
-		PageNum: pageNum,
-		PageSize: pageSize,
-		TotalPage: 0,
-	}, nil
 }
 

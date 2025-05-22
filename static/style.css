@@ -37,6 +37,9 @@ header {
 	padding-bottom: 1rem;
 }
 
+footer {
+	padding-top: 1rem;
+}
 
 hr {
 	height: 4px;
@@ -114,6 +117,8 @@ hr {
 	color: var(--foreground-color);
 	background-color: var(--background-color);
 }
+.header-nav-submenu{ display: none; }
+.header-nav-submenu:target { display: inherit; }
 /* ======================================================== */
 
 /* ======================================================== */
@@ -367,6 +372,42 @@ form input[type="submit"], .form-submit {
 form input[type="submit"]:hover, .form-submit:hover {
 	background-color: var(--background-color);;
 	color: var(--foreground-color);
+}
+/* ======================================================== */
+
+
+/* ======================================================== */
+/* list navigator component. */
+.list-nav {
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+	display: flex;
+	width: 100%;
+}
+.list-page-nav {
+	flex-grow: 2;
+	display: inline-flex;
+	align-item: center;
+	flex-grow: 1;
+}
+.list-page-goto, .list-search-form {
+	display: inline-flex;
+	align-items: center;
+	flex-grow: 1;
+}
+.list-page-goto input[type="submit"],
+.list-search-form input[type="submit"] {
+	margin-top: 0;
+}
+.list-page-goto-form-tf { width: 3rem; }
+.list-search {
+	display: inline;
+}
+.list-page-nav-l { margin-left: 2px; margin-right: 2px; }
+@media (max-width: 800px) {
+	.list-nav {
+		display: block;
+	}
 }
 /* ======================================================== */
 

@@ -1,6 +1,15 @@
 {{define "_header-nav"}}
 <div class="header-nav">
-  <div class="header-nav-left"><a href="/">HOME</a> <a href="/search">SEARCH</a> <a href="/all">ALL</a> <a href="/new">NEW</a></div>
+  <div class="header-nav-left"><a href="/">HOME</a>
+	{{if .Config}}
+	{{if .Config.UseNamespace}}<a href="/all/namespace">NAMESPACE</a>{{end}}
+	{{end}}
+	<a href="/all/repo">REPO</a>
+	{{if .LoginInfo}}
+	{{if .LoginInfo.LoggedIn}}<a href="#nav-new">NEW</a>{{end}}
+	{{if .LoginInfo.LoggedIn}}<span class="header-nav-submenu" id="nav-new" name="nav-new"><a href="/new/namespace">NAMESPACE</a> <a href="/new/repo">REPOSITORY</a> <a href="#">CLOSE</a></span>{{end}}
+	{{end}}
+  </div>
   {{if .Config}}
     {{if not .Config.PlainMode}}
     <div class="header-nav-action">

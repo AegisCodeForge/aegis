@@ -24,6 +24,7 @@ func bindAdminIndexController(ctx *routes.RouterContext) {
 		}
 		routes.LogTemplateError(ctx.LoadTemplate("admin/index").Execute(w, templates.AdminIndexTemplateModel{
 			Config: ctx.Config,
+			LoginInfo: loginInfo,
 		}))
 		
 	}))

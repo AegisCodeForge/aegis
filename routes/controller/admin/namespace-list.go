@@ -31,19 +31,18 @@ func bindAdminNamespaceListController(ctx *routes.RouterContext) {
 		if i % pageSize != 0 { totalPage += 1 }
 		if pageNum > totalPage { pageNum = totalPage }
 		if pageNum <= 1 { pageNum = 1 }
-		var namespaceList []*model.Namespace
+		var namespaceList map[string]*model.Namespace
 		if len(q) > 0 {
 			namespaceList, err = ctx.DatabaseInterface.SearchForNamespace(q, int(pageNum-1), int(pageSize))
 		} else {
 			namespaceList, err = ctx.DatabaseInterface.GetAllNamespaces(int(pageNum-1), int(pageSize))
 		}
 		if err != nil {
-			namespaceList := make([]*model.Namespace, 0)
 			routes.LogTemplateError(ctx.LoadTemplate("admin/namespace-list").Execute(w, &templates.AdminNamespaceListTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				ErrorMsg: fmt.Sprintf("Failed to load namespace list: %s", err.Error()),
-				NamespaceList: namespaceList,
+				NamespaceList: nil,
 			}))
 			return
 		}

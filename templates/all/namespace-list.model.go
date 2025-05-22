@@ -10,5 +10,7 @@ type AllNamespaceListModel struct {
 	DepotName string
 	NamespaceList map[string]*model.Namespace
 	LoginInfo *LoginInfoModel
+	PageInfo *PageInfoModel
+	Query string
 }
 

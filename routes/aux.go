@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/templates"
@@ -121,3 +122,37 @@ func GenerateRepoHeader(ctx *RouterContext, repo *model.Repository, typeStr stri
 	}
 	return repoHeaderInfo
 }
+
+func GeneratePageInfo(r *http.Request, size int) (*templates.PageInfoModel, error) {
+	// set up a base pageInfo obj.  the TotalPage is left empty since
+	// it depends on the result of actual query. a default of p=1 and
+	// s=50 is set for the resulting value.  one shall change the
+	// value of the resulting obj as needed. correction would be done
+	// if a `size` of bigger or equal than 0 is specified, since by
+	// our convention .PageNum starts from 1 and we need to restrict
+	// its value within [1..totalPage]. if `size` is smaller than 0 ,
+	// then this correction is not carried out.
+	p := r.URL.Query().Get("p")
+	if len(p) <= 0 { p = "1" }
+	s := r.URL.Query().Get("s")
+	if len(s) <= 0 { s = "50" }
+	pageNum, err := strconv.Atoi(p)
+	if err != nil { return nil, err }
+	pageSize, err := strconv.Atoi(s)
+	if err != nil { return nil, err }
+	totalPage := 0
+	if size == 0 {
+		totalPage = 1
+	} else if size > 0 {
+		totalPage = size / pageSize
+		if size % pageSize != 0 { totalPage += 1 }
+		if pageNum <= 1 { pageNum = 1 }
+		if pageNum > totalPage { pageNum = totalPage }
+	}
+	return &templates.PageInfoModel{
+		PageNum: pageNum,
+		PageSize: pageSize,
+		TotalPage: totalPage,
+	}, nil
+}
+

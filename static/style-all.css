@@ -1,0 +1,10 @@
+.all-list-table {
+	border-top: 4px var(--foreground-color) solid;
+	border-bottom: 4px var(--foreground-color) solid;
+	border-collapse: collapse;
+	width: 100%;
+}
+.all-list-table-head {
+	border-top: 2px var(--foreground-color) solid;
+	border-bottom: 2px var(--foreground-color) solid;
+}

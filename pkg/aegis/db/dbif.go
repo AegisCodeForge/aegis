@@ -18,9 +18,13 @@ type AegisDatabaseInterface interface {
 	GetRepositoryByName(nsName string, repoName string) (*model.Repository, error)
 	GetAllNamespace() (map[string]*model.Namespace, error)
 	GetAllVisibleNamespace(username string) (map[string]*model.Namespace, error)
+	GetAllVisibleNamespacePaginated(username string, pageNum int, pageSize int) (map[string]*model.Namespace, error)
+	SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error)
+	GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error)
+	SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error)
 	GetAllNamespaceByOwner(name string) (map[string]*model.Namespace, error)
 	GetAllRepositoryFromNamespace(name string) (map[string]*model.Repository, error)
-	GetAllVisibleRepositoryFromNamespace(username string, ns string) (map[string]*model.Repository, error)
+	GetAllVisibleRepositoryFromNamespace(username string, ns string) ([]*model.Repository, error)
 	RegisterUser(name string, email string, passwordHash string, status model.AegisUserStatus) (*model.AegisUser, error)
 	// update user info. NOTE THAT any implementers MUST update the
 	// status field as well if that has changed.
@@ -44,12 +48,14 @@ type AegisDatabaseInterface interface {
 	MoveRepository(oldNs string, oldName string, newNs string, newName string) error
 
 	GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error)
-	GetAllNamespaces(pageNum int, pageSize int) ([]*model.Namespace, error)
+	GetAllNamespaces(pageNum int, pageSize int) (map[string]*model.Namespace, error)
 	GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error)
 
 	CountAllUser() (int64, error)
 	CountAllNamespace() (int64, error)
 	CountAllRepositories() (int64, error)
+	CountAllVisibleNamespace(username string) (int64, error)
+	CountAllVisibleRepositories(username string) (int64, error)
 
 	// search user name & title containing the string `k`, case
 	// insensitive.
@@ -57,7 +63,7 @@ type AegisDatabaseInterface interface {
 
 	// search namespce name & title containing the string `k`, case
 	// insensitive.
-	SearchForNamespace(k string, pageNum int, pageSize int) ([]*model.Namespace, error)
+	SearchForNamespace(k string, pageNum int, pageSize int) (map[string]*model.Namespace, error)
 
 	// search repo namespace name & repository name & title containing
 	// the string `k`, case insensitive.
@@ -68,6 +74,15 @@ type AegisDatabaseInterface interface {
 	SetNamespaceACL(nsName string, targetUserName string, acl *model.ACLTuple) error
 	SetRepositoryACL(nsName string, repoName string, targetUserName string, acl *model.ACLTuple) error
 
-	GetAllComprisingNamespace(username string) ([]*model.Namespace, error)
+	GetAllComprisingNamespace(username string) (map[string]*model.Namespace, error)
+	
+	CountAllVisibleNamespaceSearchResult(username string, pattern string) (int64, error)
+	CountAllVisibleRepositoriesSearchResult(username string, pattern string) (int64, error)
 }
+
+// the fact that golang has no parameter default values is
+// horrible. it's a simple concept, it's not hard to implement, and
+// due to no default values one has to either make the interface
+// bloated with functions for each cases or force the caller to endure
+// a bloated function.
 

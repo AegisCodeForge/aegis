@@ -1,0 +1,4 @@
+* pagination
+
+PageNum *starts from 1 in everything other than database interfaces* (not just =DatabaseInterface=, but any interface that's doing business w/ a database), so you'll have to minus 1 when you call any comprising methods. New code shall follow this as well.
+

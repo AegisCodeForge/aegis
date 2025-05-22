@@ -13,8 +13,15 @@ import (
 
 func bindLoginController(ctx *RouterContext) {
 	http.HandleFunc("GET /login", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			loginInfo.LoggedIn = false
+			loginInfo.UserName = ""
+		}
+		if loginInfo.LoggedIn { FoundAt(w, "/") }
 		LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 			Config: ctx.Config,
+			LoginInfo: loginInfo,
 		}))
 	}))
 
@@ -32,7 +39,7 @@ func bindLoginController(ctx *RouterContext) {
 			return
 		}
 		switch u.Status {
-		case model.BANNED:
+		case model.BANNED: 
 			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 				Config: ctx.Config,
 				ErrorMsg: "User suspended.",

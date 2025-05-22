@@ -231,7 +231,6 @@ func bindNamespaceController(ctx *RouterContext) {
 			ctx.ReportForbidden("Not enough privilege", w, r)
 			return
 		}
-		pageInfo, err := GeneratePageInfo(r)
 		var userList map[string]*model.ACLTuple
 		if ns.ACL == nil {
 			userList = nil
@@ -239,13 +238,7 @@ func bindNamespaceController(ctx *RouterContext) {
 			userList = ns.ACL.ACL
 		}
 		totalMemberCount := len(userList)
-		pageInfo.TotalPage = totalMemberCount / pageInfo.PageSize
-		if totalMemberCount % pageInfo.PageSize != 0 {
-			pageInfo.TotalPage += 1
-		}
-		if pageInfo.PageNum > pageInfo.TotalPage {
-			pageInfo.PageNum = pageInfo.TotalPage
-		}
+		pageInfo, err := GeneratePageInfo(r, totalMemberCount)
 		// the reason we do this is the fact that maps in go does not
 		// guarantee the order of keys when doing a range over them.
 		k := auxfuncs.SortedKeys(userList)

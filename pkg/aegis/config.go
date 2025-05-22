@@ -335,13 +335,13 @@ func (cfg *AegisConfig) Sync() error {
 	return nil
 }
 
-func (cfg *AegisConfig) GetAllRepositoryPlain() (map[string]*model.Repository, error) {
+func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
 	// NOTE: you should NOT call this when UseNamespace is true.
 	// this would return nil when UseNamespace is true, just in case
 	// people depend on its behaviour otherwise.
 	if cfg.UseNamespace { return nil, nil }
 	gitPath := cfg.GitRoot
-	res := make(map[string]*model.Repository, 0)
+	res := make([]*model.Repository, 0)
 	l, err := os.ReadDir(gitPath)
 	if err != nil { return nil, err }
 	for _, item := range l {
@@ -358,14 +358,14 @@ func (cfg *AegisConfig) GetAllRepositoryPlain() (map[string]*model.Repository, e
 			if len(repoName) <= 0 { continue }
 		}
 		k := gitlib.NewLocalGitRepository("", repoName, p)
-		res[repoName] = &model.Repository{
+		res = append(res, &model.Repository{
 			Namespace: k.Namespace,
 			Name: k.Name,
 			Description: k.Description,
 			AccessControlList: nil,
 			Status: model.REPO_NORMAL_PUBLIC,
 			Repository: k,
-		}
+		})
 	}
 	return res, nil
 }
@@ -437,6 +437,31 @@ func (cfg *AegisConfig) GetAllNamespacePlain() (map[string]*model.Namespace, err
 			delete(ns.RepositoryList, k[1])
 		}
 		res[namespaceName] = ns
+	}
+	return res, nil
+}
+
+// TODO: find a better & more efficient way to do this.
+func (cfg *AegisConfig) SearchAllNamespacePlain(pattern string) (map[string]*model.Namespace, error) {
+	preres, err := cfg.GetAllNamespacePlain()
+	if err != nil { return nil, err }
+	res := make(map[string]*model.Namespace, 0)
+	for k, v := range preres {
+		if strings.Contains(v.Name, pattern) || strings.Contains(v.Title, pattern) {
+			res[k] = v
+		}
+	}
+	return res, nil
+}
+
+func (cfg *AegisConfig) SearchAllRepositoryPlain(pattern string) ([]*model.Repository, error) {
+	preres, err := cfg.GetAllRepositoryPlain()
+	if err != nil { return nil, err }
+	res := make([]*model.Repository, 0)
+	for _, v := range preres {
+		if strings.Contains(v.Name, pattern) || strings.Contains(v.Namespace, pattern) {
+			res = append(res, v)
+		}
 	}
 	return res, nil
 }

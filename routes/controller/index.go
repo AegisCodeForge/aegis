@@ -39,7 +39,11 @@ func bindIndexController(ctx *RouterContext) {
 		} else {
 			var repol map[string]*model.Repository
 			if ctx.Config.PlainMode {
-				repol, err = ctx.Config.GetAllRepositoryPlain()
+				repols, err := ctx.Config.GetAllRepositoryPlain()
+				repol = make(map[string]*model.Repository, 0)
+				for _, item := range repols {
+					repol[item.Name] = item
+				}
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
@@ -52,12 +56,12 @@ func bindIndexController(ctx *RouterContext) {
 				}
 			}
 			grmodel := make([]struct{RelPath string; Description string}, 0)
-			for key, item := range repol {
+			for _, item := range repol {
 				grmodel = append(grmodel, struct{
 					RelPath string
 					Description string
 				}{
-					RelPath: key,
+					RelPath: item.FullName(),
 					Description: item.Description,
 				})
 			}

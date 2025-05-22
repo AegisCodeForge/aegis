@@ -399,13 +399,27 @@ VALUES (?,?,?,?,?,?,?, ?)
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespace(username string) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
-WHERE ns_status == 1 OR ns_owner = ?
-`, pfx))
+WHERE ns_status = 1 %s
+`, pfx, privateSelectClause))
 	if err != nil { return nil, err }
-	rs, err := stmt.Query(username)
+	defer stmt1.Close()
+	var rs *sql.Rows
+	if len(username) > 0 {
+		pattern := strings.ReplaceAll(username, "\\", "\\\\")
+		pattern = strings.ReplaceAll(pattern, "%", "\\%")
+		pattern = strings.ReplaceAll(pattern, "_", "\\_")
+		pattern = "%" + pattern + "%"
+		rs, err = stmt1.Query(username, pattern, "\\")
+	} else {
+		rs, err = stmt1.Query()
+	}
 	if err != nil { return nil, err }
 	defer rs.Close()
 	res := make(map[string]*model.Namespace, 0)
@@ -499,18 +513,31 @@ WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(username string, ns string) (map[string]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(username string, ns string) ([]*model.Repository, error) {
 	pfx := dbif.config.DatabaseTablePrefix
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_name, repo_description, repo_acl, repo_status
 FROM %srepository
-WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ?)
-`, pfx))
+WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
+`, pfx, privateSelectClause))
 	if err != nil { return nil, err }
-	rs, err := stmt.Query(ns, username)
+	var rs *sql.Rows
+	if len(username) > 0 {
+		pattern := strings.ReplaceAll(username, "\\", "\\\\")
+		pattern = strings.ReplaceAll(pattern, "%", "\\%")
+		pattern = strings.ReplaceAll(pattern, "_", "\\_")
+		pattern = "%" + pattern + "%"
+		rs, err = stmt.Query(username, pattern, "\\")
+	} else {
+		rs, err = stmt.Query(ns, username)
+	}
 	if err != nil { return nil, err }
 	defer rs.Close()
-	res := make(map[string]*model.Repository, 0)
+	res := make([]*model.Repository, 0)
 	for rs.Next() {
 		var name, desc, acl string
 		var status int64
@@ -519,14 +546,14 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 OR repo_owner =
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
-		res[name] = &model.Repository{
+		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: name,
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
-		}
+		})
 	}
 	return res, nil
 }
@@ -811,7 +838,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize int) ([]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize int) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
@@ -823,7 +850,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	r, err := stmt.Query(pageSize, pageNum * pageSize)
 	if err != nil { return nil, err }
 	defer r.Close()
-	res := make([]*model.Namespace, 0)
+	res := make(map[string]*model.Namespace, 0)
 	var name, title, desc, email, owner, acl string
 	var reg_date int64
 	var status int
@@ -832,7 +859,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
-		res = append(res, &model.Namespace{
+		res[name] = &model.Namespace{
 			Name: name,
 			Title: title,
 			Description: desc,
@@ -841,7 +868,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			RegisterTime: reg_date,
 			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
-		})
+		}
 	}
 	return res, nil
 }
@@ -960,13 +987,12 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum int, pageSize int) ([]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	pattern := strings.ReplaceAll(k, "\\", "\\\\")
 	pattern = strings.ReplaceAll(pattern, "%", "\\%")
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
-	fmt.Println("pattern", pattern)
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
@@ -978,7 +1004,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	r, err := stmt.Query(pattern, "\\", pattern, "\\", pageSize, pageNum * pageSize)
 	if err != nil { return nil, err }
 	defer r.Close()
-	res := make([]*model.Namespace, 0)
+	res := make(map[string]*model.Namespace, 0)
 	var name, title, desc, email, owner, acl string
 	var reg_date int64
 	var status int
@@ -987,7 +1013,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
-		res = append(res, &model.Namespace{
+		res[name] = &model.Namespace{
 			Name: name,
 			Title: title,
 			Description: desc,
@@ -996,7 +1022,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			RegisterTime: reg_date,
 			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
-		})
+		}
 	}
 	return res, nil
 }
@@ -1114,7 +1140,7 @@ UPDATE %snamespace SET ns_acl = ? WHERE ns_name = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllComprisingNamespace(username string) ([]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllComprisingNamespace(username string) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	pattern := strings.ReplaceAll(username, "\\", "\\\\")
 	pattern = strings.ReplaceAll(pattern, "%", "\\%")
@@ -1130,7 +1156,7 @@ WHERE ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 	r, err := stmt1.Query(username, pattern, "\\")
 	if err != nil { return nil, err }
 	defer r.Close()
-	res := make([]*model.Namespace, 0)
+	res := make(map[string]*model.Namespace, 0)
 	for r.Next() {
 		var name, title, desc, email, owner, acl string
 		var regtime int64
@@ -1139,7 +1165,7 @@ WHERE ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
-		res = append(res, &model.Namespace{
+		res[name] = &model.Namespace{
 			Name: name,
 			Title: title,
 			Description: desc,
@@ -1148,8 +1174,349 @@ WHERE ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 			RegisterTime: regtime,
 			ACL: a,
 			Status: model.AegisNamespaceStatus(status),
+		}
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespacePaginated(username string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
+FROM %snamespace
+WHERE ns_status = 1 %s
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, privateSelectClause))
+	if err != nil { return nil, err }
+	defer stmt1.Close()
+	var rs *sql.Rows
+	if len(username) > 0 {
+		pattern := strings.ReplaceAll(username, "\\", "\\\\")
+		pattern = strings.ReplaceAll(pattern, "%", "\\%")
+		pattern = strings.ReplaceAll(pattern, "_", "\\_")
+		pattern = "%" + pattern + "%"
+		rs, err = stmt1.Query(username, pattern, "\\", pageSize, pageNum*pageSize)
+	} else {
+		rs, err = stmt1.Query(pageSize, pageNum*pageSize)
+	}
+	if err != nil { return nil, err }
+	defer rs.Close()
+	res := make(map[string]*model.Namespace, 0)
+	for rs.Next() {
+		var name, title, desc, email, owner, acl string
+		var regtime int64
+		var status int64
+		err = rs.Scan(&name, &title, &desc, &email, &owner, &regtime, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		res[name] = &model.Namespace{
+			Name: name,
+			Title: title,
+			Description: desc,
+			Email: email,
+			Owner: owner,
+			RegisterTime: regtime,
+			ACL: a,
+			Status: model.AegisNamespaceStatus(status),
+		}
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+FROM %srepository
+WHERE repo_status = 1 OR repo_status = 4 %s
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, privateSelectClause))
+	defer stmt.Close()
+	if err != nil { return nil, err }
+	var rs *sql.Rows
+	if len(username) > 0 {
+		pattern := strings.ReplaceAll(username, "\\", "\\\\")
+		pattern = strings.ReplaceAll(pattern, "%", "\\%")
+		pattern = strings.ReplaceAll(pattern, "_", "\\_")
+		pattern = "%" + pattern + "%"
+		rs, err = stmt.Query(username, pattern, "\\", pageNum, pageNum*pageSize)
+	} else {
+		rs, err = stmt.Query(pageSize, pageNum*pageSize)
+	}
+	if err != nil { return nil, err }
+	defer rs.Close()
+	res := make([]*model.Repository, 0)
+	for rs.Next() {
+		var ns, name, desc, acl string
+		var status int64
+		err = rs.Scan(&ns, &name, &desc, &acl, &status)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		p := path.Join(dbif.config.GitRoot, ns, name)
+		res = append(res, &model.Repository{
+			Namespace: ns,
+			Name: name,
+			Description: desc,
+			AccessControlList: a,
+			Status: model.AegisRepositoryStatus(status),
+			Repository: gitlib.NewLocalGitRepository(ns, name, p),
 		})
 	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespace(username string) (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %snamespace WHERE ns_status = 1 %s
+`, pfx, privateSelectClause))
+	if err != nil { return 0, err }
+	defer stmt1.Close()
+	var r *sql.Row
+	if len(username) > 0 {
+		pattern := strings.ReplaceAll(username, "\\", "\\\\")
+		pattern = strings.ReplaceAll(pattern, "%", "\\%")
+		pattern = strings.ReplaceAll(pattern, "_", "\\_")
+		pattern = "%" + pattern + "%"
+		r = stmt1.QueryRow(username, pattern, "\\")
+	} else {
+		r = stmt1.QueryRow()
+	}
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositories(username string) (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE repo_status = 1 OR repo_status = 4 %s
+`, pfx, privateSelectClause))
+	if err != nil { return 0, err }
+	var r *sql.Row
+	if len(username) > 0 {
+		pattern := strings.ReplaceAll(username, "\\", "\\\\")
+		pattern = strings.ReplaceAll(pattern, "%", "\\%")
+		pattern = strings.ReplaceAll(pattern, "_", "\\_")
+		pattern = "%" + pattern + "%"
+		r = stmt.QueryRow(username, pattern, "\\")
+	} else {
+		r = stmt.QueryRow()
+	}
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	queryPattern := strings.ReplaceAll(query, "\\", "\\\\")
+	queryPattern = strings.ReplaceAll(queryPattern, "%", "\\%")
+	queryPattern = strings.ReplaceAll(queryPattern, "_", "\\_")
+	queryPattern = "%" + queryPattern + "%"
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
+FROM %snamespace
+WHERE
+    (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
+    AND (ns_status = 1 %s)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, privateSelectClause))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	var r *sql.Rows
+	if len(username) > 0 {
+		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
+		usernamePattern = "%" + usernamePattern + "%"
+		r, err = stmt.Query(queryPattern, "\\", queryPattern, "\\", username, usernamePattern, "\\", pageSize, pageNum * pageSize)
+	} else {
+		r, err = stmt.Query(queryPattern, "\\", queryPattern, "\\", pageSize, pageNum * pageSize)
+	}
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make(map[string]*model.Namespace, 0)
+	var name, title, desc, email, owner, acl string
+	var reg_date int64
+	var status int
+	for r.Next() {
+		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status, &acl)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		res[name] = &model.Namespace{
+			Name: name,
+			Title: title,
+			Description: desc,
+			Email: email,
+			Owner: owner,
+			RegisterTime: reg_date,
+			ACL: a,
+			Status: model.AegisNamespaceStatus(status),
+		}
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	queryPattern := strings.ReplaceAll(query, "\\", "\\\\")
+	queryPattern = strings.ReplaceAll(queryPattern, "%", "\\%")
+	queryPattern = strings.ReplaceAll(queryPattern, "_", "\\_")
+	queryPattern = "%" + queryPattern + "%"
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+FROM %srepository
+WHERE
+    (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+    AND (repo_status = 1 OR repo_status = 4 %s)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, privateSelectClause))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	var r *sql.Rows
+	if len(username) > 0 {
+		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
+		usernamePattern = "%" + usernamePattern + "%"
+		r, err = stmt.Query(
+			queryPattern, "\\",
+			queryPattern, "\\",
+			username, usernamePattern, "\\",
+			pageSize, pageNum * pageSize,
+		)
+	} else {
+		r, err = stmt.Query(
+			queryPattern, "\\",
+			queryPattern, "\\",
+			pageSize, pageNum * pageSize,
+		)
+	}
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.Repository, 0)
+	for r.Next() {
+		var ns, name, desc, acl string
+		var status int64
+		err = r.Scan(&ns, &name, &desc, &acl, &status)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		p := path.Join(dbif.config.GitRoot, ns, name)
+		res = append(res, &model.Repository{
+			Namespace: ns,
+			Name: name,
+			Description: desc,
+			AccessControlList: a,
+			Status: model.AegisRepositoryStatus(status),
+			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+		})
+	}
+	return res, nil
+}
+
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespaceSearchResult(username string, pattern string) (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	searchPattern := strings.ReplaceAll(pattern, "\\", "\\\\")
+	searchPattern = strings.ReplaceAll(searchPattern, "%", "\\%")
+	searchPattern = strings.ReplaceAll(searchPattern, "_", "\\_")
+	searchPattern = "%" + searchPattern + "%"
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt, err := dbif.connection.Prepare(
+		fmt.Sprintf(`
+SELECT COUNT(*) FROM %snamespace
+WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
+%s
+`, pfx, privateSelectClause),
+	)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	var r *sql.Row
+	if len(username) > 0 {
+		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
+		usernamePattern = "%" + usernamePattern + "%"
+		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\", username, usernamePattern, "\\")
+	} else {
+		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
+	}
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResult(username string, pattern string) (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	searchPattern := strings.ReplaceAll(pattern, "\\", "\\\\")
+	searchPattern = strings.ReplaceAll(searchPattern, "%", "\\%")
+	searchPattern = strings.ReplaceAll(searchPattern, "_", "\\_")
+	searchPattern = "%" + searchPattern + "%"
+	privateSelectClause := ""
+	if len(username) > 0 {
+		privateSelectClause = fmt.Sprintf("AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+	}
+	stmt, err := dbif.connection.Prepare(
+		fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+%s
+`, pfx, privateSelectClause),
+	)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	var r *sql.Row
+	
+	if len(username) > 0 {
+		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
+		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
+		usernamePattern = "%" + usernamePattern + "%"
+		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\", username, usernamePattern, "\\")
+	} else {
+		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
+	}
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
 	return res, nil
 }
 

@@ -12,7 +12,7 @@ type NewRepositoryTemplateModel struct {
 		Type string
 		Message string
 	}
-	NamespaceList []*model.Namespace
+	NamespaceList map[string]*model.Namespace
 	Selected string
 }
 

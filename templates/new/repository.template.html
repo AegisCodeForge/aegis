@@ -28,7 +28,7 @@
 		<form action="" method="POST">
 		  <div class="field"><label class="field-label" for="namespace">Namespace:</label> <select name="namespace">
 			  {{if .NamespaceList}}
-			  {{range $ns := .NamespaceList}}
+			  {{range $k, $ns := .NamespaceList}}
 			  <option value="{{$ns.Name}}" {{if eq $selected $ns.Name}}selected{{end}} >{{$ns.Name}} ({{$ns.Title}})</option>
 			  {{end}}
 			  {{end}}

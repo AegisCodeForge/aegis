@@ -9,7 +9,7 @@ type AdminNamespaceListTemplateModel struct {
 	Config *aegis.AegisConfig
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
-	NamespaceList []*model.Namespace
+	NamespaceList map[string]*model.Namespace
 	PageInfo *PageInfoModel
 }
 
