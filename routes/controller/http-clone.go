@@ -1,11 +1,11 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"path"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -15,10 +15,13 @@ import (
 // HEAD
 // objects/
 
+// NOTE THAT this route handles public http read-only clone, thus it
+// will report 404 for all private repositories.
+
 func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/info/{p...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -32,7 +35,14 @@ func bindHttpCloneController(ctx *RouterContext) {
 			}))
 			return
 		}
-		fmt.Println(r.URL.Query())
+		isNamespacePublic := ns.Status != model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status != model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status != model.REPO_ARCHIVED
+		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
+			w.WriteHeader(404)
+			w.Write([]byte("404 Not Found"))
+			return
+		}
 		p := path.Join(repo.Repository.GitDirectoryPath, "info", r.PathValue("p"))
 		s, err := os.ReadFile(p)
 		if err != nil {
@@ -43,7 +53,7 @@ func bindHttpCloneController(ctx *RouterContext) {
 	}))
 	http.HandleFunc("GET /repo/{repoName}/HEAD", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -57,7 +67,14 @@ func bindHttpCloneController(ctx *RouterContext) {
 			}))
 			return
 		}
-		fmt.Println(r.URL.Query())
+		isNamespacePublic := ns.Status != model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status != model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status != model.REPO_ARCHIVED
+		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
+			w.WriteHeader(404)
+			w.Write([]byte("404 Not Found"))
+			return
+		}
 		p := path.Join(repo.Repository.GitDirectoryPath, "HEAD")
 		s, err := os.ReadFile(p)
 		if err != nil {
@@ -68,7 +85,7 @@ func bindHttpCloneController(ctx *RouterContext) {
 	}))
 	http.HandleFunc("GET /repo/{repoName}/objects/{obj...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -80,6 +97,14 @@ func bindHttpCloneController(ctx *RouterContext) {
 				ErrorCode: errCode,
 				ErrorMessage: err.Error(),
 			}))
+			return
+		}
+		isNamespacePublic := ns.Status != model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status != model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status != model.REPO_ARCHIVED
+		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
+			w.WriteHeader(404)
+			w.Write([]byte("404 Not Found"))
 			return
 		}
 		obj := r.PathValue("obj")

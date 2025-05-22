@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
@@ -13,7 +14,7 @@ import (
 func bindDiffController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", WithLog(func(w http.ResponseWriter, r *http.Request){
 		rfn := r.PathValue("repoName")
-		_, _, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -27,6 +28,30 @@ func bindDiffController(ctx *RouterContext) {
 			}))
 			return
 		}
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
+			if t == nil {
+				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
+			}
+			if t == nil {
+				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+					LoginInfo: loginInfo,
+					ErrorCode: 403,
+					ErrorMessage: "Not enough privilege.",
+				}))
+				return
+			}
+		}
+		
 		commitId := r.PathValue("commitId")
 		cobj, err := repo.Repository.ReadObject(commitId)
 		if err != nil {
@@ -43,15 +68,6 @@ func bindDiffController(ctx *RouterContext) {
 				ErrorMessage: fmt.Sprintf("Failed to read diff %s: %s", commitId, err),
 			}))
 			return
-		}
-		
-		var loginInfo *templates.LoginInfoModel = nil
-		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
 		}
 		
 		LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{

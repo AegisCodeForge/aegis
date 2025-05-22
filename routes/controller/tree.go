@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
@@ -22,7 +23,7 @@ func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, o
 func bindTreeHandler(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tree/{treeId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			errCode := 500
 			if routes.IsRouteError(err) {
@@ -36,6 +37,30 @@ func bindTreeHandler(ctx *RouterContext) {
 			}))
 			return
 		}
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
+			if t == nil {
+				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
+			}
+			if t == nil {
+				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+					LoginInfo: loginInfo,
+					ErrorCode: 403,
+					ErrorMessage: "Not enough privilege.",
+				}))
+				return
+			}
+		}
+		
 		treeId := r.PathValue("treeId")
 		treePath := r.PathValue("treePath")
 		repo, ok := ctx.GitRepositoryList[repoName]
@@ -98,14 +123,6 @@ func bindTreeHandler(ctx *RouterContext) {
 			RootPath: rootPath,
 			TreePath: treePath,
 			TreePathSegmentList: treePathSegmentList,
-		}
-		var loginInfo *templates.LoginInfoModel = nil
-		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
 		}
 		LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 			RepoHeaderInfo: repoHeaderInfo,

@@ -125,7 +125,9 @@ func (ctx *RouterContext) SyncNamespacePlain(ns *model.Namespace) error {
 	return nil
 }
 
-func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string, *model.Repository, error) {
+// we need the namespace acl to supplement the repository acl in terms
+// of business logic.
+func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string, *model.Namespace, *model.Repository, error) {
 	np := strings.Split(strings.TrimSpace(str), ":")
 	namespaceName := ""
 	repoName := ""
@@ -139,15 +141,15 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 	var rp *model.Repository
 	var ok bool
 	var err error
+	var ns *model.Namespace
 	if ctx.Config.PlainMode {
-		var ns *model.Namespace
 		ns, ok = ctx.GitNamespaceList[namespaceName]
 		if !ok {
 			err := ctx.SyncAllNamespacePlain()
-			if err != nil { return "", "", nil, err }
+			if err != nil { return "", "", nil, nil, err }
 			ns, ok = ctx.GitNamespaceList[namespaceName]
 			if !ok {
-				return "", "", nil, NewRouteError(
+				return "", "", nil, nil, NewRouteError(
 					NOT_FOUND, fmt.Sprintf(
 						"Namespace %s not found.", namespaceName,
 					),
@@ -155,19 +157,21 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 			}
 		}
 		err = ctx.SyncNamespacePlain(ns)
-		if err != nil { return "", "", nil, err }
+		if err != nil { return "", "", nil, nil, err }
 		rp, ok = ns.RepositoryList[repoName]
 		if !ok {
-			return "", "", nil, NewRouteError(
+			return "", "", nil, nil, NewRouteError(
 					NOT_FOUND, fmt.Sprintf(
 						"Repository %s not found in %s.", repoName, namespaceName,
 					),
 			)
 		}
 	} else {
+		ns, err = ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
+		if err != nil { return "", "", nil, nil, err }
 		rp, err = ctx.DatabaseInterface.GetRepositoryByName(namespaceName, repoName)
-		if err != nil { return "", "", nil, err }
+		if err != nil { return "", "", nil, nil, err }
 	}
-	return namespaceName, repoName, rp, nil
+	return namespaceName, repoName, ns, rp, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
@@ -25,7 +26,7 @@ func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName str
 func bindBranchController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, repoName, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		namespaceName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			if routes.IsRouteError(err) {
 				if err.(*RouteError).ErrorType == NOT_FOUND {
@@ -37,6 +38,29 @@ func bindBranchController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 			}
 			return
+		}
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
+			if t == nil {
+				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
+			}
+			if t == nil {
+				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+					LoginInfo: loginInfo,
+					ErrorCode: 403,
+					ErrorMessage: "Not enough privilege.",
+				}))
+				return
+			}
 		}
 		
 		branchName := r.PathValue("branchName")
@@ -118,15 +142,6 @@ func bindBranchController(ctx *RouterContext) {
 			TreePathSegmentList: treePathSegmentList,
 		}
 		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
-		
-		var loginInfo *templates.LoginInfoModel = nil
-		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-		}
 		
 		switch target.Type() {
 		case gitlib.TREE:

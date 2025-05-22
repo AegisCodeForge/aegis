@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
@@ -18,7 +19,7 @@ import (
 func bindRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		namespaceName, repoName, s, err := ctx.ResolveRepositoryFullName(rfn)
+		namespaceName, repoName, ns, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			if routes.IsRouteError(err) {
 				if err.(*RouteError).ErrorType == NOT_FOUND {
@@ -30,6 +31,29 @@ func bindRepositoryController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 			}
 			return
+		}
+		
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if !ctx.Config.PlainMode && s.Status == model.REPO_NORMAL_PRIVATE {
+			t := s.AccessControlList.GetUserPrivilege(loginInfo.UserName)
+			if t == nil {
+				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
+			}
+			if t == nil {
+				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+					LoginInfo: loginInfo,
+					ErrorCode: 403,
+					ErrorMessage: "Not enough privilege.",
+				}))
+				return
+			}
 		}
 		
 		err = s.Repository.SyncAllBranchList()
@@ -116,10 +140,6 @@ func bindRepositoryController(ctx *RouterContext) {
 
 		repoHeaderInfo := GenerateRepoHeader(ctx, s, "", "")
 
-		var loginInfo *templates.LoginInfoModel = nil
-		if !ctx.Config.PlainMode {
-			loginInfo, _ = GenerateLoginInfoModel(ctx, r)
-		}
 		LogTemplateError(ctx.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
 			Config: ctx.Config,
 			RepoName: rfn,
