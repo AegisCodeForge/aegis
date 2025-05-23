@@ -144,6 +144,23 @@ type AegisConfig struct {
 
 	Mailer AegisMailerConfig `json:"mailer"`
 	ReceiptSystem AegisReceiptSystemConfig `json:"receiptSystem"`
+
+	// what should the instance display when the front page (route
+	// `/`) is visited. the following values are special; when any one of these
+	// 
+	// + "all/namespace"
+	// + "all/repository"
+	// + "repository/{namespace_name}:{repo_name}"
+	// + "namespace/{namespace_name}"
+	//
+	// any values that starts with a slash "/" is considered as a relative path
+	// against the configured static assets directory (e.g. if
+	// `StaticAssetDirectory` is "static/" and `FrontPageConfig` is "/readme.md",
+	// then the file "static/readme.md" would be read, processed (as markdown file,
+	// due to having a ".md" extension name) and displayed.
+	// if UseNamespace is false, then the value "all/namespace" would work the same
+	// as "all/repository". if not set, it's "all/repository" by default.
+	FrontPageConfig string `json:"frontPage"`
 }
 
 type AegisMailerConfig struct {

@@ -1,11 +1,17 @@
 package controller
 
 import (
+	"fmt"
+	"html"
 	"net/http"
+	"os"
+	"path"
+	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
+	"github.com/gomarkdown/markdown"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 func bindIndexController(ctx *RouterContext) {
@@ -15,62 +21,50 @@ func bindIndexController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if ctx.Config.UseNamespace {
-			var nsl map[string]*model.Namespace
-			if ctx.Config.PlainMode {
-				nsl, err = ctx.Config.GetAllNamespacePlain()
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
-				}
+		if strings.HasPrefix(ctx.Config.FrontPageConfig, "/") {
+			p := path.Join(ctx.Config.StaticAssetDirectory, ctx.Config.FrontPageConfig[1:])
+			var frontPageHtml string
+			f, err := os.ReadFile(p)
+			if err != nil {
+				frontPageHtml = fmt.Sprintf("<p>Failed to read preset index page: %s. Please contact the site owner about this.</p>", err.Error())
 			} else {
-				nsl, err = ctx.DatabaseInterface.GetAllNamespace()
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
+				switch path.Ext(p) {
+				case ".txt":
+					frontPageHtml = fmt.Sprintf("<pre>%s</pre>", html.EscapeString(string(f)))
+				case ".md":
+					rs := string(markdown.ToHTML(f, nil, nil))
+					rs = bluemonday.UGCPolicy().Sanitize(rs)
+					frontPageHtml = rs
+				case ".htm": fallthrough
+				case ".html":
+					frontPageHtml = bluemonday.UGCPolicy().Sanitize(string(f))
 				}
 			}
-			LogTemplateError(ctx.LoadTemplate("depot-namespace").Execute(w, templates.DepotNamespaceModel{
-				DepotName: ctx.Config.DepotName,
-				NamespaceList: nsl,
+			LogTemplateError(ctx.LoadTemplate("index-static").Execute(w, templates.IndexStaticTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
+				FrontPage: frontPageHtml,
 			}))
+			return
+		} else if ctx.Config.FrontPageConfig == "all/namespace" {
+			FoundAt(w, "/all/namespace")
+		} else if ctx.Config.FrontPageConfig == "all/repository" {
+			FoundAt(w, "/all/repo")
+		} else if strings.HasPrefix(ctx.Config.FrontPageConfig, "namespace/") {
+			if !ctx.Config.UseNamespace {
+				frontPageHtml := "<p>Misconfiguration: a namespace is used for the front page, but the depot itself is configured to not support namespaces. Please contact the site owner about this issue.</p>"
+				LogTemplateError(ctx.LoadTemplate("index-static").Execute(w, templates.IndexStaticTemplateModel{
+					Config: ctx.Config,
+					LoginInfo: loginInfo,
+					FrontPage: frontPageHtml,
+				}))
+				return
+			}
+			FoundAt(w, fmt.Sprintf("/s/%s", ctx.Config.FrontPageConfig[len("namespace/"):]))
+		} else if strings.HasPrefix(ctx.Config.FrontPageConfig, "repository/") {
+			FoundAt(w, fmt.Sprintf("/repo/%s", ctx.Config.FrontPageConfig[len("repository/"):]))
 		} else {
-			var repol map[string]*model.Repository
-			if ctx.Config.PlainMode {
-				repols, err := ctx.Config.GetAllRepositoryPlain()
-				repol = make(map[string]*model.Repository, 0)
-				for _, item := range repols {
-					repol[item.Name] = item
-				}
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
-				}
-			} else {
-				repol, err = ctx.DatabaseInterface.GetAllRepositoryFromNamespace("")
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
-				}
-			}
-			grmodel := make([]struct{RelPath string; Description string}, 0)
-			for _, item := range repol {
-				grmodel = append(grmodel, struct{
-					RelPath string
-					Description string
-				}{
-					RelPath: item.FullName(),
-					Description: item.Description,
-				})
-			}
-			LogTemplateError(ctx.LoadTemplate("depot-no-namespace").Execute(w, templates.DepotNoNamespaceModel{
-				RepositoryList: grmodel,
-				DepotName: ctx.Config.DepotName,
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-			}))
+			FoundAt(w, "/all/namespace")
 		}
 	}))
 }

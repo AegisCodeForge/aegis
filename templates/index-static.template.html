@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-all.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+      <h1 class="header-name">{{.Config.DepotName}}</h1>
+	</header>
+
+	<hr />
+
+	<main>
+	  {{rawHTML .FrontPage}}
+	</main>
+	
+	<hr />
+	
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
