@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Index Configuration :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="admin-main main-side">
+		<h2>Index Configuration</h2>
+		<div>{{.ErrorMsg}}</div>
+		
+		<div id="form">
+		  <form action="" method="POST">
+			<div class="field"><label class="field-label" for="index-type">Index type:</label>
+			  <select class="field-select" name="index-type" id="index-type">
+				<option {{if eq .IndexType "all/namespace"}}selected{{end}} value="all/namespace">All Namespaces</option>
+				<option {{if eq .IndexType "all/repository"}}selected{{end}} value="all/repository">All Repository</option>
+				<option {{if eq .IndexType "namespace"}}selected{{end}} value="namespace">Namespace</option>
+				<option {{if eq .IndexType "repository"}}selected{{end}} value="repository">Repository</option>
+				<option {{if eq .IndexType "static"}}selected{{end}} value="static">Static file</option>
+			  </select>
+			</div>
+			<div class="field"><label class="field-label" for="namespace">Namespace:</label><input class="field-tf" name="namespace" id="namespace" value="{{.IndexNamespace}}"></div>
+			<div class="field"><label class="field-label" for="repository">Repository:</label><input class="field-tf" name="repository" id="repository" value="{{.IndexRepository}}"></div>
+			<div class="field"><label class="field-label" for="file name">File name:</label><input class="field-tf" name="file-name" id="file-name" value="{{.IndexFileName}}" /></div>
+			<div class="field"><label class="field-label" for="file-content">Email:</label><textarea name="file-content" id="file-content">{{.IndexFileContent}}</textarea></div>
+			<input class="form-submit" type="submit" value="Save" />
+		  </form>
+		</div>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

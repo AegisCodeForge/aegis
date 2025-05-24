@@ -342,7 +342,7 @@ func (cfg *AegisConfig) Sync() error {
 	if err != nil { return err }
 	st, err := os.Stat(p)
 	if err != nil { return err }
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE, st.Mode())
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, st.Mode())
 	if err != nil { return err }
 	defer f.Close()
 	_, err = f.Write(s)
