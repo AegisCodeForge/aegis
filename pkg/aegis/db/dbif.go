@@ -54,6 +54,7 @@ type AegisDatabaseInterface interface {
 	CountAllUser() (int64, error)
 	CountAllNamespace() (int64, error)
 	CountAllRepositories() (int64, error)
+	CountAllRepositoriesSearchResult(q string) (int64, error)
 	CountAllVisibleNamespace(username string) (int64, error)
 	CountAllVisibleRepositories(username string) (int64, error)
 

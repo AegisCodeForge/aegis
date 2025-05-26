@@ -25,28 +25,30 @@
 		<div class="admin-action">
 		  <a class="admin-action-item" href="/admin/new-user">New User</a>
 		</div>
-		<div class="admin-list-nav">
-		  <div class="admin-list-page-nav">
+		<div class="list-nav admin-list-nav">
+		  <div class="list-page-nav admin-list-page-nav">
 			{{if gt .PageInfo.PageNum 1}}
 			<a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&lt;&lt;</a>
 			{{end}}
-			<span class="admin-list-page-nav-page-indicator">{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}</span>
+			<span class="list-page-nav-page-indicator admin-list-page-nav-page-indicator">{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}</span>
 			{{if lt .PageInfo.PageNum (sub .PageInfo.TotalPage 1)}}
 			<a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&gt;&gt;</a>
 			{{end}}
-			<form class="admin-list-page-nav-form" action="" method="GET">
+		  </div>
+		  <div class="list-page-goto admin-list-page-goto">
+			<form class="list-page-goto-form admin-list-page-goto-form" action="" method="GET">
 			  <input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
-			  <label for="p">Page:</label> <input class="admin-list-page-nav-form-tf" name="p" id="p" />
+			  <label for="p">Page:</label> <input class="list-page-goto-form-tf admin-list-page-goto-form-tf" name="p" id="p" />
 			  <input type="submit" value="Go" />
 			</form>
 
-			(<a class="admin-list-page-nav-l" href="?s=10">10</a>
-			<a class="admin-list-page-nav-l" href="?s=25">25</a>
-			<a class="admin-list-page-nav-l" href="?s=50">50</a>)
+			(<a class="list-page-nav-l admin-list-page-nav-l" href="?s=10">10</a>
+			<a class="list-page-nav-l admin-list-page-nav-l" href="?s=25">25</a>
+			<a class="list-page-nav-l admin-list-page-nav-l" href="?s=50">50</a>)
 		  </div>
-		  <div class="admin-list-search">
-			<form class="admin-list-search-form" action="" method="GET">
-			  <label for="q">Search User:</label> <input class="admin-list-search-tf" name="q" id="q" />
+		  <div class="list-search admin-list-search">
+			<form class="list-search-form admin-list-search-form" action="" method="GET">
+			  <label for="q">Search User:</label> <input class="list-search-tf admin-list-search-tf" name="q" id="q" />
 			  <input type="submit" value="Search" />
 			</form>
 		  </div>

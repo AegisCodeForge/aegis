@@ -882,7 +882,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status
 FROM %srepository
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -892,10 +892,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, title, desc, acl, owner string
+	var ns, name, desc, acl, owner string
 	var status int
 	for r.Next() {
-		err = r.Scan(&ns, &name, &title, &desc, &acl, &owner, &status)
+		err = r.Scan(&ns, &name, &desc, &acl, &owner, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -935,6 +935,27 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllNamespace() (int64, error) {
 	if err != nil { return 0, err }
 	defer stmt.Close()
 	r := stmt.QueryRow()
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, r.Err() }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllRepositoriesSearchResult(q string) (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	searchPattern := strings.ReplaceAll(q, "\\", "\\\\")
+	searchPattern = strings.ReplaceAll(searchPattern, "%", "\\%")
+	searchPattern = strings.ReplaceAll(searchPattern, "_", "\\_")
+	searchPattern = "%" + searchPattern + "%"
+	stmt, err := dbif.connection.Prepare(
+		fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)`, pfx),
+	)
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	r := stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
 	if r.Err() != nil { return 0, r.Err() }
 	var res int64
 	err = r.Scan(&res)
@@ -1040,9 +1061,9 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum 
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_acl
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status
 FROM %srepository
-WHERE repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?
+WHERE (repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1051,10 +1072,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, title, desc, acl, owner string
+	var ns, name, desc, acl, owner string
 	var status int
 	for r.Next() {
-		err = r.Scan(&ns, &name, &title, &desc, &acl, &owner, &status, &acl)
+		err = r.Scan(&ns, &name, &desc, &acl, &owner, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1093,7 +1114,6 @@ SELECT ns_acl FROM %snamespace WHERE ns_name = ?
 	}
 	acl.ACL[targetUserName] = aclt
 	aclStr, err = acl.SerializeACL()
-	fmt.Println("aclstr", aclStr)
 	if err != nil { return err }
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
@@ -1131,7 +1151,6 @@ SELECT repo_acl FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	}
 	acl.ACL[targetUserName] = aclt
 	aclStr, err = acl.SerializeACL()
-	fmt.Println("aclstr", aclStr)
 	if err != nil { return err }
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }

@@ -23,7 +23,7 @@
 	{{end}}
   </div>
   <div class="header-clone-address">
-	<table style="width:100%">
+	<table class="header-clone-address-table">
 	  <tr><td></td><td><b>Clone address (click to copy)</b></td></tr>	  
 	  <tr><td><b>HTTP (Read-only):</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape .RepoURL)}}')" >{{.RepoURL}}</a></td></tr>
 	  <tr><td><b>SSH:</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape .RepoSSH)}}')">{{.RepoSSH}}</a></td></tr>

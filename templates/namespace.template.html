@@ -20,10 +20,11 @@
 	  {{end}}
 	  <div class="namespace-description">{{.Namespace.Description}}</div>
 	</header>
-	<hr />
 
 	{{if le (len (.Namespace.RepositoryList)) 0 }}
+	<hr />
 	<p>There is no repository in this namespace.</p>
+	<hr />
 	{{else}}
 
 	<table>
@@ -43,7 +44,7 @@
 	  </tbody>
     </table>
 	{{end}}
-    <hr />
+
 	<footer>
 	  {{template "_footer"}}
 	</footer>

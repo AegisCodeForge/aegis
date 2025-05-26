@@ -101,10 +101,18 @@ func BindAllController(ctx *routes.RouterContext) {
 			}
 		} else {
 			var repolCountv int64
-			if len(q) > 0 {
-				repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositoriesSearchResult(loginInfo.UserName, q)
+			if loginInfo.IsAdmin {
+				if len(q) > 0 {
+					repolCountv, err = ctx.DatabaseInterface.CountAllRepositoriesSearchResult(q)
+				} else {
+					repolCountv, err = ctx.DatabaseInterface.CountAllRepositories()
+				}
 			} else {
-				repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositories(loginInfo.UserName)
+				if len(q) > 0 {
+					repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositoriesSearchResult(loginInfo.UserName, q)
+				} else {
+					repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositories(loginInfo.UserName)
+				}
 			}
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
@@ -116,10 +124,18 @@ func BindAllController(ctx *routes.RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			if len(q) > 0 {
-				repol, err = ctx.DatabaseInterface.SearchAllVisibleRepositoryPaginated(loginInfo.UserName, q, pageInfo.PageNum - 1, pageInfo.PageSize)
+			if loginInfo.IsAdmin {
+				if len(q) > 0 {
+					repol, err = ctx.DatabaseInterface.SearchForRepository(q, pageInfo.PageNum - 1, pageInfo.PageSize)
+				} else {
+					repol, err = ctx.DatabaseInterface.GetAllRepositories(pageInfo.PageNum - 1, pageInfo.PageSize)
+				}
 			} else {
-				repol, err = ctx.DatabaseInterface.GetAllVisibleRepositoryPaginated(loginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
+				if len(q) > 0 {
+					repol, err = ctx.DatabaseInterface.SearchAllVisibleRepositoryPaginated(loginInfo.UserName, q, pageInfo.PageNum - 1, pageInfo.PageSize)
+				} else {
+					repol, err = ctx.DatabaseInterface.GetAllVisibleRepositoryPaginated(loginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
+				}
 			}
 		}
 		routes.LogTemplateError(ctx.LoadTemplate("all/repository-list").Execute(w, templates.AllRepositoryListModel{
