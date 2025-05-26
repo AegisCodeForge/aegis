@@ -1,44 +1,38 @@
-{{$namespaceName := .Namespace.Name}}
+{{$repoName := .Repository.Name}}
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Settings of {{.Namespace.Name}} :: {{.Config.DepotName}}</title>
+    <title>Settings of {{.Repository.Namespace}}:{{.Repository.Name}} :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
-	<link rel="stylesheet" href="/static/style-namespace-setting.css">
+	<link rel="stylesheet" href="/static/style-repo-setting.css">
   </head>
   <body>
 	<header>
 	  {{template "_header-nav" .}}
-      <h1 class="header-name index-header-name"><a href="/s/{{.Namespace.Name}}">{{.Namespace.Title}}</a> ({{.Namespace.Name}})</h1>
-	  {{if gt (len (.Namespace.Owner)) 0}}
-	  <div>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></div>
-	  {{end}}
-	  {{if eq .Namespace.Owner .LoginInfo.UserName}}
-	  <div class="namespace-nav"><a href="/s/{{.Namespace.Name}}/setting">Settings</a> <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a></div>
-	  {{end}}
-	  <div class="namespace-description">{{.Namespace.Description}}</div>
+	  
+	  {{template "_repo-header" .RepoHeaderInfo}}
 	</header>
 	<hr />
 
 	<main>
-	  {{template "namespace-setting/_sidebar" .}}
+	  {{template "repo-setting/_sidebar" .}}
 
 	  <div class="main-side">
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg}}</div>
+		{{end}}
 
 		<h2>Edit Member</h2>
 		
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
 		<form id="namespace-setting-form" action="" method="POST">
 		  <div class="field">Username: {{.Username}}</div>
 		  <div class="field"><label for="addMember">Add Member</label> <input type="checkbox" name="addMember" id="addMember" {{if and .ACLTuple .ACLTuple.AddMember}}checked{{end}} /></div>
 		  <div class="field"><label for="deleteMember">Delete Member</label> <input type="checkbox" name="deleteMember" id="deleteMember"  {{if and .ACLTuple .ACLTuple.DeleteMember}}checked{{end}}  /></div>
 		  <div class="field"><label for="editMember">Edit Member</label> <input type="checkbox" name="editMember" id="editMember" {{if and .ACLTuple .ACLTuple.DeleteMember}}checked{{end}} /></div>
 		  <div class="field"><label for="editInfo">Edit Info</label> <input type="checkbox" name="editInfo" id="editInfo" {{if and .ACLTuple .ACLTuple.EditInfo}}checked{{end}} /></div>
-		  <div class="field"><label for="addRepo">Add Repository</label> <input type="checkbox" name="addRepo" id="addRepo" {{if and .ACLTuple .ACLTuple.AddRepository}}checked{{end}} /></div>
 		  <div class="field"><label for="pushToRepo">Push To Repository</label> <input type="checkbox" name="pushToRepo" id="pushToRepo" {{if and .ACLTuple .ACLTuple.PushToRepository}}checked{{end}} /></div>
 		  <div class="field"><label for="archiveRepo">Archive Repository</label> <input type="checkbox" name="archiveRepo" id="archiveRepo" {{if and .ACLTuple .ACLTuple.ArchiveRepository}}checked{{end}} /></div>
 		  <div class="field"><label for="deleteRepo">Delete Repository</label> <input type="checkbox" name="deleteRepo" id="deleteRepo" {{if and .ACLTuple .ACLTuple.DeleteRepository}}checked{{end}} /></div>

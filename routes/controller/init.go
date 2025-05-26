@@ -14,13 +14,14 @@ func InitializeRoute(context *routes.RouterContext) {
 	bindHistoryController(context)
 	bindIndexController(context)
 	bindRepositoryController(context)
+	bindRepositorySettingController(context)
 	bindTagController(context)
 	bindTreeHandler(context)
 	all.BindAllController(context)
-
 	bindHttpCloneController(context)
 	if context.Config.UseNamespace {
 		bindNamespaceController(context)
+		bindNamespaceSettingController(context)
 	}
 
 	if !context.Config.PlainMode {

@@ -17,7 +17,7 @@
 	<main>
 	  {{template "_admin-sidebar"}}
 
-	  <div class="admin-main main-side">
+	  <div class="setting-main main-side">
 		<h2>Database Settings</h2>
 		<div>{{.ErrorMsg}}</div>
 		<form action="" method="POST">
@@ -33,7 +33,7 @@
 		  <div class="field"><label class="field-label" for="user">Database User:</label><input name="user" id="user" class="field-tf" value="{{.Config.DatabaseUser}}" /></div>
 		  <div class="field"><label class="field-label" for="password">Database Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.DatabasePassword}}" /></div>
 		  <div class="field"><label class="field-label" for="table-prefix">Database Table Prefix:</label><input class="field-tf" name="table-prefix" id="table-prefix" value="{{.Config.DatabaseTablePrefix}}" /></div>
-		  <input type="submit" value="Save Config" />
+		  <input class="field-submit" type="submit" value="Save Config" />
 		</form>
 	  </div>
 	</main>

@@ -74,6 +74,16 @@ func NewLocalGitRepository(namespace string, name string, p string) *LocalGitRep
 	return &res
 }
 
+func (gr LocalGitRepository) SyncLocalDescription() error {
+	descFilePath := path.Join(gr.GitDirectoryPath, "description")
+	os.Remove(descFilePath)
+	f, err := os.OpenFile(descFilePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0664)
+	if err != nil { return err }
+	defer f.Close()
+	f.Write([]byte(gr.Description))
+	return nil
+}
+
 func (gr LocalGitRepository) readConfig() (ini.INI, error) {
 	configFilePath := path.Join(gr.GitDirectoryPath, "config")
 	f, err := os.Open(configFilePath)

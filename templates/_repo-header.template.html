@@ -3,7 +3,15 @@
 {{$repoName := .Repository.Name}}
 <h1 class="header-name" style="margin-bottom: 0">
   <a href="{{getNamespacePath $namespaceName}}">{{$namespaceName}}</a>:<a href="{{getRepoPath $namespaceName $repoName}}">{{$repoName}}</a>
-  </h1>
+</h1>
+<div class="repo-info">
+  {{if .Owner}}
+  Owner: <a href="/u/{{.Owner}}">{{.Owner}}</a>
+  {{end}}
+</div>
+<div class="repo-header-nav">
+  <a href="{{getRepoPath $namespaceName $repoName}}/setting">Setting</a>
+</div>
   {{if gt (len .TypeStr) 0}}
   <div class="header-node">@{{.TypeStr}}:<a href="{{getRootPath $namespaceName $repoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
   {{end}}

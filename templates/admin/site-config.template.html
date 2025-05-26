@@ -4,13 +4,14 @@
     <meta charset="utf-8" />
     <title>Site Config :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
 	<header>
 	  {{template "_header-nav" .}}
 	  
-	  <h1 class="header-name" style="margin-bottom: 0">Site Config</h1>
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
 	</header>
 	<hr />
 
@@ -18,7 +19,8 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Basic settings</h2>
+		<div class="setting-section">
+		  <h2>Basic settings</h2>
 		<form action="" method="POST">
 		  <input type="hidden" name="section" value="basic" />
 		  <div class="field"><label class="field-label"  for="depot-name">Depot name:</label><input name="depot-name" id="depot-name" class="field-tf" value="{{.Config.DepotName}}" /></div>
@@ -28,9 +30,11 @@
 		  <div class="field"><label class="field-label field-chkbox-label"  for="allow-registration">Allow Registration:</label><input type="checkbox" name="allow-registration" class="field-chkbox" {{if .Config.AllowRegistration}}checked{{end}}/></div>
 		  <div class="field"><label class="field-label field-chkbox-label"  for ="email-confirmation-required">Email Confirmation Required:</label><input type="checkbox" name="email-confirmation-required" class="field-chkbox" {{if .Config.EmailConfirmationRequired}}checked{{end}}/></div>
 		  <div class="field"><label class="field-label field-chkbox-label"  for="manual-approval">Manual Approval Required:</label><input type="checkbox" name="manual-approval" class="field-chkbox" {{if .Config.ManualApproval}}checked{{end}}/></div>
-		  <input type="submit" value="Save Config" />
+		  <input class="field-submit" type="submit" value="Save Config" />
 		</form>
+		</div>
 
+		<div class="setting-section">
 		<h2>Web Setting</h2>
 		<form action="" method="POST">
 		  <input type="hidden" name="section" value="web" />
@@ -39,8 +43,9 @@
 		  <div class="field"><label class="field-label" for="static-asset-directory">Static Asset Directory:</label><input name="static-asset-directory" id="static-asset-directory" class="field-tf" value="{{.Config.StaticAssetDirectory}}"/></div>
 		  <div class="field"><label class="field-label" for="bind-address">Bind Address:</label><input name="bind-address" id="bind-address" class="field-tf" value="{{.Config.BindAddress}}"/></div>
 		  <div class="field"><label class="field-label" for="bind-port">Bind Port:</label><input name="bind-port" id="bind-port" class="field-tf" value="{{.Config.BindPort}}"/></div>
-		  <input type="submit" value="Save Config" />
+		  <input class="field-submit" type="submit" value="Save Config" />
 		</form>
+		</div>
 
 	  </div>
 	</main>

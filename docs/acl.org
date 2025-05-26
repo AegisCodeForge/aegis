@@ -21,8 +21,6 @@ The ability to add repository to a namespace is solely reserved for the members,
 
 The ability to delete namespace is solely reserved for the owner of the namespace.
 
-=deleteRepo= does not work when set at repository level - it's a solely namespace level setting.
-
 The owner can move a namespace/repository to a different user, giving them the owner status.
 
 The owner of a namespace/repository has all the listed permissions at all time despite the possible configuration. If the config of repository conflicts with the config of namespace, the config of repository takes precedence. If a repository does not specify a 7-tuple for a specific user, the config of its residing namespace is used. If both a repository and its residing namespace have no specification for a specific user, it's considered that that user has no permission to perform any of the listed operation on the repository.

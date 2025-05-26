@@ -116,6 +116,7 @@ func GenerateRepoHeader(ctx *RouterContext, repo *model.Repository, typeStr stri
 		TypeStr: typeStr,
 		NodeName: nodeName,
 		RepoLabelList: nil,
+		Owner: repo.Owner,
 		RepoURL: fmt.Sprintf("%s/repo/%s", httpHostName, rfn),
 		RepoSSH: fmt.Sprintf("%s%s", gitSshHostName, sshfn),
 		Repository: repo,

@@ -5,11 +5,16 @@
 	display: block;
 }
 .setting-main {
-	padding: 1rem; 
-	padding-top: 0;
+	padding: 2rem; 
 	width: 100%;
 }
 .setting-main h2:first-child {
+	margin-top: 0;
+}
+.setting-section {
+	margin-top: 2rem;
+}
+.setting-section:first-child {
 	margin-top: 0;
 }
 
@@ -47,7 +52,7 @@
 	color: var(--foreground-color);
 	width: 100%;
 	font-size: 1rem;
-	scrollbar-color: white black;
+	scrollbar-color: var(--background-color) var(--foreground-color);
 }
 /* ======================================================== */
 
@@ -55,13 +60,13 @@
 
 .setting-table {
 	border-collapse: collapse;
-	border-top: 2px black solid;
-	border-bottom: 2px black solid;
+	border-top: 2px var(--foreground-color) solid;
+	border-bottom: 2px var(--foreground-color) solid;
 	width: 100%;
 }
 .setting-table thead {
-	border-top: 1px black solid;
-	border-bottom: 1px black solid;
+	border-top: 1px var(--foreground-color) solid;
+	border-bottom: 1px var(--foreground-color) solid;
 }
 .setting-list-nav {
 	margin-top: 0.5rem;

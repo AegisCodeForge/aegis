@@ -8,6 +8,7 @@ type RepoHeaderTemplateModel struct {
 	RepoURL string
 	RepoSSH string
 	TypeStr string
+	Owner string
 	NodeName string
 	Repository *model.Repository
 	RepoLabelList []string

@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Receipt System Settings :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
@@ -17,7 +18,7 @@
 	<main>
 	  {{template "_admin-sidebar"}}
 
-	  <div class="admin-main main-side">
+	  <div class="setting-main main-side">
 		<h2>Receipt System Settings</h2>
 		<div>{{.ErrorMsg}}</div>
 		<form action="" method="POST">
@@ -31,7 +32,7 @@
 		  <div class="field"><label class="field-label" for="url">Receipt System URL:</label><input name="url" id="url" class="field-tf" value="{{.Config.ReceiptSystem.URL}}"/></div>
 		  <div class="field"><label class="field-label" for="username">Receipt System Username:</label><input name="username" id="username" class="field-tf" value="{{.Config.ReceiptSystem.User}}"/></div>
 		  <div class="field"><label class="field-label" for="password">Receipt System Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.ReceiptSystem.Password}}"/></div>
-		  <input type="submit" value="Save Config" />
+		  <input class="field-submit" type="submit" value="Save Config" />
 		</form>
 	  </div>
 	</main>

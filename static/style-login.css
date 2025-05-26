@@ -1,6 +1,8 @@
 
 #login-form {
 	width: 50%;
+	margin-top: 2rem;
+	margin-bottom: 2rem;
 }
 
 @media (max-width: 600px) {

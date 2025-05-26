@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>User Edit :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
@@ -17,7 +18,7 @@
 	<main>
 	  {{template "_admin-sidebar"}}
 
-	  <div class="admin-main main-side">
+	  <div class="setting-main main-side">
 		<h2>Change info</h2>
 		{{if .ErrorMsg}}
 		{{if eq .ErrorMsg.Type "info"}}

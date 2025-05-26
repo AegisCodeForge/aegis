@@ -367,6 +367,11 @@ WHERE repo_namespace = ? AND repo_name = ?
 	}
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
 	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
+	res.Owner = owner
+	res.Status = model.AegisRepositoryStatus(status)
+	aclobj, err := model.ParseACL(acl)
+	if err != nil { return nil, err }
+	res.AccessControlList = aclobj
 	return res, nil
 }
 
@@ -520,7 +525,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(u
 		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_acl, repo_status
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status
 FROM %srepository
 WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 `, pfx, privateSelectClause))
@@ -539,9 +544,9 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, acl string
+		var name, desc, owner, acl string
 		var status int64
-		err = rs.Scan(&name, &desc, &acl, &status)
+		err = rs.Scan(&name, &desc, &owner, &acl, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -549,6 +554,7 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: name,
+			Owner: owner,
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
@@ -561,7 +567,7 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryFromNamespace(ns string) (map[string]*model.Repository, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_acl, repo_status
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status
 FROM %srepository
 WHERE repo_namespace = ?
 `, pfx))
@@ -571,9 +577,9 @@ WHERE repo_namespace = ?
 	defer rs.Close()
 	res := make(map[string]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, acl string
+		var name, desc, acl, owner string
 		var status int64
-		err = rs.Scan(&name, &desc, &acl, &status)
+		err = rs.Scan(&name, &desc, &owner, &acl, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -581,6 +587,7 @@ WHERE repo_namespace = ?
 		res[name] = &model.Repository{
 			Namespace: ns,
 			Name: name,
+			Owner: owner,
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
@@ -681,10 +688,7 @@ VALUES (?,?,?,?,?,?,?)
 	cmd := exec.Command("git", "init", "--bare")
 	cmd.Dir = p
 	if err = cmd.Run(); err != nil { return nil, err }
-	if err = tx.Commit(); err != nil {
-		fmt.Println("what?", err)
-		return nil, err
-	}
+	if err = tx.Commit(); err != nil { return nil, err }
 	r, err := model.NewRepository(ns, name, gitlib.NewLocalGitRepository(ns, name, p))
 	if err != nil { return nil, err }
 	return r, nil
@@ -704,18 +708,20 @@ SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	if len(rowid) <= 0 { return db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("%s not found in %s", name, ns)) }
 	tx, err := dbif.connection.Begin()
 	if err != nil { tx.Rollback(); return err }
+	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
 UPDATE %srepository
-SET repo_description = ?, repo_owner = ?
+SET repo_description = ?, repo_owner = ?, repo_status = ?
 WHERE rowid = ?
 `, pfx))
-	if err != nil { tx.Rollback(); return err }
-	_, err = stmt2.Exec(robj.Description, robj.Owner, rowid)
-	if err != nil { tx.Rollback(); return err }
-	// TODO: maybe we should change the description stored as file in git dir
-	// as well...
+	if err != nil { return err }
+	_, err = stmt2.Exec(robj.Description, robj.Owner, robj.Status, rowid)
+	if err != nil { return err }
 	err = tx.Commit()
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
+	robj.Repository.Description = robj.Description
+	// we don't deal with error here because it's not critical.
+	err = robj.Repository.SyncLocalDescription()
 	return nil
 }
 
@@ -1106,11 +1112,11 @@ UPDATE %snamespace SET ns_acl = ? WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) SetRepositoryACL(nsName string, repoName string, targetUserName string, aclt *model.ACLTuple) error {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_acl FROM %snamespace WHERE ns_name = ?
+SELECT repo_acl FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt1.Close()
-	r := stmt1.QueryRow(nsName)
+	r := stmt1.QueryRow(nsName, repoName)
 	if r.Err() != nil { stmt1.Close(); return r.Err() }
 	var aclStr string
 	err = r.Scan(&aclStr)
@@ -1125,15 +1131,16 @@ SELECT ns_acl FROM %snamespace WHERE ns_name = ?
 	}
 	acl.ACL[targetUserName] = aclt
 	aclStr, err = acl.SerializeACL()
+	fmt.Println("aclstr", aclStr)
 	if err != nil { return err }
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %snamespace SET ns_acl = ? WHERE ns_name = ?
+UPDATE %srepository SET repo_acl = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
-	_, err = stmt2.Exec(aclStr, nsName)
+	_, err = stmt2.Exec(aclStr, nsName, repoName)
 	if err != nil { return err }
 	err = tx.Commit()
 	if err != nil { return err }
@@ -1235,7 +1242,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(usern
 		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status
 FROM %srepository
 WHERE repo_status = 1 OR repo_status = 4 %s
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -1256,9 +1263,9 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
 	for rs.Next() {
-		var ns, name, desc, acl string
+		var ns, name, desc, owner, acl string
 		var status int64
-		err = rs.Scan(&ns, &name, &desc, &acl, &status)
+		err = rs.Scan(&ns, &name, &desc, &owner, &acl, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1266,6 +1273,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: name,
+			Owner: owner,
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),

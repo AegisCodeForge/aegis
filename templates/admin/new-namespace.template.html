@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>New Namespace :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
@@ -17,7 +18,7 @@
 	<main>
 	  {{template "_admin-sidebar"}}
 
-	  <div class="admin-main main-side">
+	  <div class="setting-main main-side">
 		<h2>New Namespace</h2>
 		<div>{{.ErrorMsg}}</div>
 		
@@ -34,7 +35,7 @@
 			  </select>
 			</div>
 			<div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description"></textarea></div>
-			<input class="form-submit" type="submit" value="New Namespace" />
+			<input class="field-submit" type="submit" value="New Namespace" />
 		  </form>
 		</div>
 	  </div>

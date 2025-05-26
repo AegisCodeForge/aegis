@@ -1,8 +1,8 @@
 * { box-sizing: border-box; }
 
 :root {
-	--foreground-color: black;
-	--background-color: lightyellow;
+	--foreground-color: white;
+	--background-color: #1f1f1f;;
 	--file-list-height: 1rem;
 }
 
@@ -25,7 +25,14 @@ a:hover {
 	color: var(--background-color);
 	background-color: var(--foreground-color);
 }
-
+table {
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+}
+th, td {
+	padding-top: 0.2rem;
+	padding-bottom: 0.2rem;
+}
 tr > th {
 	text-align: left;
 }
@@ -93,7 +100,7 @@ hr {
 .header-nav {
 	font-weight: bold;
 	font-style: 1rem;
-	letter-spacing: 0.5rem;
+	word-spacing: 1rem;
 }
 .header-nav {
 	background-color: var(--foreground-color);
@@ -104,11 +111,11 @@ hr {
 	background-color: var(--foreground-color);
 	color: var(--background-color);
 	text-decoration: none;
+	word-spacing: normal;
     transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
     -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
     -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
     -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
-
 }
 .header-nav-left {
 	flex-grow: 2;
@@ -208,8 +215,8 @@ hr {
 	display: inherit;
 }
 :target {
-	background-color: black;
-	color: white;;
+	background-color: var(--foreground-color);
+	color: var(--background-color);
 }
 .header-clone-address input {
 	background-color: var(--background-color);
@@ -260,10 +267,12 @@ main {
 .main-side {
 	width: 70%;
 	max-width: 70%;
-	padding-right: 2rem;
-	padding-left: 2rem;
+	padding: 2rem;
 	flex-grow: 2;
     border-left: 2px var(--foreground-color) solid;
+}
+.main-side h2:first-child {
+	margin-top: 0;
 }
 @media (max-width: 960px) {
 	.left-side {
@@ -334,13 +343,18 @@ main {
 	background-color: var(--background-color);;
 	color: var(--foreground-color);
 	font-size: 1rem;
-	scrollbar-color: white black;
+	scrollbar-color: var(--background-color) var(--foreground-color);
 	box-sizing: border-box;
+	width: 100%;
+}
+.field-submit {
 	width: 100%;
 }
 form input {
 	background-color: var(--background-color);;
 	color: var(--foreground-color);
+	border: 2px var(--foreground-color) solid;
+	font-size: 1rem;
 }
 form textarea {
 	border: 2px var(--foreground-color) solid;
@@ -348,14 +362,14 @@ form textarea {
 	color: var(--foreground-color);
 	width: 100%;
 	font-size: 1rem;
-	scrollbar-color: white black;
+	scrollbar-color: var(--background-color) var(--foreground-color);
 	box-sizing: border-box;
 }
 form select {
 	background-color: var(--background-color);
     color: var(--foreground-color);
     font-size: 1rem;
-    border: 2px black solid;
+    border: 2px var(--foreground-color) solid;
     width: 100%;
 }
 form input[type="submit"], .form-submit {
