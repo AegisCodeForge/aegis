@@ -39,6 +39,14 @@
 	border-top: 1px var(--foreground-color) solid;
 	border-bottom: 1px var(--foreground-color) solid;
 }
+.admin-table-item {
+	padding-top: 2rem;
+	padding-bottom: 2rem;
+}
+.admin-table-item {
+	border-top: 1px var(--foreground-color) solid;
+}
+.admin-table-item:first-child { border-top: 0; }
 .admin-list-nav {
 	margin-top: 0.5rem;
 	margin-bottom: 0.5rem;

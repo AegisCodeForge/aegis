@@ -18,12 +18,13 @@ func bindReceiptController(ctx *routes.RouterContext) {
 		if err != nil { routes.FoundAt(w, "/"); return }
 		if (time.Now().Unix() - re.IssueTime) >= re.TimeoutMinute*60 {
 			ctx.ReceiptSystem.CancelReceipt(rid)
-			routes.FoundAt(w, "/");
+			routes.FoundAt(w, "/")
 			return
 		}
 		if len(re.Command) <= 0 {
 			// invalid receipt command...
 			routes.FoundAt(w, "/")
+			return
 		}
 		switch re.Command[0] {
 		case receipt.CONFIRM_REGISTRATION:

@@ -49,7 +49,7 @@ func bindRegisterController(ctx *routes.RouterContext) {
 			command[1] = userName
 			command[2] = email
 			command[3] = string(passwordHash)
-			rid, err := ctx.ReceiptSystem.IssueReceipt(24*60*60, command)
+			rid, err := ctx.ReceiptSystem.IssueReceipt(24*60, command)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return

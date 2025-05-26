@@ -41,6 +41,7 @@ func bindAdminNamespaceListController(ctx *routes.RouterContext) {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/namespace-list").Execute(w, &templates.AdminNamespaceListTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
+				Query: q,
 				ErrorMsg: fmt.Sprintf("Failed to load namespace list: %s", err.Error()),
 				NamespaceList: nil,
 			}))
@@ -51,6 +52,7 @@ func bindAdminNamespaceListController(ctx *routes.RouterContext) {
 			LoginInfo: loginInfo,
 			ErrorMsg: "",
 			NamespaceList: namespaceList,
+			Query: q,
 			PageInfo: &templates.PageInfoModel{
 				PageNum: int(pageNum),
 				PageSize: int(pageSize),

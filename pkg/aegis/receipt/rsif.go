@@ -20,6 +20,8 @@ type AegisReceiptSystemInterface interface {
 	IssueReceipt(timeoutMinute int64, command []string) (string, error)
 	CancelReceipt(rid string) error
 	GetAllReceipt(pageNum int, pageSize int) ([]*Receipt, error)
+	SearchReceipt(q string, pageNum int, pageSize int) ([]*Receipt, error)
+	EditReceipt(id string, robj *Receipt) error
 }
 
 const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -29,6 +31,14 @@ func NewReceiptId() string {
 		res = append(res, passchdict[rand.IntN(len(passchdict))])
 	}
 	return string(res)
+}
+
+func SerializeReceiptCommand(s []string) string {
+	es := make([]string, len(s))
+	for i, k := range s {
+		es[i] = cmdArgEscape(k)
+	}
+	return strings.Join(es, ",")
 }
 
 func cmdArgEscape(s string) string {

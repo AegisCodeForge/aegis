@@ -94,7 +94,7 @@ VALUES (?,?,?,?)
 `)
 	if err != nil { return "", err }
 	rid := receipt.NewReceiptId()
-	_, err = stmt.Exec(rid, strings.Join(command, ","), time.Now().Unix(), timeoutMinute)
+	_, err = stmt.Exec(rid, receipt.SerializeReceiptCommand(command), time.Now().Unix(), timeoutMinute)
 	if err != nil { return "", err }
 	err = tx.Commit()
 	if err != nil { return "", err }
@@ -139,5 +139,53 @@ LIMIT ? OFFSET ?`)
 		})
 	}
 	return res, nil
+}
+
+func (rsif *AegisSqliteReceiptSystemInterface) SearchReceipt(q string, pageNum int, pageSize int) ([]*receipt.Receipt, error) {
+	pattern := strings.ReplaceAll(q, "\\", "\\\\")
+	pattern = strings.ReplaceAll(pattern, "%", "\\%")
+	pattern = strings.ReplaceAll(pattern, "_", "\\_")
+	pattern = "%" + pattern + "%"
+	stmt, err := rsif.connection.Prepare(`
+SELECT id, command, issue_time, timeout_minute
+FROM receipt
+WHERE id LIKE ? ESCAPE ? OR command LIKE ? ESCAPE ?
+ORDER BY rowid ASC LIMIT ? OFFSET ?`)
+	if err != nil { return nil, nil }
+	defer stmt.Close()
+	r, err := stmt.Query(pattern, "\\", pattern, "\\", pageSize, pageNum * pageSize)
+	if err != nil { return nil, err }
+	res := make([]*receipt.Receipt, 0)
+	for r.Next() {
+		var id, command string
+		var issueTime, timeoutMinute int64
+		err = r.Scan(&id, &command, &issueTime, &timeoutMinute)
+		if err != nil { return nil, err }
+		res = append(res, &receipt.Receipt{
+			Id: id,
+			Command: receipt.ParseReceiptCommand(command),
+			IssueTime: issueTime,
+			TimeoutMinute: timeoutMinute,
+		})
+	}
+	return res, nil
+}
+
+func (rsif *AegisSqliteReceiptSystemInterface) EditReceipt(id string, robj *receipt.Receipt) error {
+	tx, err := rsif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(`
+UPDATE receipt
+SET command = ?, issue_time = ?, timeout_minute = ?
+WHERE id = ?
+`)
+	if err != nil { return err }
+	defer stmt.Close()
+	_, err = stmt.Exec(receipt.SerializeReceiptCommand(robj.Command), robj.IssueTime, robj.TimeoutMinute, robj.Id)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
 }
 

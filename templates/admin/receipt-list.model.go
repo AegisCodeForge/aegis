@@ -3,13 +3,13 @@
 package templates
 
 import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/bctnry/aegis/pkg/aegis/receipt"
 
-type AdminNamespaceListTemplateModel struct {
+type AdminReceiptListTemplateModel struct {
 	Config *aegis.AegisConfig
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
-	NamespaceList map[string]*model.Namespace
+	ReceiptList []*receipt.Receipt
 	PageInfo *PageInfoModel
 	Query string
 }

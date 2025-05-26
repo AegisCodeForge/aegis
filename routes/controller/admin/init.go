@@ -18,4 +18,6 @@ func BindAllAdminControllers(context *routes.RouterContext) {
 	bindAdminEditNamespaceController(context)
 	bindAdminNewNamespaceController(context)
 	bindAdminIndexConfigController(context)
+	bindAdminRepositoryListController(context)
+	bindAdminReceiptListController(context)
 }

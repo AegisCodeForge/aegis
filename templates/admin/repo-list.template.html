@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Namespace List :: Admin :: {{.Config.DepotName}}</title>
+    <title>Repository List :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
@@ -20,10 +20,10 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Namespace List</h2>
+		<h2>Repository List</h2>
 		<div>{{.ErrorMsg}}</div>
 		<div class="admin-action">
-		  <a class="admin-action-item" href="/admin/new-namespace">New Namespace</a>
+		  <a class="admin-action-item" href="/admin/new-repo">New Repository</a>
 		</div>
 		<div class="list-nav admin-list-nav">
 		  <div class="list-page-nav admin-list-page-nav">
@@ -38,7 +38,7 @@
 		  <div class="list-page-goto admin-list-page-goto">
 			<form class="list-page-goto-form admin-list-page-goto-form" action="" method="GET">
 			  <input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
-			  <label for="p">Page:</label> <input class="list-page-goto-form-tf admin-list-page-goto-form-tf" name="p" id="p" />
+			  <label for="p">Page:</label> <input class="admin-list-page-goto-form-tf list-page-goto-form-tf" name="p" id="p" {{if .Query}}value="{{.Query}}"{{end}}/>
 			  <input type="submit" value="Go" />
 			</form>
 
@@ -46,38 +46,38 @@
 			<a class="list-page-nav-l admin-list-page-nav-l" href="?s=25">25</a>
 			<a class="list-page-nav-l admin-list-page-nav-l" href="?s=50">50</a>)
 		  </div>
-		  <div class="admin-list-search">
-			<form class="admin-list-search-form" action="" method="GET">
-			  <label for="q">Search Namespace:</label> <input class="admin-list-search-tf" name="q" id="q" {{if .Query}}value="{{.Query}}"{{end}} />
+		  <div class="list-search admin-list-search">
+			<form class="list-search-form admin-list-search-form" action="" method="GET">
+			  <label for="q">Search Namespace:</label> <input class="list-search-tf admin-list-search-tf" name="q" id="q" />
 			  <input type="submit" value="Search" />
 			</form>
 		  </div>
 		</div>
 		<table class="admin-table">
 		  <thead>
-			<tr><th>Name</th><th>Title</th><th>Email</th><th>Owner</th><th>Status</th><th>Edit</th><th>Member</th><th>Delete</th></tr>
+			<tr><th>Namespace</th><th>Name</th><th>Owner</th><th>Status</th><th>Edit</th><th>Member</th><th>Delete</th></tr>
 		  </thead>
 		  <tbody>
-			{{range .NamespaceList}}
+			{{range .RepositoryList}}
+			{{$rfn := getRepoName .Namespace .Name}}
 			<tr>
-			  <td><a target="_blank" href="/s/{{.Name}}">{{.Name}}</a></td>
-			  <td>{{.Title}}</td>
-			  <td>{{.Email}}</td>
+			  <td><a target="_blank" href="/s/{{.Namespace}}">{{.Namespace}}</a></td>
+			  <td><a target="_blank" href="/repo/{{$rfn}}">{{.Name}}</a></td>
 			  <td>{{.Owner}}</td>
 			  <td><span class="namespace-status-tag">
 				  {{if eq .Status 1}}
 				  Public
 				  {{else if eq .Status 2}}
 				  Private
-				  {{else if eq .Status 3}}
-				  Soft Deleted
+				  {{else if eq .Status 4}}
+				  Archived
 				  {{end}}
 				</span>
 			  </td>
-			  <td><a href="/admin/namespace/{{.Name}}/edit">Edit</a></td>
-			  <td><a href="/s/{{.Name}}/member">Member</a></td>
+			  <td><a href="/repo/{{$rfn}}/setting">Edit</a></td>
+			  <td><a href="/repo/{{$rfn}}/member">Member</a></td>
 			  <td>
-				<a href="/admin/namespace/{{.Name}}/delete">Delete</a>
+				<a href="/repo/{{$rfn}}/delete">Delete</a>
 			  </td>
 			</tr>
 			{{end}}

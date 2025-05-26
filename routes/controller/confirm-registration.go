@@ -38,6 +38,7 @@ func bindConfirmRegistrationController(ctx *routes.RouterContext) {
 			)
 			return
 		}
+		ctx.ReceiptSystem.CancelReceipt(rid)
 		routes.LogTemplateError(ctx.LoadTemplate("error").Execute(w, &templates.ErrorTemplateModel{
 			Config: ctx.Config,
 			ErrorCode: 200,

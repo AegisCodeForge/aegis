@@ -5,11 +5,11 @@ package templates
 import "github.com/bctnry/aegis/pkg/aegis"
 import "github.com/bctnry/aegis/pkg/aegis/model"
 
-type AdminNamespaceListTemplateModel struct {
+type AdminRepositoryListTemplateModel struct {
 	Config *aegis.AegisConfig
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
-	NamespaceList map[string]*model.Namespace
+	RepositoryList []*model.Repository
 	PageInfo *PageInfoModel
 	Query string
 }
