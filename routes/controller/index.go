@@ -64,7 +64,11 @@ func bindIndexController(ctx *RouterContext) {
 		} else if strings.HasPrefix(ctx.Config.FrontPageConfig, "repository/") {
 			FoundAt(w, fmt.Sprintf("/repo/%s", ctx.Config.FrontPageConfig[len("repository/"):]))
 		} else {
-			FoundAt(w, "/all/namespace")
+			if ctx.Config.UseNamespace {
+				FoundAt(w, "/all/namespace")
+			} else {
+				FoundAt(w, "/all/repo")
+			}
 		}
 	}))
 }

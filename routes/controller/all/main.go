@@ -2,6 +2,7 @@ package all
 
 import (
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis/model"
@@ -99,6 +100,13 @@ func BindAllController(ctx *routes.RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			slices.SortFunc(repol, func(a, b *model.Repository) int {
+				if a.Namespace < b.Namespace { return -1 }
+				if a.Namespace > b.Namespace { return 1 }
+				if a.Name < b.Name { return -1 }
+				if a.Name > b.Name { return 1 }
+				return 0
+			})
 		} else {
 			var repolCountv int64
 			if loginInfo.IsAdmin {

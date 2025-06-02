@@ -14,6 +14,7 @@ type ACLTuple struct {
 	PushToRepository bool
 	ArchiveRepository bool
 	DeleteRepository bool
+	EditHooks bool
 }
 
 type ACL struct {
@@ -25,7 +26,7 @@ func (aclt *ACLTuple) HasSettingPrivilege() bool {
 	if aclt == nil { return false }
 	// NOTE THAT having PushToRepository permission does not mean a
 	// user is allowed to go into the setting panels of things.
-	return aclt.AddMember || aclt.DeleteMember || aclt.EditMember || aclt.AddRepository || aclt.EditInfo || aclt.ArchiveRepository || aclt.DeleteRepository
+	return aclt.AddMember || aclt.DeleteMember || aclt.EditMember || aclt.AddRepository || aclt.EditInfo || aclt.ArchiveRepository || aclt.DeleteRepository || aclt.EditHooks
 }
 
 func ParseACL(s string) (*ACL, error) {
@@ -47,6 +48,7 @@ func ParseACL(s string) (*ACL, error) {
 		pushToRepo := len(v) > 5 && v[5]
 		archiveRepo := len(v) > 6 && v[6]
 		deleteRepo := len(v) > 7 && v[7]
+		editHooks := len(v) > 8 && v[8]
 		res.ACL[k] = &ACLTuple{
 			AddMember: addMember,
 			DeleteMember: deleteMember,
@@ -56,6 +58,7 @@ func ParseACL(s string) (*ACL, error) {
 			PushToRepository: pushToRepo,
 			ArchiveRepository: archiveRepo,
 			DeleteRepository: deleteRepo,
+			EditHooks: editHooks,
 		}
 	}
 	return res, nil
@@ -70,7 +73,7 @@ func (s *ACL) SerializeACL() (string, error) {
 	preres.ACL = make(map[string][]bool, 0)
 	for k, v := range s.ACL {
 		if v == nil { continue }
-		vec := make([]bool, 8)
+		vec := make([]bool, 9)
 		vec[0] = v.AddMember
 		vec[1] = v.DeleteMember
 		vec[2] = v.EditMember
@@ -79,6 +82,7 @@ func (s *ACL) SerializeACL() (string, error) {
 		vec[5] = v.PushToRepository
 		vec[6] = v.ArchiveRepository
 		vec[7] = v.DeleteRepository
+		vec[8] = v.EditHooks
 		preres.ACL[k] = vec
 	}
 	resbyte, err := json.MarshalIndent(preres, "", "    ")
@@ -97,6 +101,7 @@ func ToCommaSeparatedString(aclt *ACLTuple) string {
 	if aclt.PushToRepository { res = append(res, "pushToRepo") }
 	if aclt.ArchiveRepository { res = append(res, "archiveRepo") }
 	if aclt.DeleteRepository { res = append(res, "deleteRepo") }
+	if aclt.EditHooks { res = append(res, "editHooks") }
 	return strings.Join(res, ",")
 }
 

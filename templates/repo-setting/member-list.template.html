@@ -80,13 +80,19 @@
 		{{end}}
 		<form id="repo-setting-form" action="" method="POST">
 		  <div class="field"><label class="field-label" for="username">Username:</label> <input class="field-tf" name="username" id="username" /></div>
-		  <div class="field"><label for="addMember">Add Member</label> <input type="checkbox" name="addMember" id="addMember" /></div>
-		  <div class="field"><label for="deleteMember">Delete Member</label> <input type="checkbox" name="deleteMember" id="deleteMember" /></div>
-		  <div class="field"><label for="editMember">Edit Member</label> <input type="checkbox" name="editMember" id="editMember" /></div>
-		  <div class="field"><label for="editInfo">Edit Info</label> <input type="checkbox" name="editInfo" id="editInfo" /></div>
-		  <div class="field"><label for="pushToRepo">Push To Repository</label> <input type="checkbox" name="pushToRepo" id="pushToRepo" /></div>
-		  <div class="field"><label for="archiveRepo">Archive Repository</label> <input type="checkbox" name="archiveRepo" id="archiveRepo" /></div>
-		  <div class="field"><label for="deleteRepo">Delete Repository</label> <input type="checkbox" name="deleteRepo" id="deleteRepo" /></div>
+		  <table style="width:fit-content">
+			<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
+			<tbody>
+			<tr class="field"><td><label for="addMember">Add Member</label></td><td><input type="checkbox" name="addMember" id="addMember" /></td></tr>
+		  <tr class="field"><td><label for="deleteMember">Delete Member</label></td><td><input type="checkbox" name="deleteMember" id="deleteMember" /></td></tr>
+		  <tr class="field"><td><label for="editMember">Edit Member</label></td><td><input type="checkbox" name="editMember" id="editMember" /></td></tr>
+		  <tr class="field"><td><label for="editInfo">Edit Info</label></td><td><input type="checkbox" name="editInfo" id="editInfo" /></td></tr>
+		  <tr class="field"><td><label for="pushToRepo">Push To Repository</label></td><td><input type="checkbox" name="pushToRepo" id="pushToRepo" /></td></tr>
+		  <tr class="field"><td><label for="archiveRepo">Archive Repository</label></td><td><input type="checkbox" name="archiveRepo" id="archiveRepo" /></td></tr>
+		  <tr class="field"><td><label for="deleteRepo">Delete Repository</label></td><td><input type="checkbox" name="deleteRepo" id="deleteRepo" /></td></tr>
+			<tr class="field"><td><label for="editHooks">Edit Hooks</label></td><td><input type="checkbox" name="editHooks" id="editHooks" /></td></tr>
+			</tbody>
+		  </table>
 
 		  <input class="form-submit" type="submit" value="Add Member" />
 		</form>

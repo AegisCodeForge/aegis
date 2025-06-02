@@ -277,6 +277,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			PushToRepository: len(r.Form.Get("pushToRepo")) > 0,
 			ArchiveRepository: len(r.Form.Get("archiveRepo")) > 0,
 			DeleteRepository: len(r.Form.Get("deleteRepo")) > 0,
+			EditHooks: len(r.Form.Get("editHooks")) > 0,
 		}
 		err = ctx.DatabaseInterface.SetNamespaceACL(namespaceName, username, t)
 		if err != nil {
@@ -428,6 +429,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			PushToRepository: len(r.Form.Get("pushToRepo")) > 0,
 			ArchiveRepository: len(r.Form.Get("archiveRepo")) > 0,
 			DeleteRepository: len(r.Form.Get("deleteRepo")) > 0,
+			EditHooks: len(r.Form.Get("editHooks")) > 0,
 		}
 		err = ctx.DatabaseInterface.SetNamespaceACL(namespaceName, targetUsername, t)
 		if err != nil {

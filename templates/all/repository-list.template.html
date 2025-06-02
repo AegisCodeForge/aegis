@@ -50,7 +50,7 @@
 	  <tbody class="all-list-table-body">
 		{{range $value := .RepositoryList}}
 		<tr>
-		  <td><a href="{{getRepoPath $value.Namespace $value.Name}}">{{$value.Namespace}}:{{$value.Name}}</a></td>
+		  <td><a href="{{getRepoPath $value.Namespace $value.Name}}">{{getRepoName $value.Namespace $value.Name}}</a></td>
 		  <td>{{$value.Description}}</td>
 		</tr>
 		{{end}}

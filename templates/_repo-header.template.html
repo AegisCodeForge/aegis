@@ -9,9 +9,11 @@
   Owner: <a href="/u/{{.Owner}}">{{.Owner}}</a>
   {{end}}
 </div>
+{{if and .Config (not .Config.PlainMode)}}
 <div class="repo-header-nav">
   <a href="{{getRepoPath $namespaceName $repoName}}/setting">Setting</a>
 </div>
+{{end}}
   {{if gt (len .TypeStr) 0}}
   <div class="header-node">@{{.TypeStr}}:<a href="{{getRootPath $namespaceName $repoName .TypeStr .NodeName}}">{{if eq .TypeStr "commit"}}{{slice .NodeName 0 8}}<span style="font-size:80%">{{slice .NodeName 8 40}}</span>{{if gt (len .NodeName) 40}}<span style="font-size:60%">{{slice .NodeName 40}}</span>{{end}}{{else}}{{.NodeName}}{{end}}</a></div>
   {{end}}

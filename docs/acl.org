@@ -12,6 +12,7 @@ The following 6 permissions can be granted:
 + =pushToRepo=: push to repository through SSH.
 + =archiveRepo=: edit a repository's status
 + =deleteRepo=: delete a repository
++ =editHooks=: edit hook
 
 The ACL is conceptually a map from a user name to a 8 boolean tuple. Unless the overall design has changed, code that implements ACL-related logic should interpret and maintain the order of the values within the 8 boolean tuple as listed above.
 

@@ -353,9 +353,20 @@ func (cfg *AegisConfig) Sync() error {
 }
 
 func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
-	// NOTE: you should NOT call this when UseNamespace is true.
-	// this would return nil when UseNamespace is true, just in case
-	// people depend on its behaviour otherwise.
+	if cfg.UseNamespace {
+		m, err := cfg.GetAllNamespacePlain()
+		if err != nil { return nil, err }
+		res := make([]*model.Repository, 0)
+		for k, _ := range m {
+			r, err := cfg.GetAllRepositoryByNamespacePlain(k)
+			if err != nil { return nil, err }
+			for _, i := range r {
+				i.Namespace = k
+				res = append(res, i)
+			}
+		}
+		return res, nil
+	}
 	if cfg.UseNamespace { return nil, nil }
 	gitPath := cfg.GitRoot
 	res := make([]*model.Repository, 0)
@@ -408,7 +419,7 @@ func (cfg *AegisConfig) GetAllRepositoryByNamespacePlain(ns string) (map[string]
 		}
 		k := gitlib.NewLocalGitRepository("", repoName, p)
 		res[repoName] = &model.Repository{
-			Namespace: k.Namespace,
+			Namespace: ns,
 			Name: k.Name,
 			Description: k.Description,
 			AccessControlList: nil,

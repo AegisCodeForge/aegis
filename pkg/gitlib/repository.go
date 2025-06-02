@@ -23,6 +23,7 @@ type LocalGitRepository struct {
 	TagIndex map[string]*Tag
 	Config ini.INI
 	isSHA256 bool
+	Hooks map[string]string
 }
 
 func (gr LocalGitRepository) IsSHA256() bool {
@@ -43,6 +44,7 @@ func NewLocalGitRepository(namespace string, name string, p string) *LocalGitRep
 		Name: name,
 		GitDirectoryPath: p,
 		PackIndex: nil,
+		Hooks: nil,
 	}
 	pi, err := res.readAllPackIndex()
 	if err != nil { log.Fatal(err) }

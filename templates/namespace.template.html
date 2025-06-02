@@ -13,10 +13,12 @@
 	  {{if gt (len (.Namespace.Owner)) 0}}
 	  <div>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></div>
 	  {{end}}
+	  {{if .LoginInfo}}
 	  {{if or (eq .Namespace.Owner .LoginInfo.UserName)
 	  (.LoginInfo.IsSettingMember)
 	  (.LoginInfo.IsAdmin)}}
 	  <div class="namespace-nav"><a href="/s/{{.Namespace.Name}}/setting">Settings</a> <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a></div>
+	  {{end}}
 	  {{end}}
 	  <div class="namespace-description">{{.Namespace.Description}}</div>
 	</header>

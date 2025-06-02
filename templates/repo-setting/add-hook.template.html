@@ -1,0 +1,87 @@
+{{$repoName := .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Settings of {{.Repository.Namespace}}:{{.Repository.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-repo-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  {{template "_repo-header" .RepoHeaderInfo}}
+	</header>
+	<hr />
+
+	<main>
+	  {{template "repo-setting/_sidebar" .}}
+
+	  <div class="main-side">
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg}}</div>
+		{{end}}
+
+		<h2>Add Hook</h2>
+		
+		<form id="namespace-setting-form" action="" method="POST">
+		  <div class="field">
+			<label class="field-label" for="hookNameSelect">Hook Name (select):</label>
+			<select name="hookNameSelect" id="hookNameSelect">
+			  <option value="applypatch-msg">applypatch-msg</option>
+			  <option value="pre-applypatch">pre-applypatch</option>
+			  <option value="post-applypatch">post-applypatch</option>
+			  <option value="pre-commit">pre-commit</option>
+			  <option value="pre-merge-commit">pre-merge-commit</option>
+			  <option value="prepare-commit-msg">prepare-commit-msg</option>
+			  <option value="commit-msg">commit-msg</option>
+			  <option value="post-commit">post-commit</option>
+			  <option value="pre-rebase">pre-rebase</option>
+			  <option value="post-checkout">post-checkout</option>
+			  <option value="post-merge">post-merge</option>
+			  <option value="pre-push">pre-push</option>
+			  <option value="pre-receive">pre-receive</option>
+			  <option value="update">update</option>
+			  <option value="proc-receive">proc-receive</option>
+			  <option value="post-receive">post-receive</option>
+			  <option value="post-update">post-update</option>
+			  <option value="reference-transaction">reference-transaction</option>
+			  <option value="push-to-checkout">push-to-checkout</option>
+			  <option value="pre-auto-gc">pre-auto-gc</option>
+			  <option value="post-rewrite">post-rewrite</option>
+			  <option value="rebase">rebase</option>
+			  <option value="sendemail-validate">sendemail-validate</option>
+			  <option value="fsmonitor-watchman">fsmonitor-watchman</option>
+			  <option value="p4-changelist">p4-changelist</option>
+			  <option value="p4-prepare-changelist">p4-prepare-changelist</option>
+			  <option value="p4-post-changelist">p4-post-changelist</option>
+			  <option value="p4-pre-submit">p4-pre-submit</option>
+			  <option value="post-index-change">post-index-change</option>
+			</select>
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="hookNameSpecify">Or specify hook name here (this field takes higher precedence):</label>
+			<input class="field-tf" name="hookNameSpecify" id="hookNameSpecify" />
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="source">Source</label>
+			<textarea name="source" id="source"></textarea>
+		  </div>
+		  <div class="field">
+			<input class="form-submit" type="submit" value="Update" />
+		  </div>
+		</form>
+
+	  </div>
+	</main>
+
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

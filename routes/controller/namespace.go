@@ -29,6 +29,10 @@ func bindNamespaceController(ctx *RouterContext) {
 					return
 				}
 			}
+			LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
+				Namespace: ns,
+				Config: ctx.Config,
+			}))
 		} else {
 			ns, err = ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
@@ -41,19 +45,19 @@ func bindNamespaceController(ctx *RouterContext) {
 				return
 			}
 			ns.RepositoryList = s
+			loginInfo, err := GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
+			loginInfo.IsSettingMember = v
+			LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
+				Namespace: ns,
+				LoginInfo: loginInfo,
+				Config: ctx.Config,
+			}))
 		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
-		loginInfo.IsSettingMember = v
-		LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
-			Namespace: ns,
-			LoginInfo: loginInfo,
-			Config: ctx.Config,
-		}))
 	}))
 }
 

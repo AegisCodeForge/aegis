@@ -1,0 +1,57 @@
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Settings of {{.Repository.Namespace}}:{{.Repository.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-repo-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .RepoHeaderInfo}}
+	</header>
+	<hr />
+
+	<main>
+	  {{template "repo-setting/_sidebar" .}}
+
+	  <div class="main-side">
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg}}</div>
+		{{end}}
+
+		<h2>Edit Hooks</h2>
+
+		<a href="{{$repoPath}}/hooks/add">New Hook</a>
+		{{if .HookList}}
+		<table class="setting-table">
+		  <thead>
+			<tr><th>Hook Name</th><th>Edit</th><th>Delete</th></tr>
+		  </thead>
+		  <tbody>
+			{{range $hookName := .HookList}}
+			<tr>
+			  <td>{{$hookName}}</td>
+			  <td><a href="{{$repoPath}}/hooks/{{$hookName}}/edit">Edit</a></td>
+			  <td><a href="{{$repoPath}}/hooks/{{$hookName}}/delete">Delete</a></td>
+			</tr>
+			{{end}}
+		  </tbody>
+		</table>
+		{{else}}
+		<p>This repository have no hooks set.</p>
+		{{end}}
+	  </div>
+	</main>
+
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

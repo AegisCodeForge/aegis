@@ -93,5 +93,25 @@
   	new_name TEXT,
   	redirect_timestamp INTEGER
   );
+
+  CREATE TABLE IF NOT EXISTS gitus_issue {
+      repo_fullname TEXT,
+  	issue_id INTEGER,
+  	issue_author TEXT,
+  	issue_title TEXT,
+  	issue_content TEXT,
+  	FOREIGN KEY (issue_author) REFERENCES gitus_user(user_name)
+  };
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_gitus_issue_repo_fullname
+  ON gitus_issue (repo_fullname);
+  CREATE TABLE IF NOT EXISTS gitus_issue_event {
+      issue_abs_id INTEGER,
+  	-- 1 - comment.  2 - close as solved.  3 - close as discarded.
+  	-- 4 - reopened.
+  	issue_event_type INTEGER,
+  	issue_event_time INTEGER,
+  	issue_event_content TEXT,
+      FOREIGN KEY (issue_abs_id) REFERENCES gitus_issue(rowid)
+  };
 #+end_src
 
