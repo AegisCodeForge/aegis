@@ -36,6 +36,7 @@ func bindDiffController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -71,7 +72,8 @@ func bindDiffController(ctx *RouterContext) {
 		}
 		
 		LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{
-			RepoHeaderInfo: *GenerateRepoHeader(ctx, repo, "commit", commitId),
+			Repository: repo,
+			RepoHeaderInfo: *GenerateRepoHeader("commit", commitId),
 			CommitInfo: templates.CommitInfoTemplateModel{
 				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj.(*gitlib.CommitObject),

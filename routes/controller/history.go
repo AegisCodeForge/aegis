@@ -37,6 +37,7 @@ func bindHistoryController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -104,7 +105,8 @@ func bindHistoryController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("commit-history").Execute(
 			w,
 			templates.CommitHistoryModel{
-				RepoHeaderInfo: *GenerateRepoHeader(ctx, repo, typeStr, nodeNameElem[1]),
+				Repository: repo,
+				RepoHeaderInfo: *GenerateRepoHeader(typeStr, nodeNameElem[1]),
 				Commit: *(cobj.(*gitlib.CommitObject)),
 				CommitHistory: h[:len(h)-1],
 				LoginInfo: loginInfo,

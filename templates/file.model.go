@@ -6,6 +6,7 @@ import "github.com/bctnry/aegis/pkg/aegis"
 
 type FileTemplateModel struct {
 	Config *aegis.AegisConfig
+	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	File BlobTextTemplateModel
 	PermaLink string

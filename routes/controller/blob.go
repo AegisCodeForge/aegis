@@ -37,6 +37,7 @@ func bindBlobController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -55,7 +56,7 @@ func bindBlobController(ctx *RouterContext) {
 		
 		blobId := r.PathValue("blobId")
 
-		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "blob", blobId)
+		repoHeaderInfo := GenerateRepoHeader("blob", blobId)
 
 		gobj, err := repo.Repository.ReadObject(blobId)
 		if err != nil {
@@ -89,6 +90,7 @@ func bindBlobController(ctx *RouterContext) {
 				FileLineCount: strings.Count(str, "\n"),
 				FileContent: str,
 			},
+			Repository: repo,
 			PermaLink: permaLink,
 			TreePath: nil,
 			CommitInfo: nil,

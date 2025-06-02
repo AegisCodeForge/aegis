@@ -48,6 +48,7 @@ func bindCommitController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
 		
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
@@ -68,7 +69,7 @@ func bindCommitController(ctx *RouterContext) {
 		commitId := r.PathValue("commitId")
 		treePath := r.PathValue("treePath")
 
-		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "commit", commitId)
+		repoHeaderInfo := GenerateRepoHeader("commit", commitId)
 
 		gobj, err := repo.Repository.ReadObject(commitId)
 		if err != nil {
@@ -134,6 +135,7 @@ func bindCommitController(ctx *RouterContext) {
 				return
 			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
@@ -170,6 +172,7 @@ func bindCommitController(ctx *RouterContext) {
 			coloredStr, err := colorSyntax(filename, str)
 			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{
 					FileLineCount: strings.Count(str, "\n"),

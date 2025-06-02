@@ -40,6 +40,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = s.Owner == loginInfo.UserName || ns.Owner == loginInfo.UserName
 		}
 		if !ctx.Config.PlainMode && s.Status == model.REPO_NORMAL_PRIVATE {
 			t := s.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -138,12 +139,11 @@ func bindRepositoryController(ctx *RouterContext) {
 		
 	findingReadmeDone:
 
-		repoHeaderInfo := GenerateRepoHeader(ctx, s, "", "")
+		repoHeaderInfo := GenerateRepoHeader("", "")
 
 		LogTemplateError(ctx.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
 			Config: ctx.Config,
-			RepoName: rfn,
-			RepoObj: s.Repository,
+			Repository: s,
 			RepoHeaderInfo: *repoHeaderInfo,
 			BranchList: s.Repository.BranchIndex,
 			TagList: s.Repository.TagIndex,

@@ -50,6 +50,7 @@ func bindNamespaceController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = ns.Owner == loginInfo.UserName
 			v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
 			loginInfo.IsSettingMember = v
 			LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{

@@ -6,8 +6,7 @@ import "github.com/bctnry/aegis/pkg/gitlib"
 
 type RepositoryModel struct{
 	Config *aegis.AegisConfig
-	RepoName string
-	RepoObj *gitlib.LocalGitRepository
+	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	BranchList map[string]*gitlib.Branch
 	TagList map[string]*gitlib.Tag

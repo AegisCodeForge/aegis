@@ -45,6 +45,7 @@ func bindTreeHandler(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = repo.Owner == loginInfo.UserName || ns.Owner == loginInfo.UserName
 		}
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -71,9 +72,6 @@ func bindTreeHandler(ctx *RouterContext) {
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
 			TypeStr: "tree",
 			NodeName: treeId,
-			RepoLabelList: nil,
-			RepoURL: fmt.Sprintf("%s/repo/%s", ctx.Config.HttpHostName, rfn),
-			Repository: repo,
 		}
 
 		gobj, err := repo.Repository.ReadObject(treeId)
@@ -125,6 +123,7 @@ func bindTreeHandler(ctx *RouterContext) {
 			TreePathSegmentList: treePathSegmentList,
 		}
 		LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
+			Repository: repo,
 			RepoHeaderInfo: repoHeaderInfo,
 			TreeFileList: templates.TreeFileListTemplateModel{
 				ShouldHaveParentLink: len(treePath) > 0,

@@ -1,5 +1,5 @@
-{{$namespaceName := .RepoHeaderInfo.Repository.Namespace}}
-{{$repoName := .RepoHeaderInfo.Repository.Name}}
+{{$namespaceName := .Repository.Namespace}}
+{{$repoName := .Repository.Name}}
 {{$typeStr := .RepoHeaderInfo.TypeStr}}
 {{$nodeName := .RepoHeaderInfo.NodeName}}
 {{$repoPath := getRepoPath $namespaceName $repoName}}
@@ -13,7 +13,7 @@
   <body>
 	<header>
 	  {{template "_header-nav" .}}
-	  {{template "_repo-header" .RepoHeaderInfo}}
+	  {{template "_repo-header" .}}
 	</header>
 	
 	<div class="node-description">

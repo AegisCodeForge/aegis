@@ -1,4 +1,4 @@
-{{$reponame := .RepoName}}
+{{$reponame := .Repository.Name}}
 <!DOCTYPE html>
 <html>
   <head>
@@ -9,7 +9,7 @@
   <body>
 	<header>
 	  {{template "_header-nav" .}}
-	  {{template "_repo-header" .RepoHeaderInfo}}
+	  {{template "_repo-header" .}}
 	</header>
 	
     <hr />
@@ -32,11 +32,11 @@
 	  </div>
 	  <div class="main-side">
 		{{if gt (len .ReadmeString) 0}}{{rawHTML .ReadmeString}}{{else}}
-		{{if and (eq (len .RepoObj.BranchIndex) 0) (eq (len .RepoObj.TagIndex) 0)}}
+		{{if and (eq (len .Repository.Repository.BranchIndex) 0) (eq (len .Repository.Repository.TagIndex) 0)}}
 		<p>
 		  This repository seems to be completely empty. If you've just created this repository, you can follow the instructions below to upload a local Git repository here:
 		</p>
-		<pre>git remote add origin {{.RepoHeaderInfo.RepoSSH}}
+		<pre>git remote add origin {{getRepoSSH .Config .Repository}}
 git push -u origin</pre>
 		{{else}}<p>This repository has no README text.</p>{{end}}
         {{end}}

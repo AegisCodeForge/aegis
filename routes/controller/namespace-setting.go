@@ -37,6 +37,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			ctx.ReportForbidden("Not enough permission", w, r)
 			return
 		}
+		loginInfo.IsOwner = isOwner
 		LogTemplateError(ctx.LoadTemplate("namespace-setting/change-info").Execute(w, templates.NamespaceSettingTemplateModel{
 			Namespace: ns,
 			LoginInfo: loginInfo,
@@ -60,6 +61,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			return
 		}
 		isOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
@@ -191,6 +193,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			return
 		}
 		isOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
@@ -244,6 +247,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			return
 		}
 		isOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
@@ -303,6 +307,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			return
 		}
 		isOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
@@ -355,6 +360,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			return
 		}
 		isOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
@@ -398,6 +404,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			return
 		}
 		isOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()

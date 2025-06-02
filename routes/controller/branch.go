@@ -47,6 +47,7 @@ func bindBranchController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -64,7 +65,7 @@ func bindBranchController(ctx *RouterContext) {
 		}
 		
 		branchName := r.PathValue("branchName")
-		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "branch", branchName)
+		repoHeaderInfo := GenerateRepoHeader("branch", branchName)
 		
 		treePath := r.PathValue("treePath")
 
@@ -150,6 +151,7 @@ func bindBranchController(ctx *RouterContext) {
 				return
 			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
@@ -186,6 +188,7 @@ func bindBranchController(ctx *RouterContext) {
 			coloredStr, err := colorSyntax(filename, str)
 			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{
 					FileLineCount: strings.Count(str, "\n"),

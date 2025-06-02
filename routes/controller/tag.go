@@ -59,6 +59,7 @@ func bindTagController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
+			loginInfo.IsOwner = repo.Owner == loginInfo.UserName || ns.Owner == loginInfo.UserName
 		}
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -86,7 +87,7 @@ func bindTagController(ctx *RouterContext) {
 		//   into a tree or a blob.
 		// + by now we have a tagInfo/nil, a commitInfo/nil and a tree/blob/tag.
 		//   we thus display them accordingly.
-		repoHeaderInfo := GenerateRepoHeader(ctx, repo, "tag", tagName)
+		repoHeaderInfo := GenerateRepoHeader("tag", tagName)
 		
 		err = repo.Repository.SyncAllTagList()
 		if err != nil {
@@ -192,6 +193,7 @@ func bindTagController(ctx *RouterContext) {
 				return
 			}
 			LogTemplateError(ctx.LoadTemplate("tag").Execute(w, templates.TagTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				Tag: tobj,
 				TagInfo: tagInfo,
@@ -218,6 +220,7 @@ func bindTagController(ctx *RouterContext) {
 			coloredStr, err := colorSyntax("", str)
 			if err == nil { str = coloredStr }
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				File: templates.BlobTextTemplateModel{
 					FileLineCount: strings.Count(str, "\n"),
@@ -256,6 +259,7 @@ func bindTagController(ctx *RouterContext) {
 				TreePathSegmentList: treePathSegmentList,
 			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
+				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,

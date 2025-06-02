@@ -23,6 +23,7 @@ type Repository struct {
 	Status AegisRepositoryStatus `json:"status"`
 	Repository *gitlib.LocalGitRepository `json:"localGitRepo"`
 	LocalPath string `json:"localPath"`
+	RepoLabelList []string `json:"labelList"`
 }
 
 func NewRepository(ns string, name string, localgr *gitlib.LocalGitRepository) (*Repository, error) {

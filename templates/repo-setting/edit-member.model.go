@@ -8,8 +8,8 @@ import "github.com/bctnry/aegis/pkg/aegis/model"
 type RepositorySettingEditMemberTemplateModel struct {
 	Config *aegis.AegisConfig
 	Repository *model.Repository
-	RepoFullName string
 	RepoHeaderInfo *RepoHeaderTemplateModel
+	RepoFullName string
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
 	Username string

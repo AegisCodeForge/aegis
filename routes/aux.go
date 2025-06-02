@@ -73,6 +73,8 @@ func CheckUserSession(ctx *RouterContext, r *http.Request) (bool, error) {
 }
 
 func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.LoginInfoModel, error) {
+	// NOTE: we don't set .IsOwner here - that needs extra info and is
+	// up to each controller.
 	if ctx.Config.PlainMode { return nil, nil }
 	loggedIn := false
 	un, err := GetUsernameFromCookie(r)
@@ -81,6 +83,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		return &templates.LoginInfoModel{
 			LoggedIn: loggedIn,
 			UserName: "",
+			IsOwner: false,
+			IsSettingMember: false,
 			IsAdmin: false,
 			IsSuperAdmin: false,
 		}, nil
@@ -91,6 +95,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		return &templates.LoginInfoModel{
 			LoggedIn: loggedIn,
 			UserName: "",
+			IsOwner: false,
+			IsSettingMember: false,
 			IsAdmin: false,
 			IsSuperAdmin: false,
 		}, nil
@@ -102,24 +108,17 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 	return &templates.LoginInfoModel{
 		LoggedIn: res,
 		UserName: un,
+		IsOwner: false,
+		IsSettingMember: false,
 		IsAdmin: u.Status == model.ADMIN || u.Status == model.SUPER_ADMIN,
 		IsSuperAdmin: u.Status == model.SUPER_ADMIN,
 	}, nil
 }
 
-func GenerateRepoHeader(ctx *RouterContext, repo *model.Repository, typeStr string, nodeName string) *templates.RepoHeaderTemplateModel {
-	httpHostName := ctx.Config.ProperHTTPHostName()
-	gitSshHostName := ctx.Config.GitSSHHostName()
-	sshfn := fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
-	rfn := repo.FullName()
+func GenerateRepoHeader(typeStr string, nodeName string) *templates.RepoHeaderTemplateModel {
 	repoHeaderInfo := &templates.RepoHeaderTemplateModel{
 		TypeStr: typeStr,
 		NodeName: nodeName,
-		RepoLabelList: nil,
-		Owner: repo.Owner,
-		RepoURL: fmt.Sprintf("%s/repo/%s", httpHostName, rfn),
-		RepoSSH: fmt.Sprintf("%s%s", gitSshHostName, sshfn),
-		Repository: repo,
 	}
 	return repoHeaderInfo
 }

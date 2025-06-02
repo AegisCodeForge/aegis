@@ -7,6 +7,7 @@ import "github.com/bctnry/aegis/pkg/gitlib"
 
 type DiffTemplateModel struct {
 	Config *aegis.AegisConfig
+	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	CommitInfo CommitInfoTemplateModel
 	Diff string

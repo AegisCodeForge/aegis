@@ -7,6 +7,7 @@ import "github.com/bctnry/aegis/pkg/gitlib"
 
 type CommitHistoryModel struct {
 	Config *aegis.AegisConfig
+	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	Commit gitlib.CommitObject
 	CommitHistory []gitlib.CommitObject

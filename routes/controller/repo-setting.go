@@ -42,6 +42,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
@@ -60,7 +61,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, templates.RepositorySettingTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			RepoFullName: rfn,
 			LoginInfo: loginInfo,
 		}))
@@ -92,6 +92,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -140,7 +141,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				Repository: repo,
-				RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 				RepoFullName: rfn,
 				ErrorMsg: fmt.Sprintf("Invalid status value. Please try again."),
 			}))
@@ -152,7 +152,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				Repository: repo,
-				RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 				RepoFullName: rfn,
 				ErrorMsg: fmt.Sprintf("Not enough privilege."),
 			}))
@@ -166,7 +165,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				Repository: repo,
-				RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 				RepoFullName: rfn,
 				ErrorMsg: fmt.Sprintf("Internal error while updating repo: %s.", err.Error()),
 			}))
@@ -176,7 +174,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
 			Repository: repo,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			RepoFullName: rfn,
 			ErrorMsg: "Updated.",
 		}))
@@ -210,6 +207,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isDeleteCapableMember := (repoPriv != nil && repoPriv.DeleteRepository) || (nsPriv != nil && nsPriv.DeleteRepository)
@@ -271,6 +269,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -312,7 +311,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("repo-setting/member-list").Execute(w, templates.RepositorySettingMemberListTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			RepoFullName: rfn,
 			LoginInfo: loginInfo,
 			ACL: page,
@@ -347,6 +345,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -432,6 +431,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -469,7 +469,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			LoginInfo: loginInfo,
 			Repository: repo,
 			RepoFullName: rfn,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			Username: targetUsername,
 			ACLTuple: userPriv,
 		}))
@@ -501,6 +500,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -583,6 +583,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -607,7 +608,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("repo-setting/hook-list").Execute(w, templates.RepositorySettingHookListTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			RepoFullName: rfn,
 			LoginInfo: loginInfo,
 			ErrorMsg: errMsg,
@@ -641,6 +641,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -659,7 +660,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("repo-setting/add-hook").Execute(w, templates.RepositorySettingAddHookTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			RepoFullName: rfn,
 			LoginInfo: loginInfo, 
 			ErrorMsg: "",
@@ -692,6 +692,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -774,6 +775,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -799,7 +801,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("repo-setting/edit-hook").Execute(w, templates.RepositorySettingEditHookTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
-			RepoHeaderInfo: GenerateRepoHeader(ctx, repo, "", ""),
 			RepoFullName: rfn,
 			LoginInfo: loginInfo,
 			HookName: hookName,
@@ -834,6 +835,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -911,6 +913,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		isOwner := isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
