@@ -102,6 +102,23 @@ func (ctx RouterContext) ReportObjectTypeMismatch(objid string, expectedType str
 	)
 }
 
+func (ctx *RouterContext) ReportRedirect(target string, timeout int, title string, message string, w http.ResponseWriter, r *http.Request) {
+	var loginInfoModel *templates.LoginInfoModel
+	var err error
+	if !ctx.Config.PlainMode {
+		loginInfoModel, err = GenerateLoginInfoModel(ctx, r)
+		if err != nil { panic(err) }
+	}
+	LogTemplateError(ctx.LoadTemplate("_redirect/index").Execute(w, templates.RedirectWithMessageModel{
+		Config: ctx.Config,
+		LoginInfo: loginInfoModel,
+		Timeout: timeout,
+		RedirectUrl: target,
+		MessageTitle: title,
+		MessageText: message,
+	}))
+}
+
 func (ctx *RouterContext) SyncAllNamespacePlain() error {
 	if ctx.Config.UseNamespace {
 		rp, err := ctx.Config.GetAllNamespacePlain()

@@ -34,7 +34,11 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
 		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportForbidden("Not enough permission", w, r)
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s", namespaceName), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		loginInfo.IsOwner = isOwner
@@ -63,118 +67,91 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isOwner := ns.Owner == loginInfo.UserName
 		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isMember := priv != nil
-		isSettingMember := isMember && priv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportForbidden("Not enough permission", w, r)
+		canEditInfo := priv != nil && priv.EditInfo
+		if !loginInfo.IsAdmin && !isOwner && !canEditInfo {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s", namespaceName), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
-		loginInfo.IsSettingMember = isSettingMember
+		loginInfo.IsSettingMember = loginInfo.IsAdmin || isOwner || priv.HasSettingPrivilege()
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		anythingChanged := false
 		newOwner := strings.TrimSpace(r.Form.Get("owner"))
 		if ns.Owner != newOwner {
 			if !isOwner && !loginInfo.IsAdmin {
-				LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-					Config: ctx.Config,
-					LoginInfo: loginInfo,
-					Timeout: 3,
-					RedirectUrl: fmt.Sprintf("/s/%s/setting", namespaceName),
-					MessageTitle: "Not enough privilege",
-					MessageText: "You are neither owner nor an admin, thus cannot change this namespace's ownership.",
-				}))
+				ctx.ReportRedirect(fmt.Sprintf("/s/%s/setting", namespaceName), 0,
+					"Not enough privilege",
+					"You are neither owner nor an admin, thus cannot change this namespace's ownership.",
+					w, r,
+				)
 				return
 			}
 			ns.Owner = newOwner
-			anythingChanged = true
-		}
-		if ns.Title != strings.TrimSpace(r.Form.Get("title")) {
-			anythingChanged = true
 		}
 		ns.Title = r.Form.Get("title")
-		if ns.Description != strings.TrimSpace(r.Form.Get("description")) {
-			anythingChanged = true
-		}
 		ns.Description = r.Form.Get("description")
-		if ns.Email != strings.TrimSpace(r.Form.Get("email")) {
-			anythingChanged = true
-		}
 		ns.Email = r.Form.Get("email")
 		i, err := strconv.Atoi(r.Form.Get("status"))
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/change-info").Execute(w, &templates.NamespaceSettingTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Namespace: ns,
-				ErrorMsg: struct{Type string; Message string}{
-					Type: r.Form.Get("type"),
-					Message: fmt.Sprintf("Invalid status value. Please try again.", err.Error()),
-				},
-			}))
+			ctx.ReportRedirect(
+				fmt.Sprintf("/s/%s/setting", namespaceName), 0,
+				"Invalid Request",
+				"Invalid status value. Please try again.",
+				w, r,
+			)
 			return
-		}
-		if ns.Status != model.AegisNamespaceStatus(i) {
-			anythingChanged = true
 		}
 		ns.Status = model.AegisNamespaceStatus(i)
-		userPrivilege := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		if anythingChanged && (userPrivilege == nil || !userPrivilege.EditInfo) {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/change-info").Execute(w, &templates.NamespaceSettingTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Namespace: ns,
-				ErrorMsg: struct{Type string; Message string}{
-					Type: "",
-					Message: "Not enough privilege.",
-				},
-			}))
-			return
-		}
 		err = ctx.DatabaseInterface.UpdateNamespaceInfo(namespaceName, ns)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		LogTemplateError(ctx.LoadTemplate("namespace-setting/change-info").Execute(w, &templates.NamespaceSettingTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Namespace: ns,
-			ErrorMsg: struct{Type string; Message string}{
-				Type: r.Form.Get("type"),
-				Message: fmt.Sprintf("Updated."),
-			},
-		}))
+		ctx.ReportRedirect(fmt.Sprintf("/s/%s/setting", namespaceName), 3,
+			"Updated",
+			"Namespace info updated.",
+			w, r,
+		)
 	}))
 
 	http.HandleFunc("GET /s/{namespace}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
-		userInfo, err := GenerateLoginInfoModel(ctx, r)
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !userInfo.LoggedIn { FoundAt(w, namespacePath); return }
+		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if ns.Owner != userInfo.UserName {
-			ctx.ReportForbidden("Not owner", w, r)
-			return
+		if !loginInfo.IsAdmin &&  ns.Owner != loginInfo.UserName {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/setting", namespaceName), 3,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 		}
 		err = ctx.DatabaseInterface.HardDeleteNamespaceByName(namespaceName)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		FoundAt(w, "/")
+		ctx.ReportRedirect("/", 3,
+			"Deleted",
+			"Namespace deleted..",
+			w, r,
+		)
 	}))
 
 	http.HandleFunc("GET /s/{namespace}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
@@ -198,7 +175,11 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isMember := priv != nil
 		isSettingMember := isMember && priv.HasSettingPrivilege()
 		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportForbidden("Not enough privilege", w, r)
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/setting", ns.Name), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		var userList map[string]*model.ACLTuple
@@ -249,10 +230,13 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isOwner := ns.Owner == loginInfo.UserName
 		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isMember := priv != nil
-		isSettingMember := isMember && priv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportForbidden("Not enough privilege", w, r)
+		canAddMember := priv != nil && priv.AddMember
+		if !loginInfo.IsAdmin && !isOwner && !canAddMember {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/setting", ns.Name), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		err = r.ParseForm()
@@ -262,14 +246,11 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		}
 		username := strings.TrimSpace(r.Form.Get("username"))
 		if len(username) <= 0 {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/s/%s/member", namespaceName),
-				MessageTitle: "Invalid request",
-				MessageText: "User name cannot be empty.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/setting", ns.Name), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		t := &model.ACLTuple{
@@ -288,7 +269,11 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		FoundAt(w, fmt.Sprintf("/s/%s/member", namespaceName))
+		ctx.ReportRedirect(fmt.Sprintf("/s/%s/member", ns.Name), 3,
+			"Updated",
+			"Member list updated.",
+			w, r,
+		)
 	}))
 
 	http.HandleFunc("GET /s/{namespace}/member/{username}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
@@ -309,22 +294,13 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isOwner := ns.Owner == loginInfo.UserName
 		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isMember := priv != nil
-		isSettingMember := isMember && priv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportForbidden("Not enough privilege", w, r)
-			return
-		}
-		fmt.Println("user priv ", priv)
-		if !priv.DeleteMember {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/s/%s/member", namespaceName),
-				MessageTitle: "Not enough privilege",
-				MessageText: "You don't have enough privilege in this namespace.",
-			}))
+		privSufficient := isOwner || loginInfo.IsAdmin || (priv != nil && priv.DeleteMember)
+		if !privSufficient {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/member", ns.Name), 0,
+				"Not enough privilege",
+				"You seem to not have not enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		targetUsername := r.PathValue("username")
@@ -362,20 +338,14 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isOwner := ns.Owner == loginInfo.UserName
 		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isMember := priv != nil
-		isSettingMember := isMember && priv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner {
-			if !isSettingMember || !priv.EditMember {
-				LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-					Config: ctx.Config,
-					LoginInfo: loginInfo,
-					Timeout: 3,
-					RedirectUrl: fmt.Sprintf("/s/%s/member", namespaceName),
-					MessageTitle: "Not enough privilege",
-					MessageText: "You don't have enough privilege in this namespace.",
-				}))
-				return
-			}
+		canEditMember := priv != nil && priv.EditMember
+		if !loginInfo.IsAdmin && !isOwner && !canEditMember {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/member", namespaceName), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
+			return
 		}
 		targetUsername := r.PathValue("username")
 		userPriv := ns.ACL.GetUserPrivilege(targetUsername)
@@ -406,20 +376,14 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		isOwner := ns.Owner == loginInfo.UserName
 		loginInfo.IsOwner = isOwner
 		priv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isMember := priv != nil
-		isSettingMember := isMember && priv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner {
-			if !isSettingMember || !priv.EditMember {
-				LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-					Config: ctx.Config,
-					LoginInfo: loginInfo,
-					Timeout: 3,
-					RedirectUrl: fmt.Sprintf("/s/%s/member", namespaceName),
-					MessageTitle: "Not enough privilege",
-					MessageText: "You don't have enough privilege in this namespace.",
-				}))
-				return
-			}
+		canEditMember := priv != nil && priv.EditMember
+		if !loginInfo.IsAdmin && !isOwner && !canEditMember {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/member", namespaceName), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
+			return
 		}
 		targetUsername := r.PathValue("username")
 		err = r.ParseForm()

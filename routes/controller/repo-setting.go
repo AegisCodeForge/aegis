@@ -47,14 +47,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
 		if !loginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+				"Not enouhg privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		loginInfo.IsSettingMember = true
@@ -68,7 +65,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 	http.HandleFunc("POST /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -78,7 +75,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -98,14 +95,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
 		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		loginInfo.IsSettingMember = isSettingMember
@@ -118,14 +112,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		newOwner := strings.TrimSpace(r.Form.Get("owner"))
 		if repo.Owner != newOwner {
 			if !isOwner && !isNsOwner && !loginInfo.IsAdmin && newOwner != repo.Owner {
-				LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-					Config: ctx.Config,
-					LoginInfo: loginInfo,
-					Timeout: 3,
-					RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-					MessageTitle: "Not enough permission",
-					MessageText: "You don't have enough permission to move the ownership of this repository.",
-				}))
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
 				return
 			}
 			repo.Owner = newOwner
@@ -181,7 +172,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 	http.HandleFunc("GET /repo/{repoName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -191,7 +182,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
@@ -210,41 +201,33 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		loginInfo.IsOwner = isRepoOwner || isNsOwner
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isDeleteCapableMember := (repoPriv != nil && repoPriv.DeleteRepository) || (nsPriv != nil && nsPriv.DeleteRepository)
-		if !loginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isDeleteCapableMember {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Failed to delete repository",
-				MessageText: "Not enough privilege.",
-			}))
+		canDeleteRepo := (repoPriv != nil && repoPriv.DeleteRepository) || (nsPriv != nil && nsPriv.DeleteRepository)
+		if !loginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !canDeleteRepo {
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 
 		err = ctx.DatabaseInterface.HardDeleteRepository(repo.Namespace, repo.Name)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Internal error",
-				MessageText: fmt.Sprintf("Failed to delete repository: %s.", err.Error()),
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+				"Internal error",
+				fmt.Sprintf("Failed to delete repository: %s.", err.Error()),
+				w, r,
+			)
 			return
 		}
-		if ctx.Config.UseNamespace {
-			FoundAt(w, fmt.Sprint("/s/%s", ns.Name))
-		} else {
-			FoundAt(w, "/")
-		}
+		redirectTarget := "/"
+		if ctx.Config.UseNamespace { redirectTarget = fmt.Sprintf("/s/%s", ns.Name) }
+		ctx.ReportRedirect(redirectTarget, 3, "Deleted.", "The specified repository is deleted.", w, r)
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -254,12 +237,10 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -275,14 +256,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
 		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		loginInfo.IsSettingMember = isSettingMember
@@ -320,7 +298,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("POST /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -330,11 +308,10 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
 		
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
@@ -351,39 +328,30 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasAddMemberPriv := (nsPriv != nil && nsPriv.AddMember) || (repoPriv != nil && repoPriv.AddMember)
 		if !loginInfo.IsAdmin && !isOwner && !hasAddMemberPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 
 		err = r.ParseForm()
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Invalid request",
-				MessageText: "Failed to parse request.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Invalid request",
+				"Failed to parse request.",
+				w, r,
+			)
 			return
 		}
 		username := strings.TrimSpace(r.Form.Get("username"))
 		if len(username) <= 0 {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Invalid request",
-				MessageText: "User name cannot be empty.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Invalid request",
+				"User name cannot be empty.",
+				w, r,
+			)
 			return
 		}
 		t := &model.ACLTuple{
@@ -407,7 +375,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 	http.HandleFunc("GET /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -417,7 +385,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -437,27 +405,21 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditMemberPriv := (nsPriv != nil && nsPriv.EditMember) || (repoPriv != nil && repoPriv.EditMember)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditMemberPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 
 		err = r.ParseForm()
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Invalid request",
-				MessageText: "Failed to parse request.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Invalid request",
+				"Failed to parse request.",
+				w, r,
+			)
 			return
 		}
 		
@@ -476,7 +438,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 	http.HandleFunc("POST /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -486,7 +448,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -506,27 +468,21 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditMemberPriv := (nsPriv != nil && nsPriv.EditMember) || (repoPriv != nil && repoPriv.EditMember)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditMemberPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 
 		err = r.ParseForm()
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/setting", rfn),
-				MessageTitle: "Invalid request",
-				MessageText: "Failed to parse request.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Invalid request",
+				"Failed to parse request.",
+				w, r,
+			)
 			return
 		}
 		
@@ -544,14 +500,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		}
 		err = ctx.DatabaseInterface.SetRepositoryACL(repo.Namespace, repo.Name, targetUsername, t)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 0,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Failed to update member privilege",
-				MessageText: fmt.Sprintf("Failed to update member privilege: %s. Please contact site owner.", err.Error()),
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Failed to update member privilege",
+				fmt.Sprintf("Failed to update member privilege: %s. Please contact site owner.", err.Error()),
+				w, r,
+			)
 			return
 		}
 		FoundAt(w, fmt.Sprintf("/repo/%s/member", rfn))
@@ -559,7 +512,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 	http.HandleFunc("GET /repo/{repoName}/hooks", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -569,7 +522,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -589,14 +542,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+				"Not enough permission",
+				"You don't have enough permission to change the settings of this repository.",
+				w, r,
+			)
 			return
 		}
 		rs, err := repo.Repository.GetAllSetHooksName()
@@ -617,7 +567,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("GET /repo/{repoName}/hooks/add", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -627,7 +577,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -647,14 +597,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		LogTemplateError(ctx.LoadTemplate("repo-setting/add-hook").Execute(w, templates.RepositorySettingAddHookTemplateModel{
@@ -668,7 +615,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("POST /repo/{repoName}/hooks/add", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -678,7 +625,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -698,27 +645,21 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/member", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 
 		err = r.ParseForm()
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Invalid request",
-				MessageText: fmt.Sprintf("Invalid request: %s", err.Error()),
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
+				"Invalid request",
+				fmt.Sprintf("Invalid request: %s", err.Error()),
+				w, r,
+			)
 			return
 		}
 
@@ -729,29 +670,23 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		hookSource := r.Form.Get("source")
 		err = repo.Repository.SaveHook(hookName, hookSource)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 0,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Failed to save hook",
-				MessageText: fmt.Sprintf("Failed to save hook %s: %s. You should contact the site owner about this.", hookName, err.Error()),
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
+				"Failed to save hook",
+				fmt.Sprintf("Failed to save hook %s: %s. You should contact the site owner about this.", hookName, err.Error()),
+				w, r,
+			)
 			return
 		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Timeout: 0,
-			RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-			MessageTitle: "Added",
-			MessageText: "Requested hook is added to the repository.",
-		}))
+		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
+			"Hook saved",
+			"Request hook is added to the repository.",
+			w, r,
+		)
 	}))
 	
 	http.HandleFunc("GET /repo/{repoName}/hooks/{hookName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -761,7 +696,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -781,14 +716,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		hookName := r.PathValue("hookName")
@@ -811,7 +743,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("POST /repo/{repoName}/hooks/{hookName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -821,7 +753,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -841,55 +773,43 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		err = r.ParseForm()
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 0,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Invalid request",
-				MessageText: fmt.Sprintf("Invalid request: %s.", err.Error()),
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Invalid request",
+				fmt.Sprintf("Invalid request: %s", err.Error()),
+				w, r,
+			)
 			return
 		}
 		hookName := r.PathValue("hookName")
 		hookSource := r.Form.Get("source")
 		err = repo.Repository.SaveHook(hookName, hookSource)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 0,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Failed while saving hook",
-				MessageText: fmt.Sprintf("Failed while saving hook %s: %s. You should contact site owner for this", hookName, err.Error()),
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Failed while saving hook",
+				fmt.Sprintf("Failed while saving hook %s: %s. You should contact site owner for this", hookName, err.Error()),
+				w, r,
+			)
 			return
 		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Timeout: 3,
-			RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-			MessageTitle: "Hook updated.",
-			MessageText: "The specified hook is updated.",
-		}))
+		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
+			"Hook updated",
+			"The specified hook is updated.",
+			w, r,
+		)
 	}))
 	
 	http.HandleFunc("GET /repo/{repoName}/hooks/{hookName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -899,7 +819,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
@@ -919,14 +839,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-				MessageTitle: "Not enough permission",
-				MessageText: "You don't have enough permission to change the settings of this repository.",
-			}))
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
+				"Not enough privilege",
+				"Your user account seems to not have enough privilege for this action.",
+				w, r,
+			)
 			return
 		}
 		hookName := r.PathValue("hookName")
@@ -942,14 +859,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			msgTitle = "Hook deleted."
 			msgText = "The specified hook is deleted."
 		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Timeout: timeout,
-			RedirectUrl: fmt.Sprintf("/repo/%s/hooks", rfn),
-			MessageTitle: msgTitle,
-			MessageText: msgText,
-		}))
+		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), timeout, msgTitle, msgText, w, r)
 	}))
 }
 

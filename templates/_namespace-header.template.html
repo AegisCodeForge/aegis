@@ -1,0 +1,17 @@
+{{define "_namespace-header"}}
+<div class="namespace-info">
+  <h1 class="header-name index-header-name"><a href="/s/{{.Namespace.Name}}">{{.Namespace.Title}}</a> ({{.Namespace.Name}})</h1>
+  {{if gt (len (.Namespace.Owner)) 0}}
+  <span>Owner: <a href="/u/{{.Namespace.Owner}}">{{.Namespace.Owner}}</a></span>
+  {{end}}
+  <div class="namespace-description">{{.Namespace.Description}}</div>
+</div>
+{{if and .Config (not .Config.PlainMode)}}
+<div class="namespace-nav">
+  {{if or (.LoginInfo.IsOwner) (.LoginInfo.IsSettingMember) (.LoginInfo.IsAdmin)}}
+  <a href="/s/{{.Namespace.Name}}/setting">Settings</a>
+  {{end}}
+  <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a>
+</div>
+{{end}}
+{{end}}

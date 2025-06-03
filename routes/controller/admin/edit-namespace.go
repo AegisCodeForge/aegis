@@ -20,15 +20,10 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 		nsn := r.PathValue("name")
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(nsn)
 		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: "",
-				Timeout: 0,
-				RedirectUrl: "/admin/namespace-list",
-				MessageTitle: "Error",
-				MessageText: fmt.Sprintf("Failed to fetch namespace: %s", err.Error()),
-			}))
+			ctx.ReportRedirect("/admin/namespace-list", 0, "Error",
+				fmt.Sprintf("Failed to fetch namespace: %s", err.Error()),
+				w, r,
+			)
 			return
 		}
 		routes.LogTemplateError(ctx.LoadTemplate("admin/namespace-edit").Execute(w, &templates.AdminNamespaceEditTemplateModel{
@@ -60,15 +55,7 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 		}
 		err = r.ParseForm()
 		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: "",
-				Timeout: 3,
-				RedirectUrl: "/admin/namespace-list",
-				MessageTitle: "Error",
-				MessageText: "Invalid request.",
-			}))
+			ctx.ReportRedirect("/admin/namespace-list", 3, "Error", "Invalid request", w, r)
 			return
 		}
 		title := r.Form.Get("title")
@@ -76,15 +63,7 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 		email := r.Form.Get("email")
 		i, err := strconv.Atoi(r.Form.Get("status"))
 		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: "",
-				Timeout: 3,
-				RedirectUrl: "/admin/namespace-list",
-				MessageTitle: "Error",
-				MessageText: "Invalid status value. Please try again.",
-			}))
+			ctx.ReportRedirect("/admin/namespace-list", 3, "Error", "Invalid status value. Please try again.", w, r)
 			return
 		}
 		description := r.Form.Get("description")

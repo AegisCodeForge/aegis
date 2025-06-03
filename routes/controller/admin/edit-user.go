@@ -91,15 +91,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 			if len(r.Form.Get("bio")) > 0 { user.Bio = r.Form.Get("bio") }
 			i, err := strconv.ParseInt(r.Form.Get("status"), 10, 32)
 			if !loginInfo.IsSuperAdmin && model.AegisUserStatus(i) != model.SUPER_ADMIN {
-				routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{
-					Config: ctx.Config,
-					LoginInfo: loginInfo,
-					ErrorMsg: "",
-					Timeout: 3,
-					RedirectUrl: "/admin/user-list",
-					MessageTitle: "Error",
-					MessageText: "Not enough permission.",
-				}))
+				ctx.ReportRedirect("/admin/user-list", 0, "Error", "Not enough permission.", w, r)
 				return
 			}
 			if err != nil {

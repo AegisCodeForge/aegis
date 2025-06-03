@@ -14,12 +14,12 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  
-	  <h1 class="header-name" style="margin-bottom: 0">Error</h1>
+	  <h1 class="header-name" style="margin-bottom: 0">{{.MessageTitle}}</h1>
 	</header>
 	<hr />
 
 	<main>
-	  {{template "namespace-setting/_sidebar"}}
+	  {{template "_redirect/_sidebar"}}
 
 	  <div class="admin-main main-side">
 		<h2>{{.MessageTitle}}</h2>
