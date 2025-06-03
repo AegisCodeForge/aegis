@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/rand/v2"
 	"strings"
+	"time"
 )
 
 type Receipt struct {
@@ -92,6 +93,10 @@ func ParseReceiptCommand(s string) []string {
 	}
 	if b.Len() > 0 { res = append(res, b.String()) }
 	return res
+}
+
+func (r *Receipt) Expired() bool {
+	return (time.Now().Unix() - r.IssueTime) >= r.TimeoutMinute * 60
 }
 
 const (

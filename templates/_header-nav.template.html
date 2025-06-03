@@ -6,6 +6,7 @@
 	{{end}}
 	<a href="/all/repo">REPO</a>
 	{{if .LoginInfo}}
+	{{.LoginInfo}}
 	{{if .LoginInfo.LoggedIn}}<a href="#nav-new">NEW</a>{{end}}
 	{{if .LoginInfo.LoggedIn}}<span class="header-nav-submenu" id="nav-new" name="nav-new"><a href="/new/namespace">NAMESPACE</a> <a href="/new/repo">REPOSITORY</a> <a href="#">CLOSE</a></span>{{end}}
 	{{end}}
