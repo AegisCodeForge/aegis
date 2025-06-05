@@ -39,7 +39,10 @@ func bindNewRepositoryController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
+		if !loginInfo.LoggedIn {
+			ctx.ReportRedirect("/", 3, "Not Logged In", "You need to log in before creating a new repository", w, r)
+			return
+		}
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -61,11 +64,13 @@ func bindNewRepositoryController(ctx *RouterContext) {
 		}
 		newRepoName := r.Form.Get("name")
 		newRepoDescription := r.Form.Get("description")
-		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName)
+		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName, userName)
+		fmt.Println(repo)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		repo.Owner = userName
 		repo.Description = newRepoDescription
 		// NOTE: we ignore this error since we have the repository already.
 		ctx.DatabaseInterface.UpdateRepositoryInfo(newRepoNS, newRepoName, repo)

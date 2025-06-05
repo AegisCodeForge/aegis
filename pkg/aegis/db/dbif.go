@@ -41,7 +41,7 @@ type AegisDatabaseInterface interface {
 	UpdateNamespaceStatus(name string, newStatus model.AegisNamespaceStatus) error
 	// the implementer should remove the directory as well.
 	HardDeleteNamespaceByName(name string) error
-	CreateRepository(ns string, name string) (*model.Repository, error)
+	CreateRepository(ns string, name string, owner string) (*model.Repository, error)
 	UpdateRepositoryInfo(ns string, name string, robj *model.Repository) error
 	UpdateRepositoryStatus(ns string, name string, status model.AegisRepositoryStatus) error
 	HardDeleteRepository(ns string, name string) error
@@ -89,6 +89,9 @@ type AegisDatabaseInterface interface {
 	GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error)
 	NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error
 	HardDeleteRepositoryIssueEvent(eventAbsId int64) error
+	
+	GetAllBelongingNamespace(viewingUser string, user string) ([]*model.Namespace, error)
+	GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error)
 }
 
 // the fact that golang has no parameter default values is

@@ -8,7 +8,8 @@ import "github.com/bctnry/aegis/pkg/aegis/model"
 type UserTemplateModel struct {
 	Config *aegis.AegisConfig
 	User *model.AegisUser
-	RepositoryList map[string]*model.Repository
+	RepositoryList []*model.Repository
 	LoginInfo *LoginInfoModel
+	BelongingNamespaceList []*model.Namespace
 }
 

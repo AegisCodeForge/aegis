@@ -24,16 +24,22 @@ func bindUserController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		ls, err := ctx.DatabaseInterface.GetAllRepositoryFromNamespace(un)
+		nsList, err := ctx.DatabaseInterface.GetAllBelongingNamespace(loginInfo.UserName, un)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		repoList, err := ctx.DatabaseInterface.GetAllBelongingRepository(loginInfo.UserName, un, 0, 0)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		LogTemplateError(ctx.LoadTemplate("user").Execute(w, templates.UserTemplateModel{
 			User: user,
-			RepositoryList: ls,
+			RepositoryList: repoList,
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
+			BelongingNamespaceList: nsList,
 		}))
 	}))
 }

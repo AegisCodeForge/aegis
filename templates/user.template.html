@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>{{.User.Name}} :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-user.css">
   </head>
   <body>
 	<header>
@@ -18,28 +19,25 @@
 		<b>Email</b>: <a href="mailto:{{.User.Email}}">{{.User.Email}}</a><br />
 		<b>Website</b>: <a href="{{.User.Website}}">{{.User.Website}}</a><br />
 		<b>Bio</b>: {{.User.Bio}}<br />
+		<div class="user-profile-belonging-namespace">
+		  <b>Joined Namespace</b>:
+		  {{range $k, $v := .BelongingNamespaceList}}
+		  <div class="user-profile-belonging-namespace-list-item">
+			<a href="/s/{{$v.Name}}">{{$v.Title}} ({{$v.Name}})</a>
+		  </div>
+		  {{end}}
+		</div>
 	  </div>
 	  <div class="user-profile-repository-list">
 		{{if le (len .RepositoryList) 0 }}
 		<p>There is no repository for this user.</p>
 		{{else}}
-		
-		<table>
-		  <thead>
-			<tr>
-		  <th>Repository</th>
-		  <th>Description</th>
-		</tr>
-		  </thead>
-		  <tbody>
-			{{range $key, $value := .RepositoryList}}
-		<tr>
-		  <td><a href="/repo/{{$value.Namespace}}:{{$key}}">{{$key}}</a></td>
-		  <td>{{$value.Description}}</td>
-		</tr>
+		{{range $key, $value := .RepositoryList }}
+		<div class="user-profile-repository-list-item">
+		  <a style="display:block; font-size:2em;font-weight:bold;" href="{{getRepoPath $value.Namespace $value.Name}}">{{getRepoName $value.Namespace $value.Name}}</a>
+		  <p>{{$value.Description}}</p>
+		</div>
 		{{end}}
-		  </tbody>
-		</table>
 		{{end}}
 	  </div>
 	</div>

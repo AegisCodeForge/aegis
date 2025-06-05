@@ -1,0 +1,14 @@
+.user-profile-repository-list {
+	flex-grow: 2;
+}
+.user-profile-repository-list-item {
+	background-color: #ffffff3f;
+	padding: 1em;
+	margin-bottom: 1em;
+}
+.user-profile-repository-list-item  a {
+	background-color: unset;
+}
+.user-profile-repository-list-item  a:hover {
+	background-color: var(--foreground-color);
+}

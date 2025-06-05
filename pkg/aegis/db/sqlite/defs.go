@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	_ "github.com/mattn/go-sqlite3"
@@ -48,5 +49,13 @@ func NewSqliteAegisDatabaseInterface(cfg *aegis.AegisConfig) (*SqliteAegisDataba
 		config: cfg,
 		connection: db,
 	}, nil
+}
+
+func ToSqlSearchPattern(s string) string {
+	res := strings.ReplaceAll(s, "\\", "\\\\")
+	res = strings.ReplaceAll(s, "%", "\\%")
+	res = strings.ReplaceAll(s, "_", "\\_")
+	res = "%" + res + "%"
+	return res
 }
 
