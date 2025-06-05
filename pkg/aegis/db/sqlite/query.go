@@ -1547,3 +1547,226 @@ WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 	return res, nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryIssue(ns string, name string) ([]*model.Issue, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, issue_id, issue_author, issue_title, issue_content
+FROM %sissue
+WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(ns, name)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.Issue, 0)
+	for r.Next() {
+		var issueAbsId int64
+		var issueId int
+		var issueAuthor, issueTitle, issueContent string
+		err = r.Scan(&issueAbsId, &issueId, &issueAuthor, &issueTitle, &issueContent)
+		if err != nil { return nil, err }
+		res = append(res, &model.Issue{
+			IssueAbsId: issueAbsId,
+			RepoNamespace: ns,
+			RepoName: name,
+			IssueId: issueId,
+			IssueTitle: issueTitle,
+			IssueAuthor: issueAuthor,
+			IssueContent: issueContent,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRepositoryIssue(ns string, name string, iid int) (*model.Issue, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, issue_timestamp, issue_author, issue_title, issue_content, issue_status
+FROM %sissue
+WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r := stmt.QueryRow(ns, name, iid)
+	if r.Err() != nil { return nil, r.Err() }
+	var absid, timestamp int64
+	var status int
+	var author, title, content string
+	err = r.Scan(&absid, &timestamp, &author, &title, &content, &status)
+	if err != nil { return nil, err }
+	return &model.Issue{
+		IssueAbsId: absid,
+		RepoNamespace: ns,
+		RepoName: name,
+		IssueId: iid,
+		IssueAuthor: author,
+		IssueTitle: title,
+		IssueTime: timestamp,
+		IssueContent: content,
+		IssueStatus: status,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllRepositoryIssue(ns string, name string) (int, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*)
+FROM %sissue
+WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	r := stmt.QueryRow(ns, name)
+	if r.Err() != nil { return 0, r.Err() }
+	var res int
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) NewRepositoryIssue(ns string, name string, author string, title string, content string) (int64, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %sissue WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return 0, err }
+	defer stmt.Close()
+	r := stmt.QueryRow(ns, name)
+	if r.Err() != nil { return 0, err }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
+	res += 1
+	tx, err := dbif.connection.Begin()
+	if err != nil { return 0, err }
+	defer tx.Rollback()
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %sissue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status)
+VALUES (?,?,?,?,?,?,?)
+`, pfx))
+	_, err = stmt2.Exec(ns, name, res, time.Now().Unix(), author, title, content, model.ISSUE_OPENED)
+	if err != nil { return 0, err }
+	err = tx.Commit()
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) HardDeleteRepositoryIssue(ns string, name string, issueId int) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+`, pfx))
+	if err != nil { return err }
+	defer stmt.Close()
+	_, err = stmt.Exec(ns, name, issueId)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid FROM %sissue WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt1.Close()
+	r := stmt1.QueryRow(ns, name)
+	if r.Err() != nil { return nil, r.Err() }
+	var absId int
+	err = r.Scan(&absId)
+	if err != nil { return nil, err }
+	stmt2, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, issue_event_type, issue_event_time, issue_event_author, issue_event_content
+FROM %sissue_event
+WHERE issue_abs_id = ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt2.Close()
+	rs, err := stmt2.Query(absId)
+	if err != nil { return nil, err }
+	defer rs.Close()
+	res := make([]*model.IssueEvent, 0)
+	for rs.Next() {
+		var author, content string
+		var eventType int
+		var eventAbsId, timestamp int64
+		err = rs.Scan(&eventAbsId, &eventType, &timestamp, &author, &content)
+		if err != nil { return nil, err }
+		res = append(res, &model.IssueEvent{
+			EventAbsId: eventAbsId,
+			EventType: eventType,
+			EventTimestamp: timestamp,
+			EventAuthor: author,
+			EventContent: content,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, issue_status FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+`, pfx))
+	if err != nil { return err }
+	defer stmt.Close()
+	r := stmt.QueryRow(ns, name, issueId)
+	if r.Err() != nil { return r.Err() }
+	var issueAbsId int64
+	var issueStatus int
+	err = r.Scan(&issueAbsId, &issueStatus)
+	if err != nil { return err }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %sissue_event(issue_abs_id, issue_event_type, issue_event_time, issue_event_author, issue_event_content) VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return err }
+	defer stmt2.Close()
+	_, err = stmt2.Exec(issueAbsId, eType, time.Now().Unix(), author, content)
+	if err != nil { return err }
+	newIssueStatus := issueStatus
+	if eType == model.EVENT_CLOSED_AS_SOLVED {
+		newIssueStatus = model.ISSUE_CLOSED_AS_SOLVED
+	} else if eType == model.EVENT_CLOSED_AS_DISCARDED {
+		newIssueStatus = model.ISSUE_CLOSED_AS_SOLVED
+	} else if eType == model.EVENT_REOPENED {
+		newIssueStatus = model.ISSUE_OPENED
+	}
+	if newIssueStatus != issueStatus {
+		stmt3, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %sissue SET issue_status = ? WHERE rowid = ?
+`, pfx))
+		if err != nil { return err }
+		defer stmt3.Close()
+		_, err = stmt3.Exec(newIssueStatus, issueAbsId)
+		if err != nil { return err }
+	}
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) HardDeleteRepositoryIssueEvent(eventAbsId int64) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %sissue_event WHERE rowid = ?
+`, pfx))
+	if err != nil { return err }
+	defer stmt.Close()
+	_, err = stmt.Exec(eventAbsId)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}

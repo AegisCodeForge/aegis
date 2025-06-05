@@ -1,0 +1,46 @@
+{{$repoName := getRepoName .Repository.Namespace .Repository.Name}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{$repoName}} :: Gitus</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-issue.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+    <hr />
+
+	<main>
+	  {{template "issue/_sidebar" .}}
+	  <div class="main-side">
+		<div class="issue-list">
+		  {{if or (not .IssueList) (le (len .IssueList) 0) }}
+		  There is no issue for this repository.
+		  {{else}}
+		  {{range .IssueList}}
+		  <div class="issue-list-item">
+			<div class="issue-title-bar"><span class="issue-id">#{{.IssueId}}:</span> <a href="{{$repoPath}}/issue/{{.IssueId}}"><span class="issue-title">{{.IssueTitle}}</span></a></div>
+			<div class="issue-desc-bar"><a href="/u/{{.IssueAuthor}}" class="issue-author">{{.IssueAuthor}}</a> @ {{toPreciseTime .IssueTime}}</div>
+		  </div>
+		  {{end}}
+		  {{end}}
+		</div>
+	  </div>
+	</main>
+	
+
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+
+

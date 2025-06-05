@@ -24,7 +24,7 @@ func bindSettingGPGController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		LogTemplateError(ctx.LoadTemplate("setting-gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
+		LogTemplateError(ctx.LoadTemplate("setting/gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
 			KeyList: s,
@@ -56,7 +56,7 @@ func bindSettingGPGController(ctx *RouterContext) {
 		}
 		err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(confirmPassword))
 		if err == bcrypt.ErrMismatchedHashAndPassword {
-			LogTemplateError(ctx.LoadTemplate("setting-gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
+			LogTemplateError(ctx.LoadTemplate("setting/gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				KeyList: keyList,
@@ -69,7 +69,7 @@ func bindSettingGPGController(ctx *RouterContext) {
 		}
 		keyText := r.Form.Get("key-text")
 		if len(strings.TrimSpace(keyText)) <= 0 {
-			LogTemplateError(ctx.LoadTemplate("setting-gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
+			LogTemplateError(ctx.LoadTemplate("setting/gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				KeyList: keyList,

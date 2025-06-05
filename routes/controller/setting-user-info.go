@@ -30,7 +30,7 @@ func bindSettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		LogTemplateError(ctx.LoadTemplate("setting-user-info").Execute(w, templates.SettingUserInfoTemplateModel{
+		LogTemplateError(ctx.LoadTemplate("setting/user-info").Execute(w, templates.SettingUserInfoTemplateModel{
 			User: user,
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
@@ -64,7 +64,7 @@ func bindSettingController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			LogTemplateError(ctx.LoadTemplate("setting-user-info").Execute(w, templates.SettingUserInfoTemplateModel{
+			LogTemplateError(ctx.LoadTemplate("setting/user-info").Execute(w, templates.SettingUserInfoTemplateModel{
 				User: user,
 				Config: ctx.Config,
 				LoginInfo: vr,
@@ -95,7 +95,7 @@ func bindSettingController(ctx *RouterContext) {
 			// we will have confirm check at the frontend; this is
 			// here for the people who disabled javascript.
 			if r.Form.Get("new-password") != r.Form.Get("confirm-new-password") {
-				LogTemplateError(ctx.LoadTemplate("setting-user-info").Execute(w, templates.SettingUserInfoTemplateModel{
+				LogTemplateError(ctx.LoadTemplate("setting/user-info").Execute(w, templates.SettingUserInfoTemplateModel{
 					User: user,
 					Config: ctx.Config,
 					LoginInfo: vr,
@@ -108,7 +108,7 @@ func bindSettingController(ctx *RouterContext) {
 			}
 			err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(r.Form.Get("old-password")))
 			if err == bcrypt.ErrMismatchedHashAndPassword {
-				LogTemplateError(ctx.LoadTemplate("setting-user-info").Execute(w, templates.SettingUserInfoTemplateModel{
+				LogTemplateError(ctx.LoadTemplate("setting/user-info").Execute(w, templates.SettingUserInfoTemplateModel{
 					User: user,
 					Config: ctx.Config,
 					LoginInfo: vr,
@@ -130,7 +130,7 @@ func bindSettingController(ctx *RouterContext) {
 			}
 			ctx.DatabaseInterface.UpdateUserPassword(targetUsername, string(newpwh))
 		}
-		LogTemplateError(ctx.LoadTemplate("setting-user-info").Execute(w, templates.SettingUserInfoTemplateModel{
+		LogTemplateError(ctx.LoadTemplate("setting/user-info").Execute(w, templates.SettingUserInfoTemplateModel{
 			User: user,
 			Config: ctx.Config,
 			LoginInfo: vr,

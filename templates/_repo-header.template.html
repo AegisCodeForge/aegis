@@ -1,6 +1,7 @@
 {{define "_repo-header"}}
 {{$namespaceName := .Repository.Namespace}}
 {{$repoName := .Repository.Name}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
 <div class="repo-info">
 <h1 class="header-name" style="margin-bottom: 0">
   <a href="{{getNamespacePath $namespaceName}}">{{$namespaceName}}</a>:<a href="{{getRepoPath $namespaceName $repoName}}">{{$repoName}}</a>
@@ -12,9 +13,10 @@
 {{if and .Config (not .Config.PlainMode)}}
 <div class="repo-header-nav">
   {{if and .LoginInfo (or .LoginInfo.IsOwner .LoginInfo.IsSettingMember .LoginInfo.IsAdmin)}}
-  <a href="{{getRepoPath $namespaceName $repoName}}/setting">Setting</a>
+  <a href="{{$repoPath}}/setting">Setting</a>
   {{end}}
-  </div>
+  <a href="{{$repoPath}}/issue">Issue</a>
+</div>
 {{end}}
 {{if .RepoHeaderInfo}}
   {{if gt (len .RepoHeaderInfo.TypeStr) 0}}

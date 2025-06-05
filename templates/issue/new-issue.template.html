@@ -1,0 +1,40 @@
+{{$repoName := getRepoName .Repository.Namespace .Repository.Name}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{$repoName}} :: Gitus</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-issue.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+    <hr />
+
+	<main>
+	  {{template "issue/_sidebar" .}}
+	  <div class="main-side">
+		<h2>Create New Issue</h2>
+		<form action="" method="POST">
+		  <div class="field"><label class="field-label" for="title">Title:</label>
+			<input class="field-tf" name="title" id="title" /></div>
+		  <div class="field"><label class="field-label" for="content">Content:</label>
+			<textarea name="content" id="content"></textarea></div>
+		  <input type="submit" value="New Issue" />
+		</form>
+	  </div>
+	</main>
+	
+
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>

@@ -18,6 +18,8 @@
 + ={hostname}/repo/{reponame}/history/branch:{branchName}=: the history of branch =branchName=.
 + ={hostname}/repo/{reponame}/history/commit:{commitId}=: the history of commit =commitId=.
 + ={hostname}/repo/{reponame}/issue=: issue tracker.
+  + ={hostname}/repo/{reponame}/issue/new=: new issue
+  + ={hostname}/repo/{reponame}/issue/{issueId}=: each issue
 + ={hostname}/u/{username}=: User page.
 + ={hostname}/new/namespace=: New namespace page.
 + ={hostname}/new/repo=: New repository page.

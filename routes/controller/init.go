@@ -42,6 +42,8 @@ func InitializeRoute(context *routes.RouterContext) {
 		admin.BindAllAdminControllers(context)
 
 		bindResetPasswordController(context)
+
+		bindIssueController(context)
 	}
 }
 

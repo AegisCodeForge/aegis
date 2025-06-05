@@ -79,6 +79,16 @@ type AegisDatabaseInterface interface {
 	
 	CountAllVisibleNamespaceSearchResult(username string, pattern string) (int64, error)
 	CountAllVisibleRepositoriesSearchResult(username string, pattern string) (int64, error)
+
+	GetAllRepositoryIssue(ns string, name string) ([]*model.Issue, error)
+	GetRepositoryIssue(ns string, name string, iid int) (*model.Issue, error)
+	CountAllRepositoryIssue(ns string, name string) (int, error)
+	// returns the issue_id of the new issue.
+	NewRepositoryIssue(ns string, name string, author string, title string, content string) (int64, error)
+	HardDeleteRepositoryIssue(ns string, name string, issueId int) error
+	GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error)
+	NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error
+	HardDeleteRepositoryIssueEvent(eventAbsId int64) error
 }
 
 // the fact that golang has no parameter default values is

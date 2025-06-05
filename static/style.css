@@ -279,6 +279,12 @@ main {
 	min-width: 30%;
 	padding-right: 2rem;
 }
+.sidebar hr {
+	height: 2px;
+}
+.sidebar-item {
+	display: block;
+}
 .main-side {
 	width: 70%;
 	max-width: 70%;

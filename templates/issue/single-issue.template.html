@@ -1,0 +1,84 @@
+{{$repoName := getRepoName .Repository.Namespace .Repository.Name}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{$repoName}} :: Gitus</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-issue.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+    <hr />
+
+	<main>
+	  {{template "issue/_sidebar" .}}
+	  <div class="main-side">
+		<div class="issue-body">
+		  <h2 class="issue-header">#{{.Issue.IssueId}}: <span class="issue-header-title">{{.Issue.IssueTitle}}</span></h2>
+		  <div class="issue-header-author"><a href="/u/{{.Issue.IssueAuthor}}">{{.Issue.IssueAuthor}}</a> @ {{toPreciseTime .Issue.IssueTime}}</div>
+		  <div class="issue-header-content">{{renderMarkdown .Issue.IssueContent}}</div>
+		</div>
+		<div class="issue-event-list">
+		  {{range .IssueEventList}}
+		  {{if eq .EventType 1}}
+		  <div class="issue-event-list-item issue-comment">
+			<div class="issue-comment-title-bar"><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> commented @ {{toPreciseTime .EventTimestamp}}</div>
+			<div class="issue-comment-content">{{renderMarkdown .EventContent}}</div>
+		  </div>
+		  {{else if eq .EventType 2}}
+		  <div class="issue-event-list-item issue-close-as-solved">
+			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this issue as solved @ {{toPreciseTime .EventTimestamp}}
+		  </div>
+		  {{else if eq .EventType 3}}
+		  <div class="issue-event-list-item issue-close-as-discarded">
+			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this issue @ {{toPreciseTime .EventTimestamp}}
+		  </div>
+		  {{else if eq .EventType 4}}
+		  <div class="issue-event-list-item issue-reopened">
+			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> reopened this issue @ {{toPreciseTime .EventTimestamp}}
+		  </div>
+		  {{end}}
+		  {{end}}
+		</div>
+		<h3>Comment</h3>
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="comment" />
+		  <div class="field"><textarea name="content" id="content"></textarea></div>
+		  <input type="submit" value="Post Comment" />
+		</form>
+		{{if eq .Issue.IssueStatus 1}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="discarded" />
+		  <input type="submit" value="Close as discarded" />
+		</form>
+		{{end}}
+		{{if eq .Issue.IssueStatus 1}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="solved" />
+		  <input type="submit" value="Close as solved" />
+		</form>
+		{{end}}
+		{{if or (eq .Issue.IssueStatus 2) (eq .Issue.IssueStatus 3) }}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="reopen" />
+		  <input type="submit" value="Reopen" />
+		</form>
+		{{end}}
+		
+	  </div>
+	</main>
+	
+
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>

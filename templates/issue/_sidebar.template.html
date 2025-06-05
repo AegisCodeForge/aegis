@@ -1,0 +1,7 @@
+{{define "issue/_sidebar"}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<div class="issue-sidebar left-side">
+  <a class="sidebar-item" href="{{$repoPath}}/issue">All Issues</a>
+  <a class="sidebar-item" href="{{$repoPath}}/issue/new">Create New Issue</a>
+</div>
+{{end}}

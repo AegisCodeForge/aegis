@@ -1,0 +1,22 @@
+.issue-header {
+	border-bottom: 2px var(--foreground-color) solid;
+}
+.issue-body {
+	border-bottom: 1px var(--foreground-color) solid;
+}
+.issue-event-list-item {
+	padding-top: 0.5em;
+	padding-bottom: 0.5em;
+	border-top: 1px var(--foreground-color) solid;
+}
+.issue-event-list-item:first-child {
+	border: 0;
+}
+.issue-id {
+	font-size: 1.5em;
+	font-weight: bold;
+}
+.issue-title {
+	font-size: 1.5em;
+	font-weight: bold;
+}
