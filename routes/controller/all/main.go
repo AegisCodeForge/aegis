@@ -74,6 +74,7 @@ func BindAllController(ctx *routes.RouterContext) {
 			}))
 		}))
 	}
+	
 	http.HandleFunc("GET /all/repo", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {

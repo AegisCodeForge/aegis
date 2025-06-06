@@ -1257,26 +1257,35 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 }
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error) {
+	// private ns, not ns member, not repo member --> invisible.
+	// private ns, ns member --> all repo visible.
+	// private ns, not ns member, repo member --> only repo is visible.
+	// public ns --> all repo visible.
+	// ------>
+	// select repo from all public ns
+	// select repo from all ns member
+	// select repo from all repo member
 	pfx := dbif.config.DatabaseTablePrefix
-	privateSelectClause := ""
+	nsPrivateClause := ""
+	repoPrivateClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
+		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status
 FROM %srepository
+INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
+ON %srepository.repo_namespace = a.ns_name
 WHERE repo_status = 1 OR repo_status = 4 %s
 ORDER BY rowid ASC LIMIT ? OFFSET ?
-`, pfx, privateSelectClause))
+`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
 	defer stmt.Close()
 	if err != nil { return nil, err }
 	var rs *sql.Rows
 	if len(username) > 0 {
-		pattern := strings.ReplaceAll(username, "\\", "\\\\")
-		pattern = strings.ReplaceAll(pattern, "%", "\\%")
-		pattern = strings.ReplaceAll(pattern, "_", "\\_")
-		pattern = "%" + pattern + "%"
-		rs, err = stmt.Query(username, pattern, "\\", pageNum, pageNum*pageSize)
+		pattern := ToSqlSearchPattern(username)
+		rs, err = stmt.Query(username, pattern, "\\", username, pattern, "\\", pageSize, pageNum*pageSize)
 	} else {
 		rs, err = stmt.Query(pageSize, pageNum*pageSize)
 	}
@@ -1333,22 +1342,27 @@ SELECT COUNT(*) FROM %snamespace WHERE ns_status = 1 %s
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositories(username string) (int64, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	privateSelectClause := ""
+	nsPrivateClause := ""
+	repoPrivateClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
+		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*)
+FROM %srepository
+INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
+ON %srepository.repo_namespace = a.ns_name
 WHERE repo_status = 1 OR repo_status = 4 %s
-`, pfx, privateSelectClause))
+`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
 	if err != nil { return 0, err }
 	var r *sql.Row
 	if len(username) > 0 {
-		pattern := strings.ReplaceAll(username, "\\", "\\\\")
-		pattern = strings.ReplaceAll(pattern, "%", "\\%")
-		pattern = strings.ReplaceAll(pattern, "_", "\\_")
-		pattern = "%" + pattern + "%"
-		r = stmt.QueryRow(username, pattern, "\\")
+		pattern := ToSqlSearchPattern(username)
+		r = stmt.QueryRow(
+			username, pattern, "\\",
+			username, pattern, "\\",
+		)
 	} else {
 		r = stmt.QueryRow()
 	}
@@ -1360,10 +1374,7 @@ WHERE repo_status = 1 OR repo_status = 4 %s
 
 func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	queryPattern := strings.ReplaceAll(query, "\\", "\\\\")
-	queryPattern = strings.ReplaceAll(queryPattern, "%", "\\%")
-	queryPattern = strings.ReplaceAll(queryPattern, "_", "\\_")
-	queryPattern = "%" + queryPattern + "%"
+	queryPattern := ToSqlSearchPattern(query)
 	privateSelectClause := ""
 	if len(username) > 0 {
 		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
@@ -1380,10 +1391,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	defer stmt.Close()
 	var r *sql.Rows
 	if len(username) > 0 {
-		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
-		usernamePattern = "%" + usernamePattern + "%"
+		usernamePattern := ToSqlSearchPattern(username)
 		r, err = stmt.Query(queryPattern, "\\", queryPattern, "\\", username, usernamePattern, "\\", pageSize, pageNum * pageSize)
 	} else {
 		r, err = stmt.Query(queryPattern, "\\", queryPattern, "\\", pageSize, pageNum * pageSize)
@@ -1415,31 +1423,30 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 
 func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	queryPattern := strings.ReplaceAll(query, "\\", "\\\\")
-	queryPattern = strings.ReplaceAll(queryPattern, "%", "\\%")
-	queryPattern = strings.ReplaceAll(queryPattern, "_", "\\_")
-	queryPattern = "%" + queryPattern + "%"
-	privateSelectClause := ""
+	queryPattern := ToSqlSearchPattern(query)
+	nsPrivateClause := ""
+	repoPrivateClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
+		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
 FROM %srepository
+INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
+ON %srepository.repo_namespace = a.ns_name
 WHERE
     (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
     AND (repo_status = 1 OR repo_status = 4 %s)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
-`, pfx, privateSelectClause))
+`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	var r *sql.Rows
 	if len(username) > 0 {
-		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
-		usernamePattern = "%" + usernamePattern + "%"
+		usernamePattern := ToSqlSearchPattern(username)
 		r, err = stmt.Query(
+			username, usernamePattern, "\\",
 			queryPattern, "\\",
 			queryPattern, "\\",
 			username, usernamePattern, "\\",
@@ -1478,10 +1485,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespaceSearchResult(username string, pattern string) (int64, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	searchPattern := strings.ReplaceAll(pattern, "\\", "\\\\")
-	searchPattern = strings.ReplaceAll(searchPattern, "%", "\\%")
-	searchPattern = strings.ReplaceAll(searchPattern, "_", "\\_")
-	searchPattern = "%" + searchPattern + "%"
+	searchPattern := ToSqlSearchPattern(pattern)
 	privateSelectClause := ""
 	if len(username) > 0 {
 		privateSelectClause = fmt.Sprintf("AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
@@ -1497,10 +1501,7 @@ WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 	defer stmt.Close()
 	var r *sql.Row
 	if len(username) > 0 {
-		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
-		usernamePattern = "%" + usernamePattern + "%"
+		usernamePattern := ToSqlSearchPattern(username)
 		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\", username, usernamePattern, "\\")
 	} else {
 		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
@@ -1514,31 +1515,36 @@ WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResult(username string, pattern string) (int64, error) {
 	pfx := dbif.config.DatabaseTablePrefix
-	searchPattern := strings.ReplaceAll(pattern, "\\", "\\\\")
-	searchPattern = strings.ReplaceAll(searchPattern, "%", "\\%")
-	searchPattern = strings.ReplaceAll(searchPattern, "_", "\\_")
-	searchPattern = "%" + searchPattern + "%"
-	privateSelectClause := ""
+	searchPattern := ToSqlSearchPattern(pattern)
+	nsPrivateClause := ""
+	repoPrivateClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
+		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(
 		fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
-WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
-%s
-`, pfx, privateSelectClause),
+SELECT COUNT(*)
+FROM %srepository
+INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
+ON %srepository.repo_namespace = a.ns_name
+WHERE
+    (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+    AND (repo_status = 1 OR repo_status = 4 %s)
+`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause),
 	)
 	if err != nil { return 0, err }
 	defer stmt.Close()
 	var r *sql.Row
 	
 	if len(username) > 0 {
-		usernamePattern := strings.ReplaceAll(username, "\\", "\\\\")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "%", "\\%")
-		usernamePattern = strings.ReplaceAll(usernamePattern, "_", "\\_")
-		usernamePattern = "%" + usernamePattern + "%"
-		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\", username, usernamePattern, "\\")
+		usernamePattern := ToSqlSearchPattern(username)
+		r = stmt.QueryRow(
+			username, usernamePattern, "\\",
+			searchPattern, "\\",
+			searchPattern, "\\",
+			username, usernamePattern, "\\",
+		)
 	} else {
 		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
 	}
