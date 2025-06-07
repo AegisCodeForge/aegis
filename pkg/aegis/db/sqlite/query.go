@@ -1558,7 +1558,7 @@ WHERE
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryIssue(ns string, name string) ([]*model.Issue, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, issue_id, issue_author, issue_title, issue_content
+SELECT rowid, issue_id, issue_author, issue_title, issue_content, issue_timestamp
 FROM %sissue
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
@@ -1569,16 +1569,17 @@ WHERE repo_namespace = ? AND repo_name = ?
 	defer r.Close()
 	res := make([]*model.Issue, 0)
 	for r.Next() {
-		var issueAbsId int64
+		var issueAbsId, issueTimestamp int64
 		var issueId int
 		var issueAuthor, issueTitle, issueContent string
-		err = r.Scan(&issueAbsId, &issueId, &issueAuthor, &issueTitle, &issueContent)
+		err = r.Scan(&issueAbsId, &issueId, &issueAuthor, &issueTitle, &issueContent, &issueTimestamp)
 		if err != nil { return nil, err }
 		res = append(res, &model.Issue{
 			IssueAbsId: issueAbsId,
 			RepoNamespace: ns,
 			RepoName: name,
 			IssueId: issueId,
+			IssueTime: issueTimestamp,
 			IssueTitle: issueTitle,
 			IssueAuthor: issueAuthor,
 			IssueContent: issueContent,
@@ -1651,8 +1652,9 @@ SELECT COUNT(*) FROM %sissue WHERE repo_namespace = ? AND repo_name = ?
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
 INSERT INTO %sissue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status)
-VALUES (?,?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?,?)
 `, pfx))
+	if err != nil { return 0, err }
 	_, err = stmt2.Exec(ns, name, res, time.Now().Unix(), author, title, content, model.ISSUE_OPENED)
 	if err != nil { return 0, err }
 	err = tx.Commit()
@@ -1680,11 +1682,11 @@ DELETE FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error) {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid FROM %sissue WHERE repo_namespace = ? AND repo_name = ?
+SELECT rowid FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
 	if err != nil { return nil, err }
 	defer stmt1.Close()
-	r := stmt1.QueryRow(ns, name)
+	r := stmt1.QueryRow(ns, name, issueId)
 	if r.Err() != nil { return nil, r.Err() }
 	var absId int
 	err = r.Scan(&absId)
