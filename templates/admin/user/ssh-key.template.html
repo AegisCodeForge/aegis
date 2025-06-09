@@ -1,10 +1,12 @@
+{{$username := .User.Name}}
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>GPG keys :: {{.Config.DepotName}}</title>
+    <title>SSH keys :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
 	<header>
@@ -17,39 +19,37 @@
 	<hr />
 
 	<main>
-	  {{template "setting/_sidebar"}}
+	  {{template "admin/user/_sidebar" .}}
 
 	  <div class="setting-main main-side">
-		<h2>GPG Keys</h2>
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
+		<h2>SSH Keys</h2>
 		
 		{{if .KeyList}}
 		{{if gt (len .KeyList) 0}}
 		<div class="key-list">
 		  {{range $k := .KeyList}}
 		  <div class="key-list-item">
-			<b>{{$k.KeyName}}</b> <a href="/setting/gpg/{{$k.KeyName}}/edit">Edit</a> <a href="/setting/gpg/{{$k.KeyName}}/delete">Delete</a>
+			<b>{{$k.KeyName}}</b> <a href="/admin/user/{{$username}}/ssh/{{$k.KeyName}}/edit">Edit</a> <a href="/admin/user/{{$username}}/ssh/{{$k.KeyName}}/delete">Delete</a>
 			<details><summary>Key Data</summary><textarea readonly class="key-text">{{$k.KeyText}}</textarea></details>
 		  </div>
 		  {{end}}
 		</div>
 		{{else}}
-		<p>There is no GPG keys set for this user.</p>
+		<p>There is no SSH keys set for this user.</p>
 		{{end}}
 		{{else}}
-		<p>There is no GPG keys set for this user.</p>
+		<p>There is no SSH keys set for this user.</p>
 		{{end}}
 
-		<h2>Add new GPG key</h2>
+		<h2>Add new SSH key</h2>
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
 		<form action="" method="POST">
 		  <div class="field">
 		  <label class="field-label" for="key-text">Key text:</label>
 		  <textarea name="key-text"></textarea>
-		  </div>
-		  <div class="field">
-			<label class="field-label" for="password">Confirm with your password:</label><input type="password" name="password" required />
 		  </div>
 		  <input type="submit" value="Add SSH key" />
 		</form>

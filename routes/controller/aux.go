@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"path"
@@ -17,6 +16,8 @@ import (
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/routes"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func basicStringEscape(s string) string {
@@ -84,14 +85,6 @@ func responseWithTreeZip(repo *gitlib.LocalGitRepository, obj gitlib.GitObject, 
 	return nil
 }
 
-const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789-_"
-func mkname(n int) string {
-	res := make([]byte, 0)
-	for _ = range n {
-		res = append(res, passchdict[rand.Intn(len(passchdict))])
-	}
-	return string(res)
-}
 
 // NOTE: Chroma's `Analyse` is basically useless if we don't discern
 // language type manually; it somehow can reach to the conclusion that
@@ -232,5 +225,16 @@ func colorSyntax(filename string, s string) (string, error) {
 	err = formatter.Format(buf, style, iterator)
 	if err != nil { return "", err }
 	return buf.String(), nil
+}
+
+func checkUserPassword(ctx *routes.RouterContext, username string, password string) (bool, error) {
+	user, err := ctx.DatabaseInterface.GetUserByName(username)
+	if err != nil { return false, err }
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword { return false, nil }
+		return false, err
+	}
+	return true, nil
 }
 

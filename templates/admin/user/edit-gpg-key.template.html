@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Edit GPG Key :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		Admin
+	  </h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "admin/user/_sidebar" .}}
+
+	  <div class="setting-main main-side">
+		<h2>Edit GPG Key</h2>
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		
+		<form action="" method="POST">
+		  <div class="field">
+			<b>Key Name</b>: {{.Key.KeyName}}
+		  </div>
+		  <div class="field">
+		  <label class="field-label" for="key-text">Key text:</label>
+		  <textarea name="key-text">{{.Key.KeyText}}</textarea>
+		  </div>
+		  <input type="submit" value="Save GPG key" />
+		</form>
+		
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

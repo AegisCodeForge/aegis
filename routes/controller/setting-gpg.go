@@ -1,14 +1,14 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
-	"golang.org/x/crypto/bcrypt"
 )
-
 
 func bindSettingGPGController(ctx *RouterContext) {
 	http.HandleFunc("GET /setting/gpg", WithLog(func(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +19,7 @@ func bindSettingGPGController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
-		s, err := ctx.DatabaseInterface.GetAllAuthKeyByUsername(un)
+		s, err := ctx.DatabaseInterface.GetAllSignKeyByUsername(un)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -30,6 +30,7 @@ func bindSettingGPGController(ctx *RouterContext) {
 			KeyList: s,
 		}))
 	}))
+	
 	http.HandleFunc("POST /setting/gpg", WithLog(func(w http.ResponseWriter, r *http.Request){
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
@@ -43,70 +44,109 @@ func bindSettingGPGController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		keyList, err := ctx.DatabaseInterface.GetAllAuthKeyByUsername(un)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		confirmPassword := strings.TrimSpace(r.Form.Get("password"))
-		u, err := ctx.DatabaseInterface.GetUserByName(un)
+		chkres, err := checkUserPassword(ctx, un, confirmPassword)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(confirmPassword))
-		if err == bcrypt.ErrMismatchedHashAndPassword {
-			LogTemplateError(ctx.LoadTemplate("setting/gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				KeyList: keyList,
-				ErrorMsg: struct{Type string; Message string}{
-					Type: "",
-					Message: "Invalid confirmation password",
-				},
-			}))
+		if !chkres {
+			ctx.ReportRedirect("/setting/gpg", 3, "Password Mismatch", "The password you've provided does not match. Please try again.", w, r)
 			return
 		}
-		keyText := r.Form.Get("key-text")
-		if len(strings.TrimSpace(keyText)) <= 0 {
-			LogTemplateError(ctx.LoadTemplate("setting/gpg-key").Execute(w, templates.SettingGPGKeyTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				KeyList: keyList,
-				ErrorMsg: struct{Type string; Message string}{
-					Type: "",
-					Message: "Invalid key text",
-				},
-			}))
+		keyText := strings.TrimSpace(r.Form.Get("key-text"))
+		if len(keyText) <= 0 {
+			ctx.ReportRedirect("/setting/gpg", 3, "Invalid Key Text", "Key text cannot be empty.", w, r)
 			return
 		}
 		s := strings.Split(keyText, " ")
 		keyName := ""
 		if len(s) < 3 {
-			keyName = "key_" + mkname(8)
+			keyName = "key_" + auxfuncs.GenSym(8)
 		} else {
 			keyName = s[2]
 		}
-		err = ctx.DatabaseInterface.RegisterAuthKey(un, keyName, keyText)
+		err = ctx.DatabaseInterface.RegisterSignKey(un, keyName, keyText)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		FoundAt(w, "/setting/gpg")
 	}))
+	
 	http.HandleFunc("GET /setting/gpg/{keyName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request){
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
+		if !loginInfo.LoggedIn {
+			ctx.ReportRedirect("/", 3, "Not Logged In", "Please login before you perform this action.", w, r)
+			return
+		}
 		un := loginInfo.UserName
-		err = ctx.DatabaseInterface.RemoveAuthKey(un, r.PathValue("keyName"))
+		err = ctx.DatabaseInterface.RemoveSignKey(un, r.PathValue("keyName"))
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		FoundAt(w, "/setting/gpg")
+	}))
+	
+	http.HandleFunc("GET /setting/gpg/{keyName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request){
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !loginInfo.LoggedIn {
+			ctx.ReportRedirect("/", 3, "Not Logged In", "Please login before you perform this action.", w, r)
+			return
+		}
+		un := loginInfo.UserName
+		k, err := ctx.DatabaseInterface.GetSignKeyByName(un, r.PathValue("keyName"))
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		LogTemplateError(ctx.LoadTemplate("setting/edit-gpg-key").Execute(w, &templates.SettingEditGPGKeyTemplateModel{
+			Config: ctx.Config,
+			LoginInfo: loginInfo,
+			Key: k,
+		}))
+	}))
+	
+	http.HandleFunc("POST /setting/gpg/{keyName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request){
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !loginInfo.LoggedIn {
+			ctx.ReportRedirect("/", 3, "Not Logged In", "Please login before you perform this action.", w, r)
+			return
+		}
+		un := loginInfo.UserName
+		err = r.ParseForm()
+		if err != nil {
+			ctx.ReportNormalError("Invalid request", w, r)
+			return
+		}
+		keyName := r.PathValue("keyName")
+		chkres, err := checkUserPassword(ctx, un, r.Form.Get("password"))
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+		}
+		if !chkres {
+			ctx.ReportRedirect(fmt.Sprintf("/setting/gpg/%s/edit", keyName), 3, "Password Mismatch", "The password you've provided does not match. Please try again.", w, r)
+			return
+		}
+		keyText := r.Form.Get("key-text")
+		err = ctx.DatabaseInterface.UpdateSignKey(un, keyName, keyText)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		ctx.ReportRedirect(fmt.Sprintf("/setting/gpg/%s/edit", keyName), 3, "Updated", "Updated.", w, r)
 	}))
 }

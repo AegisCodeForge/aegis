@@ -27,7 +27,7 @@
 		<div class="key-list">
 		  {{range $k := .KeyList}}
 		  <div class="key-list-item">
-			<b>{{$k.KeyName}}</b> <a href="/setting/ssh/{{$k.KeyName}}/delete">Delete</a>
+			<b>{{$k.KeyName}}</b> <a href="/setting/ssh/{{$k.KeyName}}/edit">Edit</a> <a href="/setting/ssh/{{$k.KeyName}}/delete">Delete</a>
 			<details><summary>Key Data</summary><textarea readonly class="key-text">{{$k.KeyText}}</textarea></details>
 		  </div>
 		  {{end}}

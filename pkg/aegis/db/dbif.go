@@ -10,8 +10,11 @@ type AegisDatabaseInterface interface {
 	GetAllAuthKeyByUsername(name string) ([]model.AegisAuthKey, error)
 	GetAuthKeyByName(userName string, keyName string) (*model.AegisAuthKey, error)
 	RegisterAuthKey(username string, keyname string, keytext string) error
+	UpdateAuthKey(username string, keyname string, keytext string) error
 	RemoveAuthKey(username string, keyname string) error
 	GetAllSignKeyByUsername(name string) ([]model.AegisSigningKey, error)
+	GetSignKeyByName(userName string, keyName string) (*model.AegisSigningKey, error)
+	UpdateSignKey(username string, keyname string, keytext string) error
 	RegisterSignKey(username string, keyname string, keytext string) error
 	RemoveSignKey(username string, keyname string) error
 	GetNamespaceByName(name string) (*model.Namespace, error)

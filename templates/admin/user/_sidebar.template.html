@@ -1,0 +1,23 @@
+{{define "admin/user/_sidebar"}}
+<div class="admin-sidebar left-side">
+  <a class="admin-sidebar-item" href="/admin">Admin index</a>
+  <a class="admin-sidebar-item" href="/admin/site-config">Site config</a>
+  <a class="admin-sidebar-item" href="/admin/index-config">Index config</a>
+  <a class="admin-sidebar-item" href="/admin/db-setting">Database config</a>
+  <a class="admin-sidebar-item" href="/admin/session-setting">Session store config</a>
+  <a class="admin-sidebar-item" href="/admin/rs-setting">Receipt system config</a>
+  <a class="admin-sidebar-item" href="/admin/mailer-setting">Mailer config</a>
+  
+  <hr />
+
+  <a class="admin-sidebar-item" href="/admin/user-list">Users</a>
+  <a class="admin-sidebar-item" href="/admin/namespace-list">Namespaces</a>
+  <a class="admin-sidebar-item" href="/admin/repo-list">Repositories</a>
+  <a class="admin-sidebar-item" href="/admin/receipt-list">Receipts</a>
+
+  <hr />
+  <a class="admin-sidebar-item" href="/admin/user/{{.User.Name}}/edit">Edit User Info</a>
+  <a class="admin-sidebar-item" href="/admin/user/{{.User.Name}}/ssh">Edit User SSH Keys</a>
+  <a class="admin-sidebar-item" href="/admin/user/{{.User.Name}}/gpg">Edit User GPG Keys</a>
+</div>
+{{end}}

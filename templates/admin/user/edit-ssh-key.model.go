@@ -5,14 +5,13 @@ package templates
 import "github.com/bctnry/aegis/pkg/aegis"
 import "github.com/bctnry/aegis/pkg/aegis/model"
 
-type AdminUserEditTemplateModel struct {
+type SettingEditSSHKeyTemplateModel struct {
 	Config *aegis.AegisConfig
-	User *model.AegisUser
-	RepositoryList map[string]*model.Repository
-	ErrorMsg struct {
+	LoginInfo *LoginInfoModel
+	Key *model.AegisAuthKey
+	ErrorMsg struct{
 		Type string
 		Message string
 	}
-	LoginInfo *LoginInfoModel
 }
 

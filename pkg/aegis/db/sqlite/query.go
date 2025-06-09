@@ -118,6 +118,23 @@ VALUES (?,?,?)
 	return nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) UpdateAuthKey(username string, keyname string, keytext string) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %suser_authkey SET key_text = ? WHERE user_name = ? AND key_name = ?
+`, pfx))
+	if err != nil { return err }
+	defer stmt.Close()
+	_, err = stmt.Exec(keytext, username, keyname)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
 func (dbif *SqliteAegisDatabaseInterface) RemoveAuthKey(username string, keyname string) error {
 	pfx := dbif.config.DatabaseTablePrefix
 	tx, err := dbif.connection.Begin()
@@ -159,10 +176,47 @@ WHERE user_name = ?
 	return res, nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) GetSignKeyByName(userName string, keyName string) (*model.AegisSigningKey, error) {
+	pfx := dbif.config.DatabaseTablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT key_text FROM %suser_signkey
+WHERE user_name = ? AND key_name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r := stmt.QueryRow(userName, keyName)
+	if r.Err() != nil { return nil, r.Err() }
+	var text string
+	err = r.Scan(&text)
+	if err != nil { return nil, err }
+	return &model.AegisSigningKey{
+		UserName: userName,
+		KeyName: keyName,
+		KeyText: text,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) UpdateSignKey(username string, keyname string, keytext string) error {
+	pfx := dbif.config.DatabaseTablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %suser_signkey SET key_text = ? WHERE user_name = ? AND key_name = ?
+`, pfx))
+	if err != nil { return err }
+	defer stmt.Close()
+	_, err = stmt.Exec(keytext, username, keyname)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
 func (dbif *SqliteAegisDatabaseInterface) RegisterSignKey(username string, keyname string, keytext string) error {
 	pfx := dbif.config.DatabaseTablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT 1 FROM %suser_sign WHERE user_name = ? AND key_name = ?
+SELECT 1 FROM %suser_signkey WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt1.QueryRow(username, keyname)
