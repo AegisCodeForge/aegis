@@ -34,13 +34,13 @@ func bindAdminDatabaseSettingController(ctx *routes.RouterContext) {
 			}))
 			return
 		}
-		ctx.Config.DatabaseType = r.Form.Get("type")
-		ctx.Config.DatabasePath = r.Form.Get("path")
-		ctx.Config.DatabaseURL = r.Form.Get("url")
-		ctx.Config.DatabaseName = r.Form.Get("name")
-		ctx.Config.DatabaseUser = r.Form.Get("user")
-		ctx.Config.DatabasePassword = r.Form.Get("password")
-		ctx.Config.DatabaseTablePrefix = r.Form.Get("table-prefix")
+		ctx.Config.Database.Type = r.Form.Get("type")
+		ctx.Config.Database.Path = r.Form.Get("path")
+		ctx.Config.Database.URL = r.Form.Get("url")
+		ctx.Config.Database.DatabaseName = r.Form.Get("name")
+		ctx.Config.Database.UserName = r.Form.Get("user")
+		ctx.Config.Database.Password = r.Form.Get("password")
+		ctx.Config.Database.TablePrefix = r.Form.Get("table-prefix")
 		err = ctx.Config.Sync()
 		if err != nil {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{

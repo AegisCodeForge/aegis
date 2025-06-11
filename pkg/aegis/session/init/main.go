@@ -9,7 +9,7 @@ import (
 
 
 func InitializeDatabase(cfg *aegis.AegisConfig) (session.AegisSessionStore, error) {
-	switch cfg.DatabaseType {
+	switch cfg.Session.Type {
 	case "sqlite": return sqlite.NewAegisSqliteSessionStore(cfg)
 	}
 	return nil, db.NewAegisDatabaseError(db.DATABASE_NOT_SUPPORTED, "")

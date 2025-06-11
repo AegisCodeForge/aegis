@@ -24,12 +24,16 @@
 		<form action="" method="POST">
 		  <div class="field">
 			<label class="field-label" for="type">Session Store Type:</label>
-			<select name="type" id="type" value="{{.Config.SessionType}}">
+			<select name="type" id="type" value="{{.Config.Session.Type}}">
 			  <option value="sqlite">Sqlite3</option>
 			</select>
 		  </div>
-		  <div class="field"><label class="field-label" for="path">Session Store Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.SessionPath}}"/></div>
-		  <div class="field"><label class="field-label" for="url">Session Store URL:</label><input name="url" id="url" class="field-tf" value="{{.Config.SessionURL}}"/></div>
+		  <div class="field"><label class="field-label" for="path">Session Store Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.Session.Path}}"/></div>
+		  <div class="field"><label class="field-label" for="table-prefix">Session Store Table Prefix:</label><input name="table-prefix" id="table-prefix" class="field-tf" value="{{.Config.Session.TablePrefix}}"/></div>
+		  <div class="field"><label class="field-label" for="host">Session Store Host:</label><input name="host" id="host" class="field-tf" value="{{.Config.Session.Host}}"/></div>
+		  <div class="field"><label class="field-label" for="user-name">Session Store User Name:</label><input name="user-name" id="user-name" class="field-tf" value="{{.Config.Session.UserName}}"/></div>
+		  <div class="field"><label class="field-label" for="password">Session Store Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Session.Password}}"/></div>
+		  <div class="field"><label class="field-label" for="database-number">Session Store Database Number:</label><input name="database-number" id="database-number" class="field-tf" value="{{.Config.Session.DatabaseNumber}}"/></div>
 		  <input class="field-submit" type="submit" value="Save Config" />
 		</form>
 	  </div>

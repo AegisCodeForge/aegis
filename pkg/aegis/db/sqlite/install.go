@@ -3,7 +3,7 @@ package sqlite
 import "fmt"
 
 func (dbif *SqliteAegisDatabaseInterface) InstallTables() error {
-	pfx := dbif.config.DatabaseTablePrefix
+	pfx := dbif.config.Database.TablePrefix
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`

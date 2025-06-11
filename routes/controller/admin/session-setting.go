@@ -3,6 +3,8 @@ package admin
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -34,23 +36,26 @@ func bindAdminSessionSettingController(ctx *routes.RouterContext) {
 			}))
 			return
 		}
-		ctx.Config.SessionType = r.Form.Get("type")
-		ctx.Config.SessionPath = r.Form.Get("path")
-		ctx.Config.SessionURL = r.Form.Get("url")
-		err = ctx.Config.Sync()
+		ctx.Config.Session.Type = r.Form.Get("type")
+		ctx.Config.Session.Path = r.Form.Get("path")
+		ctx.Config.Session.TablePrefix = r.Form.Get("table-prefix")
+		ctx.Config.Session.Host = r.Form.Get("host")
+		ctx.Config.Session.UserName = r.Form.Get("user-name")
+		ctx.Config.Session.Password = r.Form.Get("password")
+		dbnStr := strings.TrimSpace(r.Form.Get("database-number"))
+		if dbnStr == "" { dbnStr = "0" }
+		dbn, err := strconv.Atoi(dbnStr)
 		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/session-setting").Execute(w, &templates.AdminConfigTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()),
-			}))
+			ctx.ReportNormalError("Invalid request", w, r)
 			return
 		}
-		routes.LogTemplateError(ctx.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			ErrorMsg: fmt.Sprintf("Updated."),
-		}))
+		ctx.Config.Session.DatabaseNumber = dbn
+		err = ctx.Config.Sync()
+		if err != nil {
+			ctx.ReportRedirect("/admin/session-setting", 0, "Internal Error", fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()), w, r)
+			return
+		}
+		ctx.ReportRedirect("/admin/session-setting", 3, "Updated", "Configuration updated.", w, r)
 	}))
 }
 

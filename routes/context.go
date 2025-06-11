@@ -1,5 +1,9 @@
 package routes
 
+// NOTE: this is NOT the context that's part of go's stdlib - it simply
+// is a bunch of "misc supporting things" (e.g. templates & stuff) combined
+// together and is not used to manage lifetimes & stuff AT ALL.
+
 import (
 	"fmt"
 	"html/template"

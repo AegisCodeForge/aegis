@@ -25,7 +25,7 @@ var requiredTableList = []string{
 func (dbif *SqliteAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {
 	stmt, err := dbif.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
 	for _, item := range requiredTableList {
-		tableName := dbif.config.DatabaseTablePrefix + item
+		tableName := dbif.config.Database.TablePrefix + item
 		if err != nil { return false, err }
 		r := stmt.QueryRow(tableName)
 		if r.Err() != nil { return false, r.Err() }

@@ -1,6 +1,7 @@
 package receipt
 
 import (
+	"encoding/json"
 	"errors"
 	"math/rand/v2"
 	"strings"
@@ -8,10 +9,10 @@ import (
 )
 
 type Receipt struct {
-	Id string
-	Command []string
-	IssueTime int64  // timestamp
-	TimeoutMinute int64
+	Id string `json:"id"`
+	Command []string `json:"command"`
+	IssueTime int64 `json:"issueTime"` // timestamp
+	TimeoutMinute int64 `json:"timeoutMinute"`
 }
 
 type AegisReceiptSystemInterface interface {
@@ -35,11 +36,10 @@ func NewReceiptId() string {
 }
 
 func SerializeReceiptCommand(s []string) string {
-	es := make([]string, len(s))
-	for i, k := range s {
-		es[i] = cmdArgEscape(k)
-	}
-	return strings.Join(es, ",")
+	// we're only marshalling string slices, this shouldn't return any error...
+	b, err := json.Marshal(s)
+	if err != nil { panic(err) }
+	return string(b)
 }
 
 func cmdArgEscape(s string) string {
@@ -68,31 +68,23 @@ func NewReceiptCommand(s... string) string {
 	return strings.Join(res, ",")
 }
 func ParseReceiptCommand(s string) []string {
-	res := make([]string, 0)
-	b := new(strings.Builder)
-	inQuote := false
-	escaped := false
-	for _, item := range s {
-		if escaped {
-			b.WriteRune(item)
-			escaped = false
-		} else if inQuote {
-			if item == '\\' {
-				escaped = true
-			} else {
-				b.WriteRune(item)
-			}
-		} else {
-			if item == ',' {
-				res = append(res, b.String())
-				b = new(strings.Builder)
-			} else {
-				b.WriteRune(item)
-			}
-		}
-	}
-	if b.Len() > 0 { res = append(res, b.String()) }
+	var res []string
+	err := json.Unmarshal([]byte(s), &res)
+	if err != nil { panic(err) }
 	return res
+}
+
+func SerializeReceipt(r *Receipt) string {
+	res, err := json.Marshal(r)
+	if err != nil { panic(err) }
+	return string(res)
+}
+
+func DeserializeReceipt(s string) *Receipt {
+	r := new(Receipt)
+	err := json.Unmarshal([]byte(s), r)
+	if err != nil { panic(err) }
+	return r
 }
 
 func (r *Receipt) Expired() bool {

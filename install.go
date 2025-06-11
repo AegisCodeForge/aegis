@@ -357,7 +357,7 @@ func InstallAegis(ctx routes.RouterContext) {
 
 	// setting up database
 	fmt.Println("Setting up database...")
-	if len(cfg.DatabaseType) <= 0 {
+	if len(cfg.Database.Type) <= 0 {
 		fmt.Print("Cannot infer database interface since database type empty in config. Please fix it and try again.")
 		os.Exit(1)
 	}
@@ -373,7 +373,7 @@ func InstallAegis(ctx routes.RouterContext) {
 
 	// setting up session store
 	fmt.Println("Setting up session store...")
-	if len(cfg.SessionType) <= 0 {
+	if len(cfg.Session.Type) <= 0 {
 		fmt.Print("Cannot infer session interface since session type empty in config. Please fix it and try again.")
 		os.Exit(1)
 	}
@@ -471,11 +471,11 @@ func InstallAegis(ctx routes.RouterContext) {
 	// when we reached here, gitUser shouldn't be nil, since if it's nil we
 	// would've created it with the code above.
 	if err == nil {
-		if ctx.Config.DatabaseType == "sqlite" {
-			err = os.Chown(ctx.Config.DatabasePath, gitUser.UID, gitUser.GID)
+		if ctx.Config.Database.Type == "sqlite" {
+			err = os.Chown(ctx.Config.Database.Path, gitUser.UID, gitUser.GID)
 		}
-		if ctx.Config.SessionType == "sqlite" {
-			err = os.Chown(ctx.Config.SessionPath, gitUser.UID, gitUser.GID)
+		if ctx.Config.Session.Type == "sqlite" {
+			err = os.Chown(ctx.Config.Session.Path, gitUser.UID, gitUser.GID)
 		}
 	}
 	

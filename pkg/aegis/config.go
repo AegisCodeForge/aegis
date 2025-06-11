@@ -106,42 +106,8 @@ type AegisConfig struct {
 
 	// the following database-related options are ignored when plain
 	// mode is enabled,
-	
-	// database type. currently only support "sqlite".
-	DatabaseType string `json:"dbType"`
-	// path to the database file. valid only when dbtype is sqlite;
-	// has no effect otherwise.
-	DatabasePath string `json:"dbPath"`
-	// TODO: this should be basing on the dir of the config file.
-	properDatabasePath string
-	// url to the database. valid only when dbtype is something that
-	// is "hosted" as a server (unlike sqlite which is just one file).
-	// has no effect when dbtype is sqlite.
-	DatabaseURL string `json:"dbUrl"`
-	DatabaseUser string `json:"dbUser"`
-	// name of the database. valid only when dbtype is something like
-	// "postgre" or "mariadb". has no effect when dbtype is sqlite.
-	DatabaseName string `json:"dbName"`
-	// password of the database. valid only when dbtype is something
-	// like "postgre" or "mariadb". has no effect when dbtype is
-	// sqlite.
-	DatabasePassword string `json:"dbPassword"`
-	// table prefix of the database - in case you need to host
-	// multiple gitus instance with the same database or you need
-	// to make your gitus instance to share a database with other
-	// applications.
-	DatabaseTablePrefix string `json:"dbTablePrefix"`
-
-	// session type. currently only support "sqlite".
-	// planned support includes "redis", "memcached" and  "rocksdb" in the future.
-	SessionType string `json:"sessionType"`
-	// session path. valid only when sessiontype is sqlite.
-	SessionPath string `json:"sessionPath"`
-	// TODO: this should be basing on the dir of the config file.
-	properSessionPath string
-	// session path. valid only when session type is redis.
-	SessionURL string `json:"sessionUrl"`
-
+	Database AegisDatabaseConfig `json:"database"`
+	Session AegisSessionConfig `json:"session"`
 	Mailer AegisMailerConfig `json:"mailer"`
 	ReceiptSystem AegisReceiptSystemConfig `json:"receiptSystem"`
 
@@ -163,6 +129,52 @@ type AegisConfig struct {
 	FrontPageConfig string `json:"frontPage"`
 }
 
+type AegisDatabaseConfig struct {
+	// database type. currently only support "sqlite".
+	Type string `json:"type"`
+	// path to the database file. valid only when dbtype is sqlite;
+	// has no effect otherwise.
+	Path string `json:"path"`
+	// TODO: this should be basing on the dir of the config file.
+	properPath string
+	// url to the database. valid only when dbtype is something that
+	// is "hosted" as a server (unlike sqlite which is just one file).
+	// has no effect when dbtype is sqlite.
+	URL string `json:"url"`
+	UserName string `json:"userName"`
+	// name of the database. valid only when dbtype is something like
+	// "postgre" or "mariadb". has no effect when dbtype is sqlite.
+	DatabaseName string `json:"databaseName"`
+	// password of the database. valid only when dbtype is something
+	// like "postgre" or "mariadb". has no effect when dbtype is
+	// sqlite.
+	Password string `json:"password"`
+	// table prefix of the database - in case you need to host
+	// multiple gitus instance with the same database or you need
+	// to make your gitus instance to share a database with other
+	// applications.
+	TablePrefix string `json:"tablePrefix"`
+}
+
+type AegisSessionConfig struct {
+	// session type. currently only support "sqlite" and "redis"
+	// support for "memcached" and other types are also planned.
+	Type string `json:"type"`
+	// session database path. valid only when sessiontype is sqlite.
+	Path string `json:"path"`
+	// TODO: this should be basing on the dir of the config file.
+	properPath string
+	// session table prefix. valid only when sessiontype is sqlite. used just in case
+	// for whatever reasons you'd like using the same sqlite database with other things.
+	TablePrefix string `json:"tablePrefix"`
+	// session host. in the format of "host:port". valid only when sessiontype is redis.
+	Host string `json:"host"`
+	UserName string `json:"userName"`
+	Password string `json:"password"`
+	// database number. valid only when sessiontype is redis.
+	DatabaseNumber int `json:"databaseNumber"`
+}
+
 type AegisMailerConfig struct {
 	// email sender type. currently only "gmail-plain" is supported.
 	Type string `json:"type"`
@@ -176,17 +188,34 @@ type AegisMailerConfig struct {
 	Password string `json:"password"`
 }
 
+// NOTE: this is the same as AegisDatabaseConfig - i suspect that people
+// would want to be able to search & filter specific kind of receipts and
+// i couldn't figure out a good way to implement that w/ redis.
 type AegisReceiptSystemConfig struct {
-	// the type of the supporting implementation of the receipt system.
-	// currently only support "sqlite".
+	// database type. currently only support "sqlite".
 	Type string `json:"type"`
-	// the path to the system database. valid only when Type is "sqlite".
+	// path to the database file. valid only when dbtype is sqlite;
+	// has no effect otherwise.
 	Path string `json:"path"`
 	// TODO: this should be basing on the dir of the config file.
 	properPath string
+	// url to the database. valid only when dbtype is something that
+	// is "hosted" as a server (unlike sqlite which is just one file).
+	// has no effect when dbtype is sqlite.
 	URL string `json:"url"`
-	User string `json:"user"`
+	UserName string `json:"userName"`
+	// name of the database. valid only when dbtype is something like
+	// "postgre" or "mariadb". has no effect when dbtype is sqlite.
+	DatabaseName string `json:"databaseName"`
+	// password of the database. valid only when dbtype is something
+	// like "postgre" or "mariadb". has no effect when dbtype is
+	// sqlite.
 	Password string `json:"password"`
+	// table prefix of the database - in case you need to host
+	// multiple gitus instance with the same database or you need
+	// to make your gitus instance to share a database with other
+	// applications.
+	TablePrefix string `json:"tablePrefix"`
 }
 
 func (cfg *AegisConfig) ProperHTTPHostName() string {
@@ -198,11 +227,11 @@ func (cfg *AegisConfig) ProperSSHHostName() string {
 }
 
 func (cfg *AegisConfig) ProperDatabasePath() string {
-	return cfg.properDatabasePath
+	return cfg.Database.properPath
 }
 
 func (cfg *AegisConfig) ProperSessionPath() string {
-	return cfg.properSessionPath
+	return cfg.Session.properPath
 }
 
 func (cfg *AegisConfig) ProperReceiptSystemPath() string {
@@ -236,13 +265,24 @@ func CreateConfigFile(p string) error {
 		BindPort: 8000,
 		IgnoreNamespace: nil,
 		IgnoreRepository: nil,
-		DatabaseType: "sqlite",
-		DatabasePath: "",
-		DatabaseURL: "",
-		DatabaseUser: "",
-		DatabaseName: "",
-		DatabasePassword: "",
-		DatabaseTablePrefix: "gitus_",
+		Database: AegisDatabaseConfig{
+			Type: "sqlite",
+			Path: "",
+			URL: "",
+			UserName: "",
+			DatabaseName: "",
+			Password: "",
+			TablePrefix: "aegis",
+		},
+		Session: AegisSessionConfig{
+			Type: "sqlite",
+			Path: "",
+			TablePrefix: "",
+			Host: "",
+			UserName: "",
+			Password: "",
+			DatabaseNumber: 0,
+		},
 		Mailer: AegisMailerConfig{
 			Type: "gmail-plain",
 			SMTPServer: "",
@@ -253,8 +293,11 @@ func CreateConfigFile(p string) error {
 		ReceiptSystem: AegisReceiptSystemConfig{
 			Type: "sqlite",
 			Path: "",
-			User: "",
+			URL: "",
+			UserName: "",
+			DatabaseName: "",
 			Password: "",
+			TablePrefix: "aegis_receipt_",
 		},
 	}, "", "    ")
 	if err != nil { return err }
@@ -309,17 +352,35 @@ func (c *AegisConfig) RecalculateProperPath() error {
 	}
 
 	configDir := path.Dir(c.filePath)
-	rp := path.Join(configDir, c.DatabasePath)
-	if path.IsAbs(c.DatabasePath) { rp = c.DatabasePath }
-	c.properDatabasePath = rp
+	if c.Database.Type == "sqlite" {
+		var rp string
+		if path.IsAbs(c.Database.Path) {
+			rp = c.Database.Path
+		} else {
+			rp = path.Join(configDir, c.Database.Path)
+		}
+		c.Database.properPath = rp
+	}
 
-	sp := path.Join(configDir, c.SessionPath)
-	if path.IsAbs(c.SessionPath) { sp = c.SessionPath }
-	c.properSessionPath = sp
+	if c.Session.Type == "sqlite" {
+		var sp string
+		if path.IsAbs(c.Session.Path) {
+			sp = c.Session.Path
+		} else {
+			sp = path.Join(configDir, c.Session.Path)
+		}
+		c.Session.properPath = sp
+	}
 
-	rsp := path.Join(configDir, c.ReceiptSystem.Path)
-	if path.IsAbs(c.ReceiptSystem.Path) { rsp = c.ReceiptSystem.Path }
-	c.ReceiptSystem.properPath = rsp
+	if c.ReceiptSystem.Type == "sqlite" {
+		var rsp string
+		if path.IsAbs(c.ReceiptSystem.Path) {
+			rsp = c.ReceiptSystem.Path
+		} else {
+			rsp = path.Join(configDir, c.ReceiptSystem.Path)
+		}
+		c.ReceiptSystem.properPath = rsp
+	}
 	
 	return nil
 }
@@ -337,7 +398,7 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 }
 
 func (cfg *AegisConfig) Sync() error {
-	p := cfg.filePath
+	p := cfg.filePath 
 	s, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil { return err }
 	st, err := os.Stat(p)
@@ -356,8 +417,8 @@ func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
 	if cfg.UseNamespace {
 		m, err := cfg.GetAllNamespacePlain()
 		if err != nil { return nil, err }
-		res := make([]*model.Repository, 0)
-		for k, _ := range m {
+		res := make([]*model.Repository, 0)		
+		for k := range m {
 			r, err := cfg.GetAllRepositoryByNamespacePlain(k)
 			if err != nil { return nil, err }
 			for _, i := range r {

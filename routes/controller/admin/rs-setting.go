@@ -34,27 +34,18 @@ func bindAdminReceiptSystemSettingController(ctx *routes.RouterContext) {
 			}))
 			return
 		}
-		ctx.Config.DatabaseType = r.Form.Get("type")
-		ctx.Config.DatabasePath = r.Form.Get("path")
-		ctx.Config.DatabaseURL = r.Form.Get("url")
-		ctx.Config.DatabaseName = r.Form.Get("name")
-		ctx.Config.DatabaseUser = r.Form.Get("user")
-		ctx.Config.DatabasePassword = r.Form.Get("password")
-		ctx.Config.DatabaseTablePrefix = r.Form.Get("table-prefix")
+		ctx.Config.ReceiptSystem.Type = r.Form.Get("type")
+		ctx.Config.ReceiptSystem.Path = r.Form.Get("path")
+		ctx.Config.ReceiptSystem.URL = r.Form.Get("url")
+		ctx.Config.ReceiptSystem.UserName = r.Form.Get("username")
+		ctx.Config.ReceiptSystem.Password = r.Form.Get("password")
+		ctx.Config.ReceiptSystem.TablePrefix = r.Form.Get("table-prefix")
 		err = ctx.Config.Sync()
 		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/rs-setting").Execute(w, &templates.AdminConfigTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()),
-			}))
+			ctx.ReportRedirect("/admin/rs-setting", 0, "Internal Error", fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()), w, r)
 			return
 		}
-		routes.LogTemplateError(ctx.LoadTemplate("admin/rs-setting").Execute(w, &templates.AdminConfigTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			ErrorMsg: fmt.Sprintf("Updated."),
-		}))
+		ctx.ReportRedirect("/admin/rs-setting", 3, "Updated", "Configuration is updated.", w, r)
 	}))
 }
 
