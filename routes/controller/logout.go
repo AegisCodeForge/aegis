@@ -9,12 +9,17 @@ import (
 
 func bindLogoutController(ctx *RouterContext) {
 	http.HandleFunc("GET /logout", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		sk, err := r.Cookie("session")
+		sk, err := r.Cookie(COOKIE_KEY_SESSION)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		err = ctx.SessionInterface.RevokeSession(sk.Value)
+		un, err := r.Cookie(COOKIE_KEY_USERNAME)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		err = ctx.SessionInterface.RevokeSession(un.Value, sk.Value)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return

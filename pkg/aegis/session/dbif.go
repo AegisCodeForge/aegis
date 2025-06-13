@@ -7,10 +7,10 @@ import (
 type AegisSessionStore interface {
 	Install() error
 	IsSessionStoreUsable() (bool, error)
-	RegisterSession(name string, session string) error
-	RetrieveSession(name string) (string, error)
-	VerifySession(name string, target string) (bool, error)
-	RevokeSession(target string) error
+	RegisterSession(username string, session string) error
+	RetrieveSession(username string) (string, error)
+	VerifySession(username string, target string) (bool, error)
+	RevokeSession(username string, target string) error
 }
 
 const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789"

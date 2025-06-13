@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"github.com/bctnry/aegis/pkg/aegis"
@@ -23,8 +24,13 @@ func NewAegisSqliteSessionStore(cfg *aegis.AegisConfig) (*AegisSqliteSessionStor
 }
 
 func (ss *AegisSqliteSessionStore) IsSessionStoreUsable() (bool, error) {
+	tableName := fmt.Sprintf("%ssession", ss.config.Session.TablePrefix)
+	stmt, err := ss.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
+	if err != nil { return false, err }
+ 	r := stmt.QueryRow(tableName)
+	if r.Err() != nil { return false, r.Err() }
 	var x string
- 	err := ss.connection.QueryRow("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'session'").Scan(&x)
+	err = r.Scan(&x)
 	if err == sql.ErrNoRows { return false, nil }
 	if err != nil { return false, err }
 	if len(x) <= 0 { return false, nil }
@@ -34,7 +40,7 @@ func (ss *AegisSqliteSessionStore) IsSessionStoreUsable() (bool, error) {
 func (ss *AegisSqliteSessionStore) RegisterSession(name string, session string) error {
 	tx, err := ss.connection.Begin()
 	if err != nil { return err }
-	stmt, err := tx.Prepare("INSERT INTO session(user_name, value, reg_timestamp) VALUES (?,?,?)")
+	stmt, err := tx.Prepare(fmt.Sprintf("INSERT INTO %ssession(user_name, value, reg_timestamp) VALUES (?,?,?)", ss.config.Session.TablePrefix))
 	if err != nil { tx.Rollback(); return err }
 	_, err = stmt.Exec(name, session, time.Now().UTC())
 	if err != nil { tx.Rollback(); return err }
@@ -44,7 +50,7 @@ func (ss *AegisSqliteSessionStore) RegisterSession(name string, session string) 
 }
 
 func (ss *AegisSqliteSessionStore) RetrieveSession(name string) (string, error) {
-	stmt, err := ss.connection.Prepare("SELECT value FROM session WHERE user_name = ?")
+	stmt, err := ss.connection.Prepare(fmt.Sprintf("SELECT value FROM %ssession WHERE user_name = ?", ss.config.Session.TablePrefix))
 	if err != nil { return "", err }
 	s := ""
 	err = stmt.QueryRow(name).Scan(&s)
@@ -53,7 +59,7 @@ func (ss *AegisSqliteSessionStore) RetrieveSession(name string) (string, error) 
 }
 
 func (ss *AegisSqliteSessionStore) VerifySession(name string, target string) (bool, error) {
-	stmt, err := ss.connection.Prepare("SELECT 1 FROM session WHERE user_name = ? AND value = ?")
+	stmt, err := ss.connection.Prepare(fmt.Sprintf("SELECT 1 FROM %ssession WHERE user_name = ? AND value = ?", ss.config.Session.TablePrefix))
 	if err != nil { return false, err }
 	s := ""
 	err = stmt.QueryRow(name, target).Scan(&s)
@@ -62,12 +68,12 @@ func (ss *AegisSqliteSessionStore) VerifySession(name string, target string) (bo
 	return (len(s) > 0), nil
 }
 
-func (ss *AegisSqliteSessionStore) RevokeSession(target string) error {
+func (ss *AegisSqliteSessionStore) RevokeSession(username string, target string) error {
 	tx, err := ss.connection.Begin()
 	if err != nil { return err }
-	stmt, err := tx.Prepare("DELETE FROM session WHERE value = ?")
+	stmt, err := tx.Prepare(fmt.Sprintf("DELETE FROM %ssession WHERE user_name = ? AND value = ?", ss.config.Session.TablePrefix))
 	if err != nil { tx.Rollback(); return err }
-	_, err = stmt.Exec(target)
+	_, err = stmt.Exec(username, target)
 	if err != nil { tx.Rollback(); return err }
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return err }
