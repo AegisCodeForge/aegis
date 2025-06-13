@@ -11,6 +11,6 @@ func InitializeDatabase(cfg *aegis.AegisConfig) (db.AegisDatabaseInterface, erro
 	switch cfg.Database.Type {
 	case "sqlite": return sqlite.NewSqliteAegisDatabaseInterface(cfg)
 	}
-	return nil, db.NewAegisDatabaseError(db.DATABASE_NOT_SUPPORTED, "")
+	return nil, db.ErrDatabaseNotSupported
 }
 

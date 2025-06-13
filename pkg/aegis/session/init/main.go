@@ -16,6 +16,6 @@ func InitializeDatabase(cfg *aegis.AegisConfig) (session.AegisSessionStore, erro
 	case "keydb":
 		return redis_like.NewAegisRedisLikeSessionStore(cfg)
 	}
-	return nil, db.NewAegisDatabaseError(db.DATABASE_NOT_SUPPORTED, "")
+	return nil, db.ErrDatabaseNotSupported
 }
 

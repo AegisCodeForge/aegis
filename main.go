@@ -111,7 +111,7 @@ func main() {
 
 		ssif, err := ssinit.InitializeDatabase(config)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to load database: %s\n", err.Error())
+			fmt.Fprintf(os.Stderr, "Failed to initialize session store: %s\n", err.Error())
 			os.Exit(1)
 		}
 		context.SessionInterface = ssif

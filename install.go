@@ -408,12 +408,8 @@ func InstallAegis(ctx routes.RouterContext) {
 	fmt.Println("Setting up admin user...")
 	adminExists := false
 	_, err = dbif.GetUserByName("admin")
-	if db.IsAegisDatabaseError(err) {
-		if err.(*db.AegisDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
-			adminExists = false
-		} else {
-			log.Panic(err)
-		}
+	if err == db.ErrEntityNotFound {
+		adminExists = false
 	} else if err != nil {
 		log.Panic(err)
 	} else {

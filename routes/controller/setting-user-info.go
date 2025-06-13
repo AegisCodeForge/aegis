@@ -21,11 +21,9 @@ func bindSettingController(ctx *RouterContext) {
 		un := loginInfo.UserName
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
-			if db.IsAegisDatabaseError(err) {
-				if err.(*db.AegisDatabaseError).ErrorType == db.ENTITY_NOT_FOUND {
-					ctx.ReportNotFound(un, "User", "depot", w, r)
-					return
-				}
+			if err == db.ErrEntityNotFound {
+				ctx.ReportNotFound(un, "User", "depot", w, r)
+				return
 			}
 			ctx.ReportInternalError(err.Error(), w, r)
 			return

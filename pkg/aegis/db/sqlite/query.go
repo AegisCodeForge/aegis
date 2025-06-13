@@ -26,7 +26,7 @@ WHERE user_name = ?
 	var username, title, email, bio, website, ph string
 	var status int
 	err = stmt.QueryRow(name).Scan(&username, &title, &email, &bio, &website, &status, &ph)
-	if err == sql.ErrNoRows { return nil, db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, "") }
+	if err == sql.ErrNoRows { return nil, db.ErrEntityNotFound }
 	if err != nil { return nil, err }
 	return &model.AegisUser{
 		Name: username,
@@ -51,7 +51,7 @@ WHERE user_name = ? AND key_name = ?
 	err = r.Err()
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, "Cannot find key")
+			return nil, db.ErrEntityNotFound
 		}
 		return nil, err
 	}
@@ -102,7 +102,7 @@ SELECT 1 FROM %suser_authkey WHERE user_name = ? AND key_name = ?
 	err = r.Scan(&verdict)
 	if err != nil && err != sql.ErrNoRows { return err }
 	if err == nil {
-		return db.NewAegisDatabaseError(db.ENTITY_ALREADY_EXISTS, "Key already exists with the same name")
+		return db.ErrEntityAlreadyExists
 	}
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
@@ -225,7 +225,7 @@ SELECT 1 FROM %suser_signkey WHERE user_name = ? AND key_name = ?
 	err = r.Scan(&verdict)
 	if err != nil && err != sql.ErrNoRows { return err }
 	if err == nil {
-		return db.NewAegisDatabaseError(db.ENTITY_ALREADY_EXISTS, "Key already exists with the same name")
+		return db.ErrEntityAlreadyExists
 	}
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
@@ -380,10 +380,7 @@ WHERE ns_name = ?
 	var status int
 	err = r.Scan(&title, &desc, &email, &owner, &reg_date, &status, &acl)
 	if err == sql.ErrNoRows {
-		return nil, db.NewAegisDatabaseError(
-			db.ENTITY_NOT_FOUND,
-			fmt.Sprintf("Could not find namespace %s", name),
-		)
+		return nil, db.ErrEntityNotFound
 	}
 	if err != nil { return nil, err }
 	a, err := model.ParseACL(acl)
@@ -415,7 +412,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	err = r.Scan(&desc, &owner, &acl, &status)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("Repository %s not found in %s", repoName, nsName))
+			return nil, db.ErrEntityNotFound
 		}
 		return nil, err
 	}
@@ -760,7 +757,7 @@ SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	var rowid string
 	err = v.Scan(&rowid)
 	if err != nil { return err }
-	if len(rowid) <= 0 { return db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("%s not found in %s", name, ns)) }
+	if len(rowid) <= 0 { return db.ErrEntityNotFound }
 	tx, err := dbif.connection.Begin()
 	if err != nil { tx.Rollback(); return err }
 	defer tx.Rollback()
@@ -791,7 +788,7 @@ SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	var rowid string
 	err = v.Scan(&rowid)
 	if err != nil { return err }
-	if len(rowid) <= 0 { return db.NewAegisDatabaseError(db.ENTITY_NOT_FOUND, fmt.Sprintf("%s not found in %s", name, ns)) }
+	if len(rowid) <= 0 { return db.ErrEntityNotFound }
 	tx, err := dbif.connection.Begin()
 	if err != nil { tx.Rollback(); return err }
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
@@ -819,7 +816,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	if v.Err() != nil { return v.Err() }
 	var s string
 	v.Scan(&s)
-	if len(s) > 0 { return db.NewAegisDatabaseError(db.ENTITY_ALREADY_EXISTS, fmt.Sprintf("%s:%s already exists", newNs, newName)) }
+	if len(s) > 0 { return db.ErrEntityAlreadyExists }
 	// this is sqlite thus we should be able to use rowid.
 	// for other db engine we would need a PRIMARY KEY INT AUTO_INCREMENT.
 	stmt2, err := dbif.connection.Prepare(fmt.Sprintf(`
