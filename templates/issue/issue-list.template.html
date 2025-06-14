@@ -26,7 +26,7 @@
 		  {{range .IssueList}}
 		  <div class="issue-list-item">
 			<div class="issue-title-bar"><span class="issue-id">#{{.IssueId}}:</span> <a href="{{$repoPath}}/issue/{{.IssueId}}"><span class="issue-title">{{.IssueTitle}}</span></a></div>
-			<div class="issue-desc-bar"><a href="/u/{{.IssueAuthor}}" class="issue-author">{{.IssueAuthor}}</a> @ {{toPreciseTime .IssueTime}}</div>
+			<div class="issue-desc-bar"><a href="/u/{{.IssueAuthor}}" class="issue-author">{{.IssueAuthor}}</a> @ {{toFuzzyTime .IssueTime}} ({{toPreciseTime .IssueTime}})</div>
 		  </div>
 		  {{end}}
 		  {{end}}

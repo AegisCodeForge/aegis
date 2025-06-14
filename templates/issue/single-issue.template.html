@@ -21,27 +21,27 @@
 	  <div class="main-side">
 		<div class="issue-body">
 		  <h2 class="issue-header">#{{.Issue.IssueId}}: <span class="issue-header-title">{{.Issue.IssueTitle}}</span></h2>
-		  <div class="issue-header-author"><a href="/u/{{.Issue.IssueAuthor}}">{{.Issue.IssueAuthor}}</a> @ {{toPreciseTime .Issue.IssueTime}}</div>
+		  <div class="issue-header-author"><a href="/u/{{.Issue.IssueAuthor}}">{{.Issue.IssueAuthor}}</a> @ {{toFuzzyTime .Issue.IssueTime}} ({{toPreciseTime .Issue.IssueTime}})</div>
 		  <div class="issue-header-content">{{renderMarkdown .Issue.IssueContent}}</div>
 		</div>
 		<div class="issue-event-list">
 		  {{range .IssueEventList}}
 		  {{if eq .EventType 1}}
 		  <div class="issue-event-list-item issue-comment">
-			<div class="issue-comment-title-bar"><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> commented @ {{toPreciseTime .EventTimestamp}}</div>
+			<div class="issue-comment-title-bar"><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> commented @ {{toFuzzyTime .EventTimestamp}} ({{toPreciseTime .EventTimestamp}})</div>
 			<div class="issue-comment-content">{{renderMarkdown .EventContent}}</div>
 		  </div>
 		  {{else if eq .EventType 2}}
 		  <div class="issue-event-list-item issue-close-as-solved">
-			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this issue as solved @ {{toPreciseTime .EventTimestamp}}
+			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this issue as solved @ {{toFuzzyTime .EventTimestamp}} ({{toPreciseTime .EventTimestamp}})
 		  </div>
 		  {{else if eq .EventType 3}}
 		  <div class="issue-event-list-item issue-close-as-discarded">
-			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this issue @ {{toPreciseTime .EventTimestamp}}
+			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this issue @ {{toFuzzyTime .EventTimestamp}} ({{toPreciseTime .EventTimestamp}})
 		  </div>
 		  {{else if eq .EventType 4}}
 		  <div class="issue-event-list-item issue-reopened">
-			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> reopened this issue @ {{toPreciseTime .EventTimestamp}}
+			<a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> reopened this issue @ {{toFuzzyTime .EventTimestamp}} ({{toPreciseTime .EventTimestamp}})
 		  </div>
 		  {{end}}
 		  {{end}}

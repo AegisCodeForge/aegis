@@ -57,7 +57,7 @@
 		  <div class="admin-table-item">
 			<div><b>Id</b>: {{.Id}}</div>
 			<div><b>Command</b>: {{.Command}}</div>
-			<div><b>Issue Time</b>: {{toPreciseTime .IssueTime}}</div>
+			<div><b>Issue Time</b>: {{toFuzzyTime .IssueTime}} ({{toPreciseTime .IssueTime}})</div>
 			<div><b>Expire Time</b>: {{.TimeoutMinute}} {{toExpireTime .IssueTime .TimeoutMinute}}</div>
 			<div>
 			  <a href="/admin/receipt/{{.Id}}/confirm">Confirm</a>
