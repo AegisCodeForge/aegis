@@ -4,6 +4,20 @@
 .issue-body {
 	border-bottom: 1px var(--foreground-color) solid;
 }
+.issue-list-item {	
+	background-color: #ffffff3f;
+	padding: 1em;
+	margin-bottom: 1em;
+}
+.issue-list-item a {
+	display: inline-block;
+	background-color: unset;
+	color: var(--foreground-color);
+}
+.issue-list-item a:hover {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+}
 .issue-event-list-item {
 	padding-top: 0.5em;
 	padding-bottom: 0.5em;
