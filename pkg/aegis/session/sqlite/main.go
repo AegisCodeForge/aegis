@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/session"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -49,13 +50,39 @@ func (ss *AegisSqliteSessionStore) RegisterSession(name string, session string) 
 	return nil
 }
 
-func (ss *AegisSqliteSessionStore) RetrieveSession(name string) (string, error) {
-	stmt, err := ss.connection.Prepare(fmt.Sprintf("SELECT value FROM %ssession WHERE user_name = ?", ss.config.Session.TablePrefix))
-	if err != nil { return "", err }
-	s := ""
-	err = stmt.QueryRow(name).Scan(&s)
-	if err != nil { return "", err }
-	return s, nil
+func (ss *AegisSqliteSessionStore) RetrieveSession(name string) ([]*session.AegisSession, error) {
+	stmt, err := ss.connection.Prepare(fmt.Sprintf("SELECT value, reg_timestamp FROM %ssession WHERE user_name = ?", ss.config.Session.TablePrefix))
+	if err != nil { return nil, err }
+	res := make([]*session.AegisSession, 0)
+	if err != nil { return nil, err }
+	r, err := stmt.Query(name)
+	for r.Next() {
+		var id string
+		var timestamp int64
+		err = r.Scan(&id, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &session.AegisSession{
+			Username: name,
+			Id: id,
+			Timestamp: timestamp,
+		})
+	}
+	return res, nil
+}
+
+func (ss *AegisSqliteSessionStore) RetrieveSessionByKey(username string, key string) (*session.AegisSession, error) {
+	stmt, err := ss.connection.Prepare(fmt.Sprintf("SELECT reg_timestamp FROM %ssession WHERE user_name = ? AND value = ?", ss.config.Session.TablePrefix))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(username, key)
+	if r.Err() != nil { return nil, r.Err() }
+	var timestamp int64
+	err = r.Scan(&timestamp)
+	if err != nil { return nil, err }
+	return &session.AegisSession{
+		Username: username,
+		Id: key,
+		Timestamp: timestamp,
+	}, nil
 }
 
 func (ss *AegisSqliteSessionStore) VerifySession(name string, target string) (bool, error) {

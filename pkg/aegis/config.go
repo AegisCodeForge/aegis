@@ -159,25 +159,32 @@ type AegisDatabaseConfig struct {
 type AegisSessionConfig struct {
 	// session type. currently only support:
 	// + "sqlite"
-	// + redis-like dbs: "redis", "keydb"
-	// support for "memcached" and other types are also planned.
+	// + redis-like dbs: "redis", "keydb", "valkey"
+	//   + "valkey" is not tested, but should work fine.
+	// + "memcached"
+	// support for other types are also planned.
 	Type string `json:"type"`
 	// session database path. valid only when sessiontype is sqlite.
 	Path string `json:"path"`
 	// TODO: this should be basing on the dir of the config file.
 	properPath string
-	// session table prefix. valid only when sessiontype is sqlite. used just in case
-	// for whatever reasons you'd like using the same sqlite database with other things.
+	// session table prefix.
+	// used as table prefix when type is "sqlite" and key prefix when
+	// type is "redis"/"keydb"/"valkey"/"memcached".
 	TablePrefix string `json:"tablePrefix"`
 	// session host.
 	// requirements for this value is as follows:
 	// + "sqlite": not used
-	// + "redis"/"keydb": in the format of "host:port"
+	// + "redis"/"keydb"/"valkey": in the format of "host:port"
+	// + "memcached": in the format of "host:port"
 	Host string `json:"host"`
+	// username & password.
+	// not used for "sqlite" and "memcached".
 	UserName string `json:"userName"`
 	Password string `json:"password"`
 	// database number.
 	// valid only when sessiontype is redis-like dbs, i.e.g "redis" or "keydb".
+	// not used for "sqlite" and "memcached".
 	DatabaseNumber int `json:"databaseNumber"`
 }
 

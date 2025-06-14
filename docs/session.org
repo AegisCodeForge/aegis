@@ -1,0 +1,16 @@
+* notes on session
+
+** the use of sqlite
+
+This is here only for the development of the business logic at the early stage. Technically you *can* use a sqlite db as a kv store; whether that'll be a good idea you'll have to see for yourself.
+
+** the use of memcached
+
+We assume there's only one memcached node and we don't split across multiple servers. Sessions aren't the kind of things that can be seemingly exist to you *some* of the times.
+
+We don't do SASL auth since it requires the binary protocol (which memcached has deprecated) and the golang memcached library we currently use (https://pkg.go.dev/github.com/bradfitz/gomemcache/memcache#New) seemingly does not support such configurations. We currently also don't support memcached that enables TLS (which should be fixed in the future), not because the library we use doesn't support it, but because we lazy.
+
+One thing that one should keep in mind is that you should not expose your session server to untrusted environment, even if you're not using memcached.
+
+Using memcached is not recommended even if for ideological reasons you'd like to avoid projects that adopts the Contributor Covenant; that said, the fact that nearly every kvstore project is using it is indeed a sad sight to be seen. I do plan to make my own in the future because I personally would like to avoid Contributor Covenant as well, so at the very least you have that to put your hopes in.
+

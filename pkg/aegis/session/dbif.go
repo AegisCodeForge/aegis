@@ -4,11 +4,18 @@ import (
 	"math/rand"
 )
 
+type AegisSession struct {
+	Username string
+	Id string
+	Timestamp int64
+}
+
 type AegisSessionStore interface {
 	Install() error
 	IsSessionStoreUsable() (bool, error)
 	RegisterSession(username string, session string) error
-	RetrieveSession(username string) (string, error)
+	RetrieveSession(username string) ([]*AegisSession, error)
+	RetrieveSessionByKey(username string, session string) (*AegisSession, error)
 	VerifySession(username string, target string) (bool, error)
 	RevokeSession(username string, target string) error
 }

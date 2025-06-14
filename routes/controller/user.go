@@ -14,7 +14,7 @@ func bindUserController(ctx *RouterContext) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		un := r.PathValue("userName")
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
-		if err != db.ErrEntityNotFound {
+		if err == db.ErrEntityNotFound {
 			ctx.ReportNotFound(un, "User", "depot", w, r)
 			return
 		}
