@@ -24,8 +24,14 @@
 		<form action="" method="POST">
 		  <div class="field">
 			<label class="field-label" for="type">Session Store Type:</label>
-			<select name="type" id="type" value="{{.Config.Session.Type}}">
-			  <option value="sqlite">Sqlite3</option>
+			<select name="type" id="type">
+			  <option value="sqlite" {{if eq .Config.Session.Type "sqlite"}}selected{{end}}>Sqlite3</option>
+			  <optgroup label="Redis-like">
+			  <option value="redis" {{if eq .Config.Session.Type "redis"}}selected{{end}}>Redis</option>
+			  <option value="valkey" {{if eq .Config.Session.Type "valkey"}}selected{{end}}>ValKey</option>
+			  <option value="keydb" {{if eq .Config.Session.Type "keydb"}}selected{{end}}>KeyDB</option>
+			  </optgroup>
+			  <option value="memcached" {{if eq .Config.Session.Type "memcached"}}selected{{end}}>Memcached</option>
 			</select>
 		  </div>
 		  <div class="field"><label class="field-label" for="path">Session Store Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.Session.Path}}"/></div>
