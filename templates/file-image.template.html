@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
 	<link rel="stylesheet" href="/static/style.css">
-	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.RepoHeaderInfo.Repository.Name}} :: Gitus</title>
+	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.Repository.Name}} :: {{.Config.DepotName}}</title>
   </head>
   <body>
 	<header>
@@ -19,6 +19,9 @@
 	<hr />
 
 	<main>
+	  <div class="file-tree left-side">
+		{{rawHTML .RenderedTree}}
+	  </div>
 	  <div class="file main-side" >
 		<div class="main-side-top">
 		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
@@ -30,7 +33,7 @@
 
 	<hr />
 	<footer>
-	  <a href="{{getRepoPath .RepoHeaderInfo.Repository.Namespace .RepoHeaderInfo.Repository.Name}}">Back (Repository)</a>
+	  <a href="{{getRepoPath .Repository.Namespace .Repository.Name}}">Back (Repository)</a>
 	  <a href="/">Back (Depot)</a>
 	  {{template "_footer"}}
 	</footer>
