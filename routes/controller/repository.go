@@ -31,17 +31,13 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 		}
-		namespaceName, repoName, ns, s, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, ns, s, err := ctx.ResolveRepositoryFullName(rfn)
+		if err == routes.ErrNotFound {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		if err != nil {
-			if routes.IsRouteError(err) {
-				if err.(*RouteError).ErrorType == NOT_FOUND {
-					ctx.ReportNotFound(repoName, "Repository", namespaceName, w, r)
-				} else {
-					ctx.ReportInternalError(err.Error(), w, r)
-				}
-			} else {
-				ctx.ReportInternalError(err.Error(), w, r)
-			}
+			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		

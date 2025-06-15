@@ -15,17 +15,12 @@ func bindDiffController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", WithLog(func(w http.ResponseWriter, r *http.Request){
 		rfn := r.PathValue("repoName")
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err == routes.ErrNotFound {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		if err != nil {
-			errCode := 500
-			if routes.IsRouteError(err) {
-				if err.(*RouteError).ErrorType == NOT_FOUND {
-					errCode = 404
-				}
-			}
-			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: errCode,
-				ErrorMessage: err.Error(),
-			}))
+			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		
@@ -56,18 +51,18 @@ func bindDiffController(ctx *RouterContext) {
 		commitId := r.PathValue("commitId")
 		cobj, err := repo.Repository.ReadObject(commitId)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: 500,
-				ErrorMessage: fmt.Sprintf("Failed to read commit %s: %s", commitId, err),
-			}))
+			ctx.ReportInternalError(
+				fmt.Sprintf("Failed to read commit %s: %s", commitId, err.Error()),
+				w, r,
+			)
 			return
 		}
 		diff, err := repo.Repository.GetDiff(commitId)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: 500,
-				ErrorMessage: fmt.Sprintf("Failed to read diff %s: %s", commitId, err),
-			}))
+			ctx.ReportInternalError(
+				fmt.Sprintf("Failed to read diff of %s: %s", commitId, err.Error()),
+				w, r,
+			)
 			return
 		}
 		

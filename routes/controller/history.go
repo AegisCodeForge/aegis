@@ -16,17 +16,12 @@ func bindHistoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/history/{nodeName}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err == routes.ErrNotFound {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		if err != nil {
-			errCode := 500
-			if routes.IsRouteError(err) {
-				if err.(*RouteError).ErrorType == NOT_FOUND {
-					errCode = 404
-				}
-			}
-			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-				ErrorCode: errCode,
-				ErrorMessage: err.Error(),
-			}))
+			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		

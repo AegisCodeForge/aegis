@@ -40,6 +40,7 @@ func (ctx RouterContext) ReportNotFound(objName string, objType string, namespac
 	w.WriteHeader(404)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
+			Config: ctx.Config,
 			ErrorCode: 404,
 			ErrorMessage: fmt.Sprintf(
 				"%s %s not found in %s",
@@ -53,6 +54,7 @@ func (ctx RouterContext) ReportNormalError(msg string, w http.ResponseWriter, r 
 	w.WriteHeader(400)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
+			Config: ctx.Config,
 			ErrorCode: 400,
 			ErrorMessage: fmt.Sprintf(
 				"Error: %s",
@@ -66,6 +68,7 @@ func (ctx RouterContext) ReportInternalError(msg string, w http.ResponseWriter, 
 	w.WriteHeader(500)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
+			Config: ctx.Config,
 			ErrorCode: 500,
 			ErrorMessage: fmt.Sprintf(
 				"Internal error: %s",
@@ -79,6 +82,7 @@ func (ctx RouterContext) ReportForbidden(msg string, w http.ResponseWriter, r *h
 	w.WriteHeader(403)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
+			Config: ctx.Config,
 			ErrorCode: 500,
 			ErrorMessage: fmt.Sprintf(
 				"Forbidden: %s",
@@ -170,22 +174,14 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 			if err != nil { return "", "", nil, nil, err }
 			ns, ok = ctx.GitNamespaceList[namespaceName]
 			if !ok {
-				return "", "", nil, nil, NewRouteError(
-					NOT_FOUND, fmt.Sprintf(
-						"Namespace %s not found.", namespaceName,
-					),
-				)
+				return "", "", nil, nil, ErrNotFound
 			}
 		}
 		err = ctx.SyncNamespacePlain(ns)
 		if err != nil { return "", "", nil, nil, err }
 		rp, ok = ns.RepositoryList[repoName]
 		if !ok {
-			return "", "", nil, nil, NewRouteError(
-					NOT_FOUND, fmt.Sprintf(
-						"Repository %s not found in %s.", repoName, namespaceName,
-					),
-			)
+			return "", "", nil, nil, ErrNotFound
 		}
 	} else {
 		ns, err = ctx.DatabaseInterface.GetNamespaceByName(namespaceName)

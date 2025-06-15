@@ -1,30 +1,7 @@
 package routes
 
-type RouteErrorType int
+import "errors"
 
-const (
-	NOT_FOUND RouteErrorType = 1
-	OTHER_ERROR RouteErrorType = 2
-)
+var ErrNotFound = errors.New("Requested object not found")
 
-type RouteError struct {
-	ErrorType RouteErrorType
-	ErrorMsg string
-}
-
-func (re RouteError) Error() string {
-	return re.ErrorMsg
-}
-
-func IsRouteError(e error) bool {
-	_, ok := e.(*RouteError)
-	return ok
-}
-
-func NewRouteError(t RouteErrorType, msg string) *RouteError {
-	return &RouteError{
-		ErrorType: t,
-		ErrorMsg: msg,
-	}
-}
 

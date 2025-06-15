@@ -279,8 +279,8 @@ main {
 	display: flex;
 }
 .left-side {
-	width: 30%;
-	min-width: 30%;
+	max-width: 30%;
+	flex-grow: 1;
 	padding-right: 2rem;
 }
 .sidebar hr {
@@ -290,20 +290,13 @@ main {
 	display: block;
 }
 .main-side {
-	width: 70%;
-	max-width: 70%;
 	padding: 2rem;
 	flex-grow: 2;
     border-left: 2px var(--foreground-color) solid;
+	overflow: auto;
 }
 .main-side h2:first-child {
 	margin-top: 0;
-}
-@media (max-width: 960px) {
-	.left-side {
-		width: 35%;
-		min-width: 35%;
-	}
 }
 @media (max-width: 820px) {
 	main { display: inherit; }
@@ -312,6 +305,8 @@ main {
 		border-bottom: 2px var(--foreground-color) solid;
 		padding-right: 0;
 		padding-bottom: 1rem;
+		flex-grow: 1;
+		max-width: unset;
 	}
 	.main-side {
 		border: 0;
