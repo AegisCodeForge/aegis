@@ -19,6 +19,18 @@ import (
 func bindRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		branch := strings.TrimSpace(r.URL.Query().Get("branch"))
+		if len(branch) > 0 {
+			k := strings.SplitN(branch, ":", 2)
+			switch k[0] {
+			case "branch":
+				FoundAt(w, fmt.Sprintf("/repo/%s/branch/%s", rfn, k[1]))
+				return
+			case "tag":
+				FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s", rfn, k[1]))
+				return
+			}
+		}
 		namespaceName, repoName, ns, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			if routes.IsRouteError(err) {

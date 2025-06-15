@@ -16,19 +16,26 @@
 
 	<main>
 	  <div class="left-side">
-		<h2>Branches</h2>
-		<ul>
-		  {{range .BranchList}}
-		<li><a href="/repo/{{$reponame}}/branch/{{.Name}}">{{.Name}}</a></li>
-		{{end}}
-		</ul>
-
-		<h2>Tags</h2>
-		<ul>
-		  {{range .TagList}}
-		<li><a href="/repo/{{$reponame}}/tag/{{.Name}}">{{.Name}}</a></li>
-		{{end}}
-		</ul>
+		<form action="" method="GET">
+		  <div class="field">
+			<label class="field-label" for="branch">Branch/Tag:</label>
+			<div style="display: flex; height: 1.5em;">
+			  <select class="field-select" style="flex-grow: 2" name="branch" id="branch">
+				<optgroup label="Branch">
+				  {{range .BranchList}}
+				  <option value="branch:{{.Name}}">{{.Name}}</option>
+				  {{end}}
+				</optgroup>
+				<optgroup label="Tag">
+				  {{range .TagList}}
+				  <option value="tag:{{.Name}}">{{.Name}}</option>
+				  {{end}}
+				</optgroup>
+			  </select>
+			  <input style="height:100%; margin: 0; margin-left: 1em;" type="submit" value="Go" />
+			</div>
+		  </div>
+		</form>
 	  </div>
 	  <div class="main-side">
 		{{if gt (len .ReadmeString) 0}}{{rawHTML .ReadmeString}}{{else}}
