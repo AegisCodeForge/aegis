@@ -32,20 +32,5 @@ Git supports a shorter version of SSH address if the port is at the typical numb
 
 ** "dubious ownership" and the problem of permission
 
-Newer version of Git have this "dubious ownership" thing that stops things from working if the SSH user is not the same as the owner of the Git directory. For this reason, whoever creates the directory by calling =git= (i.e. the user that runs Gitus) must transfer the ownership to the configured Git user.
-
-A proper "two-user" setup is thus as follows:
-
-+ A group: =git=.
-+ A user named =gitus= that runs the Gitus server. It should be in the =git= group.
-+ A user named =git=, which is the Git user. This user shall also be in the =git= group.
-+ The following files/directories must be able to be accessed by the users in the group =git=:
-  + Any subdirectory under ={gitRoot}=.
-  + The configuration file used to run the Gitus server.
-    + This is needed because Gitus executed by user =git= through ssh needs the configuration file in order to properly resolve the incoming requested git repo path, since ={gitRoot}= can be anywhere.
-  + The =last-config= file under =git='s home directory. (possibly the whole home directory as well since =gitus= needs to update the =last-config= file whenever the Gitus server was started.)
-  + In the case you use sqlite for the main database and the session store, the main database file & the session store file also need to be able to be accessed by the user =git=.
-    + Using sqlite for session store is strongly advised against - it exists only for the ease of development of business logic in the early stages. ("ease", as in I don't have to set up a separate Redis/memchached/whatever server)
-
-Variants of this scheme can exist, e.g. both =gitus= and =git= are in a =gitus= group instead of the =git= group, but one must make sure the files/directories above can be properly used without causing any permission-related problems. I maybe wrong, but I don't think running Gitus on a different user can offer any meaningful advantages for small instances.
+Newer version of Git have this "dubious ownership" thing that stops certain things from working if the user who's doing the thing is not the same as the owner of the Git directory. For this reason *the web server part of Aegis must be run with the Git user, at least after installation*.
     
