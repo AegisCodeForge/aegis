@@ -51,11 +51,12 @@
 	margin-top: 0.5rem;
 	margin-bottom: 0.5rem;
 	display: flex;
+	align-items: center;
 }
 .admin-list-page-nav {
 	flex-grow: 2;
 	display: flex;
-	align-item: center;
+	align-items: center;
 }
 .admin-list-page-nav-form, .admin-list-search-form {
 	display: inline-flex;
@@ -65,9 +66,23 @@
 .admin-list-search-form input[type="submit"] {
 	margin-top: 0;
 }
+.admin-list-page-goto-form {
+	display: flex;
+	align-items: center;
+	margin-right: 0.5em;
+}
+.admin-list-page-goto-form-tf {
+	width: 3em;
+	margin-left: 0.5em;
+}
 .admin-list-page-nav-form-tf { width: 3rem; }
 .admin-list-search {
-	display: inline;
+	display: inline-flex;
+	align-items: center;
+}
+.admin-list-search-tf {
+	width: 10em;
+	margin-left: 0.5em;
 }
 .admin-list-page-nav-l { margin-left: 2px; margin-right: 2px; }
 @media (max-width: 1024px) {

@@ -1,4 +1,8 @@
-* { box-sizing: border-box; }
+* {
+	box-sizing: border-box;
+	scrollbar-color: var(--foreground-color) var(--background-color);
+	scrollbar-width: thin;
+}
 
 :root {
 	--foreground-color: white;
@@ -382,6 +386,7 @@ form textarea {
 	background-color: var(--background-color);;
 	color: var(--foreground-color);
 	width: 100%;
+	height: 10em;
 	font-size: 1rem;
 	scrollbar-color: var(--background-color) var(--foreground-color);
 	box-sizing: border-box;
@@ -417,12 +422,13 @@ form input[type="submit"]:hover, .form-submit:hover {
 	margin-top: 0.5rem;
 	margin-bottom: 0.5rem;
 	display: flex;
+	align-items: center;
 	width: 100%;
 }
 .list-page-nav {
 	flex-grow: 2;
 	display: inline-flex;
-	align-item: center;
+	align-items: center;
 	flex-grow: 1;
 }
 .list-page-goto, .list-search-form {
@@ -434,9 +440,22 @@ form input[type="submit"]:hover, .form-submit:hover {
 .list-search-form input[type="submit"] {
 	margin-top: 0;
 }
-.list-page-goto-form-tf { width: 3rem; }
+.list-page-goto-form {
+	display: flex;
+	align-items: center;
+	margin-right: 0.5em;
+}
+.list-page-goto-form-tf {
+	width: 3rem;
+	margin-left: 0.5em;
+}
 .list-search {
-	display: inline;
+	display: inline-flex;
+	align-items: center;
+}
+.list-search-tf {
+	width: 10em;
+	margin-left: 0.5em;
 }
 .list-page-nav-l { margin-left: 2px; margin-right: 2px; }
 @media (max-width: 800px) {

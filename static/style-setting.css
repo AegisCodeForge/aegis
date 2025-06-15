@@ -46,7 +46,6 @@
 	color: var(--foreground-color);
 	width: 100%;
 	font-size: 1rem;
-	scrollbar-color: var(--background-color) var(--foreground-color);
 }
 /* ======================================================== */
 
@@ -66,11 +65,12 @@
 	margin-top: 0.5rem;
 	margin-bottom: 0.5rem;
 	display: flex;
+	align-items: center;
 }
 .setting-list-page-nav {
 	flex-grow: 2;
 	display: flex;
-	align-item: center;
+	align-items: center;
 }
 .setting-list-page-nav-form, .setting-list-search-form {
 	display: inline-flex;
@@ -80,9 +80,22 @@
 .setting-list-search-form input[type="submit"] {
 	margin-top: 0;
 }
-.setting-list-page-nav-form-tf { width: 3rem; }
+.setting-list-page-goto-form {
+	display: flex;
+	align-items: center;
+	margin-right: 0.5em;
+}
+.setting-list-page-goto-form-tf {
+	width: 3em;
+	margin-left: 0.5em;
+}
 .setting-list-search {
-	display: inline;
+	display: inline-flex;
+	align-items: center;
+}
+.setting-list-search-tf {
+	width: 10em;
+	margin-left: 0.5em;
 }
 .setting-list-page-nav-l { margin-left: 2px; margin-right: 2px; }
 @media (max-width: 1024px) {

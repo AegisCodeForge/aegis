@@ -11,7 +11,7 @@
   @ <span class="committer-time">{{toFuzzyTime .Commit.CommitterInfo.Time}} ({{.Commit.CommitterInfo.Time}})</span><br />
   <b>Message</b>:<p class="commit-message">{{.Commit.CommitMessage}}</p>
   {{if gt (len .Commit.Signature) 0}}
-  <details><summary><b>Commit Signature</b></summary><pre>{{.Commit.Signature}}</pre></details>
+  <details><summary><b>Commit Signature</b></summary><pre style="overflow:auto">{{.Commit.Signature}}</pre></details>
   {{end}}
 </div>
 
