@@ -8,7 +8,8 @@ type TreeTemplateModel struct {
 	Config *aegis.AegisConfig
 	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
-	TreeFileList TreeFileListTemplateModel
+	TreeFileList *TreeFileListTemplateModel
+	ParentTreeFileList *TreeFileListTemplateModel
 	PermaLink string
 
 	TreePath *TreePathTemplateModel

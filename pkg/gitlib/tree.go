@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -108,7 +109,9 @@ func (rgo RawGitObject) readAsTreeObjectNoDeflate() (*TreeObject, error) {
 }
 
 func parseTreeObject(objid string, f io.Reader) (*TreeObject, error) {
-	objlist := make([]TreeObjectItem, 0)
+	submoduleList := make([]TreeObjectItem, 0)
+	dirList := make([]TreeObjectItem, 0)
+	fileList := make([]TreeObjectItem, 0)
 	for {
 		modeAndName, err := readZeroTerminatedString(f)
 		if err != nil { break }
@@ -123,8 +126,16 @@ func parseTreeObject(objid string, f io.Reader) (*TreeObject, error) {
 			Name: modeAndNameList[1],
 			Hash: objid,
 		}
-		objlist = append(objlist, treeItem)
+		switch mode {
+		case TREE_SUBMODULE:
+			submoduleList = append(submoduleList, treeItem)
+		case TREE_TREE_OBJECT:
+			dirList = append(dirList, treeItem)
+		default:
+			fileList = append(fileList, treeItem)
+		}
 	}
+	objlist := slices.Concat(submoduleList, dirList, fileList)
 	tree := TreeObject{
 		Id: objid,
 		ObjectList: objlist,
@@ -140,6 +151,7 @@ func (gr LocalGitRepository) ResolveTreePath(t *TreeObject, p string) (GitObject
 		tobj = gobj.(*TreeObject)
 		if len(item) <= 0 { continue }
 		found := false
+		if item == "." { continue }
 		for _, sub := range tobj.ObjectList {
 			if sub.Name == item {
 				found = true;

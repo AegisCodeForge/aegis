@@ -11,7 +11,7 @@ type FileTemplateModel struct {
 	File BlobTextTemplateModel
 	PermaLink string
 
-	RenderedTree string
+	TreeFileList *TreeFileListTemplateModel
 	TreePath *TreePathTemplateModel
 	CommitInfo *CommitInfoTemplateModel
 	TagInfo *TagInfoTemplateModel

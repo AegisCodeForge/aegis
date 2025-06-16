@@ -9,6 +9,10 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  {{template "_repo-header" .}}
+	  <div class="node-description">
+		{{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
+		{{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	  </div>
 	</header>
 	<div class="node-nav tree-nav">
 	  <a href="?snapshot">Snapshot</a>
@@ -18,8 +22,9 @@
 
 	<main>
 	  <div class="node-description left-side">
-		{{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
-		{{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+		{{if .ParentTreeFileList}}
+		{{template "_tree-file-list" .ParentTreeFileList}}
+		{{end}}
 	  </div>
 	  <div class="tree main-side">
 		<div class="main-side-top">

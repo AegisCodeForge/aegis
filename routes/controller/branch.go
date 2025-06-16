@@ -11,7 +11,6 @@ import (
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/routes/controller/components"
 	"github.com/bctnry/aegis/templates"
 )
 
@@ -101,6 +100,7 @@ func bindBranchController(ctx *RouterContext) {
 		target, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
+			return
 		}
 
 		// if it's a query for snapshot of a tree we directly output
@@ -146,15 +146,35 @@ func bindBranchController(ctx *RouterContext) {
 				FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
 				return
 			}
+			// NOTE: this is intentional. by the time we've reached here
+			// `treePath` would end with a slash `/`, and the first `path.Dir`
+			// call would only remove that slash, whose result is not the path
+			// of the parent directory.
+			var parentTreeFileList *templates.TreeFileListTemplateModel = nil
+			if treePath != "" {
+				dirPath := path.Dir(path.Dir(treePath)) + "/"
+				dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
+					return
+				}
+				parentTreeFileList = &templates.TreeFileListTemplateModel{
+					ShouldHaveParentLink: len(treePath) > 0,
+					RootPath: rootPath,
+					TreePath: dirPath,
+					FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+				}
+			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
-				TreeFileList: templates.TreeFileListTemplateModel{
+				TreeFileList: &templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
 					RootPath: rootPath,
 					TreePath: treePath,
 					FileList: target.(*gitlib.TreeObject).ObjectList,
 				},
+				ParentTreeFileList: parentTreeFileList,
 				PermaLink: permaLink,
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
@@ -163,10 +183,12 @@ func bindBranchController(ctx *RouterContext) {
 				Config: ctx.Config,
 			}))
 		case gitlib.BLOB:
-			baseUrl := fmt.Sprintf("/repo/%s/branch/%s", rfn, branchName)
-			b, _ := repo.Repository.BuildTree(cobj.TreeObjId, "")
-			renderedFileTree, err := components.RenderFileTree(ctx, baseUrl, b)
-			
+			dirPath := path.Dir(treePath)
+			dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
 			mime := mime.TypeByExtension(path.Ext(treePath))
 			if len(mime) <= 0 { mime = "application/octet-stream" }
 			templateType := "file-text"
@@ -191,7 +213,12 @@ func bindBranchController(ctx *RouterContext) {
 					FileContent: str,
 				},
 				PermaLink: permaLink,
-				RenderedTree: renderedFileTree,
+				TreeFileList: &templates.TreeFileListTemplateModel{
+					ShouldHaveParentLink: len(treePath) > 0,
+					RootPath: rootPath,
+					TreePath: dirPath,
+					FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+				},
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,

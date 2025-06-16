@@ -24,6 +24,7 @@ type LocalGitRepository struct {
 	Config ini.INI
 	isSHA256 bool
 	Hooks map[string]string
+	Submodule map[string]*SubmoduleConfig
 }
 
 func (gr LocalGitRepository) IsSHA256() bool {
@@ -69,6 +70,7 @@ func NewLocalGitRepository(namespace string, name string, p string) *LocalGitRep
 			res.isSHA256 = false
 		}
 	}
+	res.LoadSubmoduleConfig()
 	cmd := exec.Command("git", "update-server-info")
 	cmd.Dir = p
 	// ignore error for now.

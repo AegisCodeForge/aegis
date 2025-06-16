@@ -120,7 +120,7 @@ func bindTreeHandler(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 			Repository: repo,
 			RepoHeaderInfo: repoHeaderInfo,
-			TreeFileList: templates.TreeFileListTemplateModel{
+			TreeFileList: &templates.TreeFileListTemplateModel{
 				ShouldHaveParentLink: len(treePath) > 0,
 				RootPath: rootPath,
 				TreePath: treePath,

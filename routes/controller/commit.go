@@ -11,7 +11,6 @@ import (
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/routes/controller/components"
 	"github.com/bctnry/aegis/templates"
 )
 
@@ -132,7 +131,7 @@ func bindCommitController(ctx *RouterContext) {
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
-				TreeFileList: templates.TreeFileListTemplateModel{
+				TreeFileList: &templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
 					RootPath: rootPath,
 					TreePath: treePath,
@@ -146,10 +145,12 @@ func bindCommitController(ctx *RouterContext) {
 				Config: ctx.Config,
 			}))
 		case gitlib.BLOB:
-			baseUrl := fmt.Sprintf("/repo/%s/commit/%s", rfn, commitId)
-			b, _ := repo.Repository.BuildTree(cobj.TreeObjId, "")
-			renderedFileTree, err := components.RenderFileTree(ctx, baseUrl, b)
-			
+			dirPath := path.Dir(treePath)
+			dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
 			mime := mime.TypeByExtension(path.Ext(treePath))
 			if len(mime) <= 0 { mime = "application/octet-stream" }
 			templateType := "file-text"
@@ -174,7 +175,12 @@ func bindCommitController(ctx *RouterContext) {
 					FileContent: str,
 				},
 				PermaLink: permaLink,
-				RenderedTree: renderedFileTree,
+				TreeFileList: &templates.TreeFileListTemplateModel{
+					ShouldHaveParentLink: len(treePath) > 0,
+					RootPath: rootPath,
+					TreePath: dirPath,
+					FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+				},
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,

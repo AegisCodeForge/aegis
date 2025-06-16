@@ -43,6 +43,11 @@ func (cfg INI) InsertValue(name string, subname string, key string, value string
 	vv.Value[key] = value
 }
 
+func (cfg INI) GetSectionList(name string) (map[string]INISection, bool) {
+	v, ok := cfg[name]
+	return v, ok
+}
+
 func (cfg INI) GetValue(name string, subname string, key string) (string, bool) {
 	v, ok := cfg[name]
 	if !ok {
