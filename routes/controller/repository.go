@@ -80,6 +80,7 @@ func bindRepositoryController(ctx *RouterContext) {
 
 		readmeString := ""
 		readmeType := ""
+		readmeTier := 0
 		// now we try to read the README file.
 		// the order would be: README - README.txt
 		//                     - any file that starts with "README."
@@ -98,14 +99,24 @@ func bindRepositoryController(ctx *RouterContext) {
 		obj, err = s.Repository.ReadObject(obj.(*gitlib.CommitObject).TreeObjId)
 		if err != nil { goto findingReadmeDone; }
 		for _, item := range obj.(*gitlib.TreeObject).ObjectList {
-			if item.Name == "README" || item.Name == "README.txt" || strings.HasPrefix(item.Name, "README.") {
+			if item.Name == "README" || strings.HasPrefix(item.Name, "README.") {
+				// NOTE: this is to make sure that README.md and the like will
+				// always have a higher priority than other README file; some repo
+				// put platform-specific README in files like `README.{plat}.md`
+				// and you can't have them getting selected when a more general
+				// readme exists.
+				thisTier := 2
+				if item.Name == "README" || item.Name == "README.txt" || item.Name == "README.org" || item.Name == "README.md" { thisTier = 1 }
+				fmt.Println("rt", readmeTier, thisTier, item.Name)
+				if readmeTier > 0 && thisTier > readmeTier { continue }
+				readmeTier = thisTier
 				obj, err = s.Repository.ReadObject(item.Hash)
 				if err != nil { continue }
 				if !gitlib.IsBlobObject(obj) { continue }
 				obj, err = s.Repository.ReadObject(item.Hash)
 				readmeType = path.Ext(item.Name)
 				readmeString = string(obj.(*gitlib.BlobObject).Data)
-				goto renderReadme
+				if thisTier == 1 { goto renderReadme }
 			}
 		}
 		
@@ -154,6 +165,10 @@ func bindRepositoryController(ctx *RouterContext) {
 			ReadmeString: readmeString,
 			LoginInfo: loginInfo,
 		}))
+	}))
+
+	http.HandleFunc("GET /repo/{repoName}/fork", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		
 	}))
 }
 
