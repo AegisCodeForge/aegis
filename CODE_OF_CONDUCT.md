@@ -1,6 +1,6 @@
 # Aegis Code of Conduct
 
-1. **Practice Empathy and Respect** Treat all contributors with basic
+1. **Practice Empathy and Respect.** Treat all contributors with basic
    decency and respect. Every individual brings with them personal
    experiences and challenges that may not be immediately
    visible. Regardless of your current circumstances, please engage
