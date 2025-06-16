@@ -39,12 +39,6 @@ func bindNamespaceController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			s, err := ctx.DatabaseInterface.GetAllRepositoryFromNamespace(ns.Name)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			ns.RepositoryList = s
 			loginInfo, err := GenerateLoginInfoModel(ctx, r)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
@@ -53,6 +47,15 @@ func bindNamespaceController(ctx *RouterContext) {
 			loginInfo.IsOwner = ns.Owner == loginInfo.UserName
 			v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
 			loginInfo.IsSettingMember = v
+			s, err := ctx.DatabaseInterface.GetAllVisibleRepositoryFromNamespace(loginInfo.UserName, ns.Name)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			ns.RepositoryList = make(map[string]*model.Repository, 0)
+			for _, k := range s {
+				ns.RepositoryList[k.Name] = k
+			}
 			LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
 				Namespace: ns,
 				LoginInfo: loginInfo,

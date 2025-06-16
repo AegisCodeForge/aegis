@@ -56,11 +56,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
 			}
 			if t == nil {
-				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-					LoginInfo: loginInfo,
-					ErrorCode: 403,
-					ErrorMessage: "Not enough privilege.",
-				}))
+				ctx.ReportForbidden("Not enough privilege", w, r)
 				return
 			}
 		}

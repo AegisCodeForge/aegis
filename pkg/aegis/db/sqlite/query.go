@@ -587,9 +587,9 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 		pattern = strings.ReplaceAll(pattern, "%", "\\%")
 		pattern = strings.ReplaceAll(pattern, "_", "\\_")
 		pattern = "%" + pattern + "%"
-		rs, err = stmt.Query(username, pattern, "\\")
+		rs, err = stmt.Query(ns, username, pattern, "\\")
 	} else {
-		rs, err = stmt.Query(ns, username)
+		rs, err = stmt.Query(ns)
 	}
 	if err != nil { return nil, err }
 	defer rs.Close()
