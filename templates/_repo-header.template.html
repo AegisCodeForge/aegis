@@ -9,6 +9,12 @@
 {{if .Repository.Owner}}
 <span>Owner: <a href="/u/{{.Repository.Owner}}">{{.Repository.Owner}}</a></span>
 {{end}}
+{{if not .Config.PlainMode}}
+<span>(<a href="{{$repoPath}}/fork">Fork</a>)</span>
+{{end}}
+{{if and (gt (len .Repository.ForkOriginNamespace) 0) (gt (len .Repository.ForkOriginName) 0)}}
+<div class="fork-info">A fork of <a href="{{getRepoPath .Repository.ForkOriginNamespace .Repository.ForkOriginName}}">{{getRepoName .Repository.ForkOriginNamespace .Repository.ForkOriginName}}</a></div>
+{{end}}
 </div>
 {{if and .Config (not .Config.PlainMode)}}
 <div class="repo-header-nav">

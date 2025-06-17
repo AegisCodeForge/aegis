@@ -23,6 +23,9 @@ type Repository struct {
 	Status AegisRepositoryStatus `json:"status"`
 	Repository *gitlib.LocalGitRepository `json:"localGitRepo"`
 	LocalPath string `json:"localPath"`
+	ForkOriginNamespace string `json:"forkOriginNamespace"`
+	ForkOriginName string `json:"forkOriginName"`
+	// reserved for features in the future.
 	RepoLabelList []string `json:"labelList"`
 }
 

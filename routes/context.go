@@ -150,6 +150,20 @@ func (ctx *RouterContext) SyncNamespacePlain(ns *model.Namespace) error {
 	return nil
 }
 
+func ParseRepositoryFullName(str string) (string, string) {
+	np := strings.Split(strings.TrimSpace(str), ":")
+	namespaceName := ""
+	repoName := ""
+	if len(np) <= 1 {
+		namespaceName = ""
+		repoName = np[0]
+	} else {
+		namespaceName = np[0]
+		repoName = np[1]
+	}
+	return namespaceName, repoName
+}
+
 // we need the namespace acl to supplement the repository acl in terms
 // of business logic.
 func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string, *model.Namespace, *model.Repository, error) {

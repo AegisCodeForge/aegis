@@ -400,16 +400,16 @@ WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetRepositoryByName(nsName string, repoName string) (*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_description, repo_owner, repo_acl, repo_status
+SELECT repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(nsName, repoName)
 	if r.Err() != nil { return nil, r.Err() }
-	var desc, owner, acl string
+	var desc, owner, acl, forkOriginNs, forkOriginName string
 	var status int
-	err = r.Scan(&desc, &owner, &acl, &status)
+	err = r.Scan(&desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, db.ErrEntityNotFound
@@ -420,6 +420,8 @@ WHERE repo_namespace = ? AND repo_name = ?
 	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
 	res.Owner = owner
 	res.Status = model.AegisRepositoryStatus(status)
+	res.ForkOriginNamespace = forkOriginNs
+	res.ForkOriginName = forkOriginName
 	aclobj, err := model.ParseACL(acl)
 	if err != nil { return nil, err }
 	res.AccessControlList = aclobj
@@ -576,7 +578,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(u
 		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
 WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 `, pfx, privateSelectClause))
@@ -595,9 +597,9 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, owner, acl string
+		var name, desc, owner, acl, forkOriginName, forkOriginNs string
 		var status int64
-		err = rs.Scan(&name, &desc, &owner, &acl, &status)
+		err = rs.Scan(&name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -610,6 +612,8 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
 		})
 	}
 	return res, nil
@@ -618,7 +622,7 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryFromNamespace(ns string) (map[string]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
 WHERE repo_namespace = ?
 `, pfx))
@@ -628,7 +632,7 @@ WHERE repo_namespace = ?
 	defer rs.Close()
 	res := make(map[string]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, acl, owner string
+		var name, desc, acl, owner, forkOriginNs, forkOriginName string
 		var status int64
 		err = rs.Scan(&name, &desc, &owner, &acl, &status)
 		if err != nil { return nil, err }
@@ -643,6 +647,8 @@ WHERE repo_namespace = ?
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
 		}
 	}
 	return res, nil
@@ -724,11 +730,11 @@ func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name strin
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner)
-VALUES (?,?,?,?,?,?,?)
+INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name)
+VALUES (?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner)
+	_, err = stmt1.Exec(fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string))
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	err = os.RemoveAll(p)
@@ -741,6 +747,40 @@ VALUES (?,?,?,?,?,?,?)
 	if err = cmd.Run(); err != nil { return nil, err }
 	if err = tx.Commit(); err != nil { return nil, err }
 	r, err := model.NewRepository(ns, name, gitlib.NewLocalGitRepository(ns, name, p))
+	r.Owner = owner
+	if err != nil { return nil, err }
+	return r, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SetUpCloneRepository(originNs string, originName string, targetNs string, targetName string, owner string) (*model.Repository, error) {
+	pfx := dbif.config.Database.TablePrefix
+	targetFullName := targetNs + ":" + targetName
+	tx, err := dbif.connection.Begin()
+	if err != nil { return nil, err }
+	defer tx.Rollback()
+	stmt1, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name)
+VALUES (?,?,?,?,?,?,?,?,?)
+`, pfx))
+	if err != nil { return nil, err }
+	_, err = stmt1.Exec(targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName)
+	if err != nil {
+		// TODO: find a better way to do this...
+		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
+			return nil, db.ErrEntityAlreadyExists
+		} else {
+			return nil, err
+		}
+	}
+	originP := path.Join(dbif.config.GitRoot, originNs, originName)
+	targetP := path.Join(dbif.config.GitRoot, targetNs, targetName)
+	err = os.RemoveAll(targetP)
+	if err != nil { return nil, err }
+	originRepo := gitlib.NewLocalGitRepository(originNs, originName, originP)
+	err = originRepo.LocalForkTo(targetP)
+	if err != nil { return nil, err }
+	if err = tx.Commit(); err != nil { return nil, err }
+	r, err := model.NewRepository(targetNs, targetName, gitlib.NewLocalGitRepository(targetNs, targetName, targetP))
 	r.Owner = owner
 	if err != nil { return nil, err }
 	return r, nil
@@ -934,7 +974,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -944,10 +984,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, acl, owner string
+	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs string
 	var status int
 	for r.Next() {
-		err = r.Scan(&ns, &name, &desc, &acl, &owner, &status)
+		err = r.Scan(&ns, &name, &desc, &acl, &owner, &status, &forkOriginNs, &forkOriginName)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -960,6 +1000,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
 		})
 	}
 	return res, nil
@@ -1114,7 +1156,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum 
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_name, repo_fork_origin_namespace
 FROM %srepository
 WHERE (repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -1125,10 +1167,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, acl, owner string
+	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs string
 	var status int
 	for r.Next() {
-		err = r.Scan(&ns, &name, &desc, &acl, &owner, &status)
+		err = r.Scan(&ns, &name, &desc, &acl, &owner, &status, &forkOriginName, &forkOriginNs)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1140,6 +1182,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
 		})
 	}
 	return res, nil
@@ -1324,7 +1368,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(usern
 		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
 INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
 ON %srepository.repo_namespace = a.ns_name
@@ -1344,9 +1388,9 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
 	for rs.Next() {
-		var ns, name, desc, owner, acl string
+		var ns, name, desc, owner, acl, forkOriginNs, forkOriginName string
 		var status int64
-		err = rs.Scan(&ns, &name, &desc, &owner, &acl, &status)
+		err = rs.Scan(&ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1359,6 +1403,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
 		})
 	}
 	return res, nil
@@ -1482,7 +1528,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(us
 		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
 INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
 ON %srepository.repo_namespace = a.ns_name
@@ -1514,9 +1560,9 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	defer r.Close()
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		var ns, name, desc, acl string
+		var ns, name, desc, acl, forkOriginNamespace, forkOriginName string
 		var status int64
-		err = r.Scan(&ns, &name, &desc, &acl, &status)
+		err = r.Scan(&ns, &name, &desc, &acl, &status, &forkOriginNamespace, &forkOriginName)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1528,6 +1574,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNamespace,
+			ForkOriginName: forkOriginName,
 		})
 	}
 	return res, nil
@@ -1899,7 +1947,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser 
 		}
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status
+SELECT repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %srepository
     INNER JOIN (SELECT ns_name FROM %snamespace WHERE (%s)) a
     ON %srepository.repo_namespace = a.ns_name
@@ -1921,9 +1969,9 @@ WHERE (%s) AND (repo_owner = ?)
 	if err != nil { return nil, err }
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		var ns, name, desc, acl, owner string
+		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName string
 		var status int64
-		err := r.Scan(&ns, &name, &desc, &owner, &acl, &status)
+		err := r.Scan(&ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1936,6 +1984,8 @@ WHERE (%s) AND (repo_owner = ?)
 			AccessControlList: a,
 			Status:model.AegisRepositoryStatus(status),
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNamespace,
+			ForkOriginName: forkOriginName,
 		})
 	}
 	return res, nil

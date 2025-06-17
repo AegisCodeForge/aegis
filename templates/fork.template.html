@@ -1,0 +1,50 @@
+{{$repoName := getRepoName .SourceRepository.Namespace .SourceRepository.Name}}
+{{$repoPath := getRepoPath .SourceRepository.Namespace .SourceRepository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Forking {{$repoName}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		Forking <a href="{{$repoPath}}">{{$repoName}}</a>
+	  </h1>
+	</header>
+	<hr />
+
+	<main>
+	  <div class="left-side">
+	  </div>
+
+	  <div class="setting-main main-side">
+		<div>Forking repository  <a href="{{$repoPath}}">{{$repoName}}</a> to:</div>
+		<form action="" method="POST">
+		  <div class="field"><label class="field-label" for="namespace">Namespace:</label>
+			<select name="namespace" style="width:unset;">
+			  {{if .NamespaceList}}
+			  {{range $k, $ns := .NamespaceList}}
+			  <option value="{{$ns.Name}}">{{$ns.Name}} ({{$ns.Title}})</option>
+			  {{end}}
+			  {{end}}
+			</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
+		<input type="submit" value="Fork" />
+		</form>
+
+	  </div>
+	</main>
+
+	<hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

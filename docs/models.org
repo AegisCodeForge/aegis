@@ -84,6 +84,10 @@
   	-- 1 - normal (public). 2 - normal (private).
       -- 4 - archived.
   	repo_status INTEGER
+  	-- if this repository is a fork, this would be filled with
+  	-- that repository's fields.
+  	repo_fork_origin_namespace TEXT
+  	repo_fork_origin_name TEXT
   );
   CREATE TABLE IF NOT EXISTS gitus_repo_redirect (
       old_ns TEXT,

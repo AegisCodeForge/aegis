@@ -1,7 +1,9 @@
 package gitlib
 
 import (
+	"bytes"
 	"compress/zlib"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -114,6 +116,19 @@ func (gr LocalGitRepository) OpenDirectlyAccessibleObject(h string) (io.ReadClos
 	return zlib.NewReader(f)
 }
 
+// targetAbsDir must be absolute path.
+func (gr LocalGitRepository) LocalForkTo(targetAbsDir string) error {
+	cmd := exec.Command("git", "clone", "--bare", gr.GitDirectoryPath, targetAbsDir)
+	stderrBuf := new(bytes.Buffer)
+	cmd.Stderr = stderrBuf
+	err := cmd.Run()
+	if err != nil {
+		return errors.New(err.Error() + ": " + stderrBuf.String())
+	}
+	// NOTE: we don't need to set up a remote here - the "origin" remote
+	// already points to the original repo.
+	return nil
+}
 
 // two places to check:
 //     refs/heads/*,  packed-refs

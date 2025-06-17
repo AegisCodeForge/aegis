@@ -44,7 +44,11 @@ type AegisDatabaseInterface interface {
 	UpdateNamespaceStatus(name string, newStatus model.AegisNamespaceStatus) error
 	// the implementer should remove the directory as well.
 	HardDeleteNamespaceByName(name string) error
+	// the implementer should create the git directory as well. common
+	// method is to run "git init".
 	CreateRepository(ns string, name string, owner string) (*model.Repository, error)
+	// same as `CreateRepository` but with related fields being set.
+	SetUpCloneRepository(originNs string, originName string, targetNs string, targetName string, owner string) (*model.Repository, error)
 	UpdateRepositoryInfo(ns string, name string, robj *model.Repository) error
 	UpdateRepositoryStatus(ns string, name string, status model.AegisRepositoryStatus) error
 	HardDeleteRepository(ns string, name string) error
