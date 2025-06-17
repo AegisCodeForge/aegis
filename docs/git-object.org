@@ -68,6 +68,7 @@ A commit object consists of a commit header and a commit message part separated 
 
 + =tree=: The id of the tree object associated with this commit.
 + =parent=: The commit that this commit is based upon.
+  + If this commit is a merge commit, more than one =parent= line would exist. Code working with this part must account for this case.
 + =author=: The author of this commit (for format, see below).
 + =committer=: The committer of this commit (see below).
 + =gpgsig=: The GPG signature of this commit.

@@ -12,6 +12,7 @@ type AegisSession struct {
 
 type AegisSessionStore interface {
 	Install() error
+	Dispose() error
 	IsSessionStoreUsable() (bool, error)
 	RegisterSession(username string, session string) error
 	RetrieveSession(username string) ([]*AegisSession, error)

@@ -79,7 +79,7 @@ func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 }
 
 func askYesNo(prompt string) bool {
-	fmt.Printf("%s [y/n]", prompt)
+	fmt.Printf("%s [y/n] ", prompt)
 	result := false
 	for {
 		var answer string
@@ -92,7 +92,7 @@ func askYesNo(prompt string) bool {
 			result = false
 			break
 		} else {
-			fmt.Println("Please enter y or n...")
+			fmt.Print("Please enter y or n... [y/n] ")
 		}
 	}
 	return result

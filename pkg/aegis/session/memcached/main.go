@@ -33,6 +33,10 @@ func (ssif *AegisMemcachedSessionStore) IsSessionStoreUsable() (bool, error) {
 	return true, nil
 }
 
+func (ssif *AegisMemcachedSessionStore) Dispose() error {
+	return ssif.connection.Close()
+}
+
 func insertSet(set []byte, s string) []byte {
 	if inSet(set, s) {
 		return set

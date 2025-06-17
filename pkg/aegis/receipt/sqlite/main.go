@@ -28,6 +28,10 @@ func NewSqliteReceiptSystemInterface(cfg *aegis.AegisConfig) (*AegisSqliteReceip
 	}, nil
 }
 
+func (rsif *AegisSqliteReceiptSystemInterface) Dispose() error {
+	return rsif.connection.Close()
+}
+
 func (rsif *AegisSqliteReceiptSystemInterface) IsReceiptSystemUsable() (bool, error) {
 	stmt, err := rsif.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
 	if err != nil { return false, err }

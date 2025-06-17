@@ -24,6 +24,10 @@ func NewAegisSqliteSessionStore(cfg *aegis.AegisConfig) (*AegisSqliteSessionStor
 	}, nil
 }
 
+func (ss *AegisSqliteSessionStore) Dispose() error {
+	return ss.connection.Close()
+}
+
 func (ss *AegisSqliteSessionStore) IsSessionStoreUsable() (bool, error) {
 	tableName := fmt.Sprintf("%ssession", ss.config.Session.TablePrefix)
 	stmt, err := ss.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")

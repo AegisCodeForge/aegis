@@ -18,6 +18,7 @@ type Receipt struct {
 type AegisReceiptSystemInterface interface {
 	IsReceiptSystemUsable() (bool, error)
 	Install() error
+	Dispose() error
 	RetrieveReceipt(rid string) (*Receipt, error)
 	IssueReceipt(timeoutMinute int64, command []string) (string, error)
 	CancelReceipt(rid string) error

@@ -6,6 +6,8 @@ type AegisDatabaseInterface interface {
 	// we have to discern between "database unusable" and "error while detecting".
 	IsDatabaseUsable() (bool, error)
 	InstallTables() error
+	Dispose() error
+	
 	GetUserByName(name string) (*model.AegisUser, error)
 	GetAllAuthKeyByUsername(name string) ([]model.AegisAuthKey, error)
 	GetAuthKeyByName(userName string, keyName string) (*model.AegisAuthKey, error)

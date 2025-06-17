@@ -37,6 +37,10 @@ func (ssif *AegisRedisLikeSessionStore) IsSessionStoreUsable() (bool, error) {
 	return true, nil
 }
 
+func (ssif *AegisRedisLikeSessionStore) Dispose() error {
+	return ssif.connection.Close()
+}
+
 func (ssif *AegisRedisLikeSessionStore) RegisterSession(name string, session string) error {
 	key := fmt.Sprintf("%s:%s:session", ssif.config.Session.TablePrefix, name)
 	ctx := context.TODO()

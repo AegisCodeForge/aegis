@@ -20,6 +20,7 @@
 + ={hostname}/repo/{reponame}/issue=: issue tracker.
   + ={hostname}/repo/{reponame}/issue/new=: new issue
   + ={hostname}/repo/{reponame}/issue/{issueId}=: each issue
++ ={hostname}/repo/{reponame}/fork=: fork repository.
 + ={hostname}/u/{username}=: User page.
 + ={hostname}/new/namespace=: New namespace page.
 + ={hostname}/new/repo=: New repository page.

@@ -3,22 +3,25 @@ package main
 //go:generate go run devtools/generate-template.go templates
 
 import (
+	gocontext "context"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"strings"
+	"syscall"
+	"time"
 
-	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/db"
 	dbinit "github.com/bctnry/aegis/pkg/aegis/db/init"
 	"github.com/bctnry/aegis/pkg/aegis/mail"
 	rsinit "github.com/bctnry/aegis/pkg/aegis/receipt/init"
 	ssinit "github.com/bctnry/aegis/pkg/aegis/session/init"
 	"github.com/bctnry/aegis/pkg/aegis/ssh"
+	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/passwd"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/routes/controller"
@@ -46,6 +49,11 @@ func main() {
 	}
 
 	if *initFlag {
+		if askYesNo("Start web installer?") {
+			WebInstaller()
+			os.Exit(0)
+		}
+
 		err := aegis.CreateConfigFile(configPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create configuration file: %s\n", err.Error())
@@ -98,11 +106,9 @@ func main() {
 		MasterTemplate: masterTemplate,
 	}
 	
-	var dbif db.AegisDatabaseInterface = nil
-	
 	if !noConfig && !config.PlainMode {
 		// check db if plainmode is false.
-		dbif, err = dbinit.InitializeDatabase(config)
+		dbif, err := dbinit.InitializeDatabase(config)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to load database: %s\n", err.Error())
 			os.Exit(1)
@@ -190,14 +196,64 @@ func main() {
 		}
 	}
 
-	controller.InitializeRoute(&context)
-
 	staticPrefix := config.StaticAssetDirectory
 	var fs = http.FileServer(http.Dir(staticPrefix))
 	http.Handle("GET /favicon.ico", routes.WithLogHandler(fs))
 	http.Handle("GET /static/", http.StripPrefix("/static/", routes.WithLogHandler(fs)))
+	server := &http.Server{
+		Addr: fmt.Sprintf("%s:%d", config.BindAddress, config.BindPort),
+	}
+	controller.InitializeRoute(&context)
 
-	log.Println(fmt.Sprintf("Serve at %s:%d", config.BindAddress, config.BindPort))
-	http.ListenAndServe(fmt.Sprintf("%s:%d", config.BindAddress, config.BindPort), nil)
+	go func() {
+		log.Println(fmt.Sprintf("Trying to serve at %s:%d", config.BindAddress, config.BindPort))
+		err := server.ListenAndServe()
+		if err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+		log.Println("Stopped serving new connections.")
+	}()
+
+	// apparently go kills absolutely everything when main returns -
+	// all the goroutines and things would be just gone and not even
+	// deferred calls are executed, which is insane if you think about
+	// it. the `http.Server.Shutdown` method closes the http server
+	// gracefully but `http.ListenAndServe` just serves and does not
+	// return the server obj, a separate Server obj is needed to
+	// close. putting the teardown part after `http.ListenAndServe`
+	// doesn't seem to cut it because of SIGINT and the like. we wait
+	// on a channel (which we set up beforehand to put up a notifying
+	// message when SIGINT/others occur) so that in cases like those
+	// we would still have a chance to wrap things up.
+	// this is also used for the webinstaller since it's also a http
+	// server as well.
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	shutdownCtx, shutdownRelease := gocontext.WithTimeout(gocontext.Background(), 10*time.Second)
+	defer shutdownRelease()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("HTTP shutdown err: %v", err.Error())
+	}
+
+	if context.DatabaseInterface != nil {
+		if err = context.DatabaseInterface.Dispose(); err != nil {
+			log.Printf("Failed to dispose database interface: %s\n", err.Error())
+		}
+	}
+	if context.SessionInterface != nil {
+		if err = context.SessionInterface.Dispose(); err != nil {
+			log.Printf("Failed to dispose session store: %s\n", err.Error())
+		}
+	}
+	if context.ReceiptSystem != nil {
+		if err = context.ReceiptSystem.Dispose(); err != nil {
+			log.Printf("Failed to dispose receipt system: %s\n", err.Error())
+		}
+	}
+	
+	log.Println("Graceful shutdown complete.")
 }
 
