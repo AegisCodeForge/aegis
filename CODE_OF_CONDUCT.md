@@ -1,5 +1,7 @@
 # Aegis Code of Conduct
 
+(https://aegis-coc.github.io/)
+
 1. **Maintain Technological Focus and Ideological Neutrality.** This
    project is committed to technological excellence and neutrality. We
    do not take positions on political, ideological, or social issues
