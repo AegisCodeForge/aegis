@@ -10,7 +10,6 @@ type AdminIndexConfigTemplateModel struct {
 	IndexType string
 	IndexNamespace string
 	IndexRepository string
-	IndexFileName string
 	IndexFileContent string
 	ErrorMsg string
 	LoginInfo *LoginInfoModel

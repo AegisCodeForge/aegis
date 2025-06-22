@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	</header>
+
+	<hr />
+	<h2>Step 1</h2>
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label" for="plain-mode">Use Plain Mode?</label>
+		<p class="field-description">When Plain Mode is set to true, Aegis would act like a simple Git web frontend similar to git-instaweb - no user management and related features would be available, including clone-by-SSH. You'll be able to control which namespace/repository would be visible in later steps if you choose to enable Plain Mode.</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Enable?</th></tr>
+		  </thead>
+		  <tbody>
+			<tr><td><label for="plain-mode">plainMode</label></td><td><input type="checkbox" name="plain-mode" id="plain-mode" {{if and .Config.PlainMode}}checked{{end}} /></td></tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
+		<label class="field-label" for="use-namespace">Use Namespace?</label>
+		<p class="field-description">Namespace is a common construct used to group multiple repositories that are within a bigger project but would not make enough sense to combine into a single monolith. If this field sets to true, namespaces would be enabled.</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Enable?</th></tr>
+		  </thead>
+		  <tbody>
+			<tr><td><label for="enable-namespace">enableNamespace</label></td><td><input type="checkbox" name="enable-namespace" id="enable-namespace" {{if and .Config.UseNamespace}}checked{{end}} /></td></tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+
+	{{if .ConfirmStageReached}}
+	<p><a href="/confirm">Back to the finish line</a></p>
+	{{end}}
+
+	<hr />
+	
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

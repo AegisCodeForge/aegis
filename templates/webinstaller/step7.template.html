@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	</header>
+	
+	<hr />
+	<!-- step 7: ignored namespaces & repositories -->
+	<h2>Step 7: Ignored Namespaces & Repositories</h2>
+	<p>NOTE: The previous steps are not needed since you've choosen to enable Plain Mode.</p>
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label" for="ignore-namespace">Ignore Namespace</label>
+		{{if .Config.UseNamespace}}
+		<p class="field-description">All namespaces specified here will not be shown to the public. Each name should be separated by a comma <code>,</code> .</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Value</th></tr>
+		  </thead>
+		  <tbody>
+			<tr>
+			  <td><label for="ignore-namespace">ignoreNamespace</label></td>
+			  <td><textarea name="ignore-namespace" id="ignore-namespace">{{strJoin .Config.IgnoreNamespace ","}}</textarea></td>
+			</tr>
+		  </tbody>
+		</table>
+		{{else}}
+		<input type="hidden" name="ignore-namespace" id="ignore-namespace" value="" />
+		<p>This field is skipped because you've choosen to not enable namespace.</p>
+		<p>Click <a href="/step1">here</a> to go back if you wish to change this setting.</p>
+		{{end}}
+	  </div>
+	  <div class="field">
+		<label class="field-label" for="ignore-repository">Ignore Repository</label>
+		<p class="field-description">All repositories should be written in the format of <code>{namespae name}:{repo name}</code>, for example, repository <code>testrepo</code> under namespace <code>testns</code> should be written <code>testns:testrepo</code>. All repositories specified here will not be shown to the public. Each name should be separated by a comma <code>,</code> .</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Value</th></tr>
+		  </thead>
+		  <tbody>
+			<tr><td><label for="ignore-repository">ignoreRepository</label></td><td><textarea name="ignore-repository" id="ignore-repository">{{strJoin .Config.IgnoreRepository ","}}</textarea></td></tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+	<hr />
+
+	{{if .ConfirmStageReached}}
+	<p><a href="/confirm">Back to the finish line</a></p>
+	{{end}}
+
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

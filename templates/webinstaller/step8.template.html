@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>	  
+	</header>
+
+	<hr />
+	<!-- step 8: web front setup -->
+	<h2>Step 8: Web Setup</h2>
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label" for="depot-name">Depot Name</label>
+		<p class="field-description">The name for this Aegis instance.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="depot-name">depotName</label></td>
+			  <td><input name="depot-name" id="depot-name" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
+		<label class="field-label">Bind Address & Port</label>
+		<p class="field-description">The address and port this instance is supposed to bind to. Two common choices for bind address: <code>0.0.0.0</code> which allows all external connections, and <code>127.0.0.1</code> which only allows local connections. For security reasons it would be better to set this to 127.0.0.1 and put Aegis behind a reverse proxy.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="bind-address">bindAddress</label></td>
+			  <td><input name="bind-address" id="bind-address" /></td>
+			</tr>
+			<tr><td><label for="bind-port">bindPort</label></td>
+			  <td><input name="bind-port" id="bind-port" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
+		<label class="field-label" for="http-host-name">HTTP Host Name</label>
+		<p class="field-description">HTTP host name. Used as the base for composing different URLs throughout the instance. Normally this would be the URL you expect other users to use to gain access to this instance through HTTP.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td>httpHostName</td>
+			  <td><input name="http-host-name" id="http-host-name" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
+		<label class="field-label" for="ssh-host-name">SSH Host Name</label>
+		<p class="field-description">SSH host name. Used as the base for composing SSH Git remote addresses.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td>sshHostName</td>
+			  <td><input name="ssh-host-name" id="ssh-host-name" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
+		<span class="field-label">Front Page</span>
+		<p class="field-description">The default front page for this instance. This would be the first thing people see when visiting this Aegis instance.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">frontPageType</td>
+			  <td>
+				<select name="front-page-type" id="front-page-type">
+				  <option value="all/namespace">All Namespaces</option>
+				  <option value="all/repository">All Repositories</option>
+				  <option value="namespace">Specified namespace</option>
+				  <option value="repository">Specified repository</option>
+				  <option value="static/html">HTML Text</option>
+				  <option value="static/text">Plain Text</option>
+				  <option value="static/markdown">Markdown Text</option>
+				  <option value="static/org">Org-mode Text</option>
+				</select>
+			  </td>
+			</tr>
+			<tr><td class="field-sub-label">frontPageValue<br/>(Valid only for "Specified namespace" and "Specified repository". Providing only the name of the namespace/repository is enough.)</td><td><input name="front-page-value" /></td></tr>
+			<tr><td class="field-sub-label">frontPageText<br />(Valid only for "Static file". This would be the content of static file, and would be rendered according to the file name.)</td><td><textarea name="front-page-text"></textarea></td></tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
+		<label class="field-label" for="depot-name">User Management Related</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped since you've chosen to activate Plain Mode.</p>
+		{{else}}
+		<p class="field-description">These fields control the behaviour of certain aspects about user management.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="allow-registration">allowRegistration</label><br />(Whether to allow</td><td><input type="checkbox" name="allow-registration" id="allow-registration" {{if and .Config.AllowRegistration}}checked{{end}} /></td></tr>
+			<tr><td class="field-sub-label"><label for="email-confirmation-required">emailConfirmationRequired</label></td><td><input type="checkbox" name="email-confirmation-required" id="email-confirmation-required" {{if and .Config.EmailConfirmationRequired}}checked{{end}} /></td></tr>
+			<tr><td class="field-sub-label"><label for="manual-approval">manualApproval</label></td><td><input type="checkbox" name="manual-approval" id="manual-approval" {{if and .Config.ManualApproval}}checked{{end}} /></td></tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+	<hr />
+
+	{{if .ConfirmStageReached}}
+	<p><a href="/confirm">Back to the finish line</a></p>
+	{{end}}
+	
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

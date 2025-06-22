@@ -21,11 +21,11 @@ type PasswdUser struct {
 
 type Passwd map[string]*PasswdUser
 
-var InvalidFormat = errors.New("Invalid line format")
+var ErrInvalidFormat = errors.New("Invalid line format")
 
 func parsePasswdLine(s string) (*PasswdUser, error) {
 	ss := strings.Split(s, ":")
-	if len(ss) <= 1 { return nil, InvalidFormat }
+	if len(ss) <= 1 { return nil, ErrInvalidFormat }
 	uid, err := strconv.Atoi(ss[2])
 	if err != nil { return nil, err }
 	gid, err := strconv.Atoi(ss[3])

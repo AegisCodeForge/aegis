@@ -39,8 +39,18 @@ func whereIs(cmdname string) (string, error) {
 }
 
 func createOtherOwnedFile(p string, uid int, gid int) error {
-	err := os.WriteFile(p, []byte(""), 0644)
-	if err != nil && !os.IsExist(err) { return err }
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		if os.IsExist(err) {
+			os.Remove(p)
+			f, err = os.OpenFile(p, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+			if err != nil { return err }
+		} else {
+			return err
+		}
+	}
+	f.WriteString("")
+	f.Close()
 	err = os.Chown(p, uid, gid)
 	if err != nil { return err }
 	return nil

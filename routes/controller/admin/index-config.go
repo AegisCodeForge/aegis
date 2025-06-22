@@ -17,26 +17,10 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 		if err != nil { routes.FoundAt(w, "/") }
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
-		iType := ctx.Config.FrontPageConfig
-		var namespace, repository, fileName, fileContent string
-		if strings.HasPrefix(iType, "/") {
-			fileName = iType[1:]
-			iType = "static"
-			f, err := os.ReadFile(path.Join(ctx.Config.StaticAssetDirectory, fileName))
-			if err != nil {
-				routes.LogTemplateError(ctx.LoadTemplate("admin/index-config").Execute(w, &templates.AdminIndexConfigTemplateModel{
-					Config: ctx.Config,
-					LoginInfo: loginInfo,
-					ErrorMsg: fmt.Sprintf("Failed to read file content: %s", err.Error()),
-					IndexType: iType,
-					IndexNamespace: namespace,
-					IndexRepository: repository,
-					IndexFileName: fileName,
-					IndexFileContent: fileContent,
-				}))
-				return
-			}
-			fileContent = string(f)
+		iType := ctx.Config.FrontPageType
+		var namespace, repository, fileContent string
+		if strings.HasPrefix(iType, "static/") {
+			fileContent = ctx.Config.FrontPageContent
 		} else if strings.HasPrefix(iType, "namespace/") {
 			namespace = iType[len("namespace/"):]
 			iType = "namespace"
@@ -58,7 +42,6 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 			IndexType: iType,
 			IndexNamespace: namespace,
 			IndexRepository: repository,
-			IndexFileName: fileName,
 			IndexFileContent: fileContent,
 		}))
 	}))
@@ -86,15 +69,15 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 		fileContent := r.Form.Get("file-content")
 		switch indexType {
 		case "all/namespace":
-			ctx.Config.FrontPageConfig = "all/namespace"
+			ctx.Config.FrontPageType = "all/namespace"
 		case "all/repository":
-			ctx.Config.FrontPageConfig = "all/repository"
+			ctx.Config.FrontPageType = "all/repository"
 		case "namespace":
-			ctx.Config.FrontPageConfig = fmt.Sprintf("namespace/%s", namespace)
+			ctx.Config.FrontPageType = fmt.Sprintf("namespace/%s", namespace)
 		case "repository":
-			ctx.Config.FrontPageConfig = fmt.Sprintf("repository/%s:%s", namespace, repository)
+			ctx.Config.FrontPageType = fmt.Sprintf("repository/%s:%s", namespace, repository)
 		case "static":
-			ctx.Config.FrontPageConfig = fileName
+			ctx.Config.FrontPageType = fileName
 			p := path.Join(ctx.Config.StaticAssetDirectory, fileName)
 			f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0664)
 			if err != nil {
@@ -105,7 +88,6 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 					IndexType: indexType,
 					IndexNamespace: namespace,
 					IndexRepository: repository,
-					IndexFileName: fileName,
 					IndexFileContent: fileContent,
 				}))
 				return
@@ -120,7 +102,6 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 					IndexType: indexType,
 					IndexNamespace: namespace,
 					IndexRepository: repository,
-					IndexFileName: fileName,
 					IndexFileContent: fileContent,
 				}))
 				return
@@ -135,7 +116,6 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 				IndexType: indexType,
 				IndexNamespace: namespace,
 				IndexRepository: repository,
-				IndexFileName: fileName,
 				IndexFileContent: fileContent,
 			}))
 			return
@@ -148,9 +128,9 @@ func bindAdminIndexConfigController(ctx *routes.RouterContext) {
 			IndexType: indexType,
 			IndexNamespace: namespace,
 			IndexRepository: repository,
-			IndexFileName: fileName,
 			IndexFileContent: fileContent,
 		}))
 		return
 	}))
 }
+

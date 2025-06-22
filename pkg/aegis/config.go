@@ -14,7 +14,7 @@ import (
 )
 
 type AegisConfig struct {
-	filePath string
+	FilePath string
 	// the version of the configuration file. currently only 0 is
 	// allowed.
 	Version int `json:"version"`
@@ -361,7 +361,7 @@ func (c *AegisConfig) RecalculateProperPath() error {
 		}
 	}
 
-	configDir := path.Dir(c.filePath)
+	configDir := path.Dir(c.FilePath)
 	if c.Database.Type == "sqlite" {
 		var rp string
 		if path.IsAbs(c.Database.Path) {
@@ -401,19 +401,24 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 	var c AegisConfig
 	err = json.Unmarshal(s, &c)
 	if err != nil { return nil, err }
-	c.filePath = p
+	c.FilePath = p
 	err = c.RecalculateProperPath()
 	if err != nil { return nil, err }
 	return &c, nil
 }
 
 func (cfg *AegisConfig) Sync() error {
-	p := cfg.filePath 
+	p := cfg.FilePath 
 	s, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil { return err }
 	st, err := os.Stat(p)
-	if err != nil { return err }
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, st.Mode())
+	if err != nil && !os.IsNotExist(err) { return err }
+	var f *os.File
+	if os.IsNotExist(err) {
+		f, err = os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	} else {
+		f, err = os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, st.Mode())
+	}
 	if err != nil { return err }
 	defer f.Close()
 	_, err = f.Write(s)

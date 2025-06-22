@@ -56,8 +56,8 @@ CREATE TABLE IF NOT EXISTS %srepository (
       repo_owner TEXT,
   	  repo_acl TEXT,
   	  repo_status INTEGER,
-  	repo_fork_origin_namespace TEXT
-  	repo_fork_origin_name TEXT
+  	repo_fork_origin_namespace TEXT,
+  	repo_fork_origin_name TEXT,
       FOREIGN KEY (repo_namespace) REFERENCES %snamespace(ns_name)
 )`, pfx, pfx))
 	if err != nil { tx.Rollback(); return err }

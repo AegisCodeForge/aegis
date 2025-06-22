@@ -33,7 +33,7 @@ func ToContext(cfg *aegis.AegisConfig) (*SSHKeyManagingContext, error) {
 	if err != nil { return nil, err }
 	p := path.Join(u.HomeDir, ".ssh", "authorized_keys")
 	f, err := os.ReadFile(p)
-	if err != nil { return nil, err }
+	if err != nil && !os.IsNotExist(err) { return nil, err }
 	managed := make(map[string]map[string]string, 0)
 	currentName := ""
 	currentManaged := make(map[string]string, 0)

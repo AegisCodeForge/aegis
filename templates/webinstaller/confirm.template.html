@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	</header>
+
+	<hr />
+	<h2>Confirmation</h2>
+	<p>Please confirm the following value of fields.</p>
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label" for="plain-mode">Use Plain Mode?</label>
+		<p><a href="/step1">Go back and change this setting</a></p>
+		<p class="field-description">When Plain Mode is set to true, Aegis would act like a simple Git web frontend similar to git-instaweb - no user management and related features would be available, including clone-by-SSH. You'll be able to control which namespace/repository would be visible in later steps if you choose to enable Plain Mode.</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Enable?</th></tr>
+		  </thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="plain-mode">plainMode</label></td><td>{{if and .Config.PlainMode}}Yes{{else}}No{{end}}</td></tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="use-namespace">Use Namespace?</label>
+		<p><a href="/step2">Go back and change this setting</a></p>
+		<p class="field-description">Namespace is a common construct used to group multiple repositories that are within a bigger project but would not make enough sense to combine into a single monolith. If this field sets to true, namespaces would be enabled.</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Enable?</th></tr>
+		  </thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="enable-namespace">enableNamespace</label></td><td>{{if and .Config.UseNamespace}}Yes{{else}}No{{end}}</td></tr>
+		  </tbody>
+		</table>
+	  </div>
+
+	  <div class="field">
+		<label class="field-label">Database Config</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step2">Go back and change this setting</a></p>
+		<p class="field-description">This is the main database configuration.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="database-type">database.type</label></td>
+			  <td>
+				{{if eq .Config.Database.Type "sqlite"}}
+				<span>SQLite</span>
+				{{end}}
+			  </td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="database-path">database.path</label><br />
+				(Valid only when type is SQLite.)
+			  </td>
+			  <td>{{.Config.Database.Path}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="database-url">database.url</label>
+			  </td>
+			  <td>{{.Config.Database.URL}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="database-username">database.userName</label></td>
+			  <td>{{.Config.Database.UserName}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="database-database-name">database.databaseName</label></td>
+			  <td>{{.Config.Database.DatabaseName}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="database-table-prefix">database.tablePrefix</label></td>
+			  <td>{{.Config.Database.TablePrefix}}</td>
+			  
+			<tr><td class="field-sub-label"><label for="database-password">database.password</label></td>
+			  <td>{{.Config.Database.Password}}</td>
+			</tr>
+			
+			</tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label">Session Config</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step3">Go back and change this setting</a></p>
+		<p class="field-description">This is used to store certain relatively short-lived info, e.g. user's login status.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="session-type">session.type</label></td>
+			  <td>
+				{{if eq .Config.Session.Type "sqlite"}}
+				<span>SQLite</span>
+				{{else if eq .Config.Session.Type "redis"}}
+				<span>Redis</span>
+				{{else if eq .Config.Session.Type "keydb"}}
+				<span>KeyDB</span>
+				{{else if eq .Config.Session.Type "valkey"}}
+				<span>ValKey</span>
+				{{else if eq .Config.Session.Type "memcached"}}
+				<span>Memcached</span>
+				{{end}}
+			  </td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="session-path">session.path</label><br />
+				(Valid only when session type is SQLite.)
+			  </td>
+			  <td>{{.Config.Session.Path}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="session-table-prefix">session.tablePrefix</label><br />
+				(Used as table prefix when session type is SQLite and key prefix when session type is Redis/KeyDB/ValKey/Memcached.)
+			  </td>
+			  <td>{{.Config.Session.TablePrefix}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="session-host">session.host</label><br />
+			  (Valid only when session type is not SQLite. For Redis/KeyDB/ValKey/Memchached, this should be in the format of "host:port".)</td>
+			  <td>{{.Config.Session.Host}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="session-username">session.userName</label></td>
+			  <td>{{.Config.Session.UserName}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="session-password">session.password</label></td>
+			  <td>{{.Config.Session.Password}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="session-database-number">session.databaseNumber</label></td>
+			  <td>{{.Config.Session.DatabaseNumber}}</td>
+			</tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label">Mailer Config</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step4">Go back and change this setting</a></p>
+		<p class="field-description">This is used in cases where the system needs to send an email.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="mailer-type">mailer.type</label></td>
+			  <td>
+				{{if eq .Config.Mailer.Type "gmail-plain"}}
+				<span>GMail (Plain)</span>
+				{{end}}
+			  </td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="mailer-smtp-server">mailer.smtpServer</label><br />
+				(Not used when mailer type is "GMail (Plain)")
+			  </td>
+			  <td>{{.Config.Mailer.SMTPServer}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="mailer-smtp-port">mailer.smtpPort</label><br />
+				(Not used when mailer type is "GMail (Plain)")
+			  </td>
+			  <td>{{.Config.Mailer.SMTPPort}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="mailer-user">mailer.user</label></td>
+			  <td>{{.Config.Mailer.User}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="mailer-password">session.password</label></td>
+			  <td>{{.Config.Mailer.Password}}</td>
+			</tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label">Receipt System</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step5">Go back and change this setting</a></p>
+		<p class="field-description">This is used to manage "receipts", which are callbacks sent to user by email when they perform certain actions.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="receipt-system-type">receiptSystem.type</label></td>
+			  <td>
+				{{if eq .Config.ReceiptSystem.Type "sqlite"}}
+				<span>SQLite</span>
+				{{end}}
+			  </td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="receipt-system-path">receiptSystem.path</label><br />
+				(Valid only when type is SQLite.)
+			  </td>
+			  <td>{{.Config.ReceiptSystem.Path}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="receipt-system-url">receiptSystem.url</label>
+			  </td>
+			  <td>{{.Config.ReceiptSystem.URL}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="receipt-system-username">receiptSystem.userName</label></td>
+			  <td>{{.Config.ReceiptSystem.UserName}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="receipt-system-database-name">receiptSystem.databaseName</label></td>
+			  <td>{{.Config.ReceiptSystem.DatabaseName}}</td>
+			</tr>
+			
+			<tr><td class="field-sub-label"><label for="receipt-system-table-prefix">receiptSystem.tablePrefix</label></td>
+			  <td>{{.Config.ReceiptSystem.TablePrefix}}</td>
+			  
+			<tr><td class="field-sub-label"><label for="receipt-system-password">receiptSystem.password</label></td>
+			  <td>{{.Config.ReceiptSystem.Password}}</td>
+			</tr>
+			
+			</tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="git-user">Git User</label>
+		<p><a href="/step6">Go back and change this setting</a></p>
+		<p class="field-description">The name of the user Aegis will use to carry out its actions. This user should also be the user that runs the Aegis web server.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="git-user">gitUser</label></td>
+			  <td>{{.Config.GitRoot}}</td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="git-root">Git Root</label>
+		<p><a href="/step6">Go back and change this setting</a></p>
+		<p class="field-description">The root directory for storing Git repositories. Must be accessible by the Git user configured above.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="git-root">gitRoot</label></td>
+			  <td>{{.Config.GitUser}}</td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+
+	  <div class="field">
+		<label class="field-label" for="ignore-namespace">Ignore Namespace</label>
+		{{if .Config.PlainMode}}
+		{{if .Config.UseNamespace}}
+		<p><a href="/step7">Go back and change this setting</a></p>
+		<p class="field-description">All namespaces specified here will not be shown to the public. Each name should be separated by a comma <code>,</code> .</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Value</th></tr>
+		  </thead>
+		  <tbody>
+			<tr>
+			  <td class="field-sub-label"><label for="ignore-namespace">ignoreNamespace</label></td>
+			  <td>{{strJoin .Config.IgnoreNamespace ","}}</td>
+			</tr>
+		  </tbody>
+		</table>
+		{{else}}
+		<input type="hidden" name="ignore-namespace" id="ignore-namespace" value="" />
+		<p>This field is skipped because you've choosen to not enable namespace.</p>
+		{{end}}
+		{{else}}
+		<p>This field is skipped because you've choosen to not enable Plain Mode; note that this field would not have any effect when the instance is not in Plain Mode, since in this case the visibility of namespaces are controlled elsewhere.</p>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="ignore-repository">Ignore Repository</label>
+		{{if .Config.PlainMode}}
+		<p><a href="/step7">Go back and change this setting</a></p>
+		<p class="field-description">All repositories should be written in the format of <code>{namespae name}:{repo name}</code>, for example, repository <code>testrepo</code> under namespace <code>testns</code> should be written <code>testns:testrepo</code>. All repositories specified here will not be shown to the public. Each name should be separated by a comma <code>,</code> .</p>
+		<table>
+		  <thead>
+			<tr><th>Field</th><th>Value</th></tr>
+		  </thead>
+		  <tbody>
+			<tr>
+			  <td class="field-sub-label"><label for="ignore-repository">ignoreRepository</label></td>
+			  <td>{{strJoin .Config.IgnoreRepository ","}}</td>
+			</tr>
+		  </tbody>
+		</table>
+		{{else}}
+		<p>This field is skipped because you've choosen to not enable Plain Mode; note that this field would not have any effect when the instance is not in Plain Mode, since in this case the visibility of namespaces are controlled elsewhere.</p>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="depot-name">Depot Name</label>
+		<p><a href="/step8">Go back and change this setting</a></p>
+		<p class="field-description">The name for this Aegis instance.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="depot-name">depotName</label></td>
+			  <td>{{.Config.DepotName}}</td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label">Bind Address & Port</label>
+		<p><a href="/step8">Go back and change this setting</a></p>
+		<p class="field-description">The address and port this instance is supposed to bind to. Two common choices for bind address: <code>0.0.0.0</code> which allows all external connections, and <code>127.0.0.1</code> which only allows local connections. For security reasons it would be better to set this to 127.0.0.1 and put Aegis behind a reverse proxy.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label"><label for="bind-address">bindAddress</label></td>
+			  <td>{{.Config.BindAddress}}</td>
+			</tr>
+			<tr><td class="field-sub-label"><label for="bind-port">bindPort</label></td>
+			  <td>{{.Config.BindPort}}</td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="http-host-name">HTTP Host Name</label>
+		<p><a href="/step8">Go back and change this setting</a></p>
+		<p class="field-description">HTTP host name. Used as the base for composing different URLs throughout the instance. Normally this would be the URL you expect other users to use to gain access to this instance through HTTP.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">hostName</td>
+			  <td>{{.Config.HttpHostName}}</td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="ssh-host-name">SSH Host Name</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step8">Go back and change this setting</a></p>
+		<p class="field-description">SSH host name. Used as the base for composing SSH Git remote addresses.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">sshHostName</td>
+			  <td>{{.Config.SshHostName}}</td>
+			</tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<span class="field-label">Front Page</span>
+		<p><a href="/step8">Go back and change this setting</a></p>
+		<p class="field-description">The default front page for this instance. This would be the first thing people see when visiting this Aegis instance.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">frontPageType</td>
+			  <td>{{.Config.FrontPageType}}</td>
+			</tr>
+			<tr><td class="field-sub-label">frontPageText<br />(Valid only for "Static file". This would be the content of static file, and would be rendered according to the file name.)</td><td><pre>{{.Config.FrontPageContent}}</pre></td></tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label" for="depot-name">User Management Related</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step8">Go back and change this setting</a></p>
+		<p class="field-description">These fields control the behaviour of certain aspects about user management.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr>
+			  <td class="field-sub-label"><label for="allow-registration">allowRegistration</label><br />(Whether to allow</td>
+			  <td>{{if and .Config.AllowRegistration}}
+				<span>Yes</span>
+				{{else}}
+				<span>No</span>
+				{{end}}
+			</td></tr>
+			<tr>
+			  <td class="field-sub-label"><label for="email-confirmation-required">emailConfirmationRequired</label></td>
+			  <td>
+				{{if and .Config.EmailConfirmationRequired}}
+				<span>Yes</span>
+				{{else}}
+				<span>No</span>
+				{{end}}
+			</td></tr>
+			<tr>
+			  <td class="field-sub-label"><label for="manual-approval">manualApproval</label></td>
+			  <td>
+				{{if and .Config.ManualApproval}}
+				<span>Yes</span>
+				{{else}}
+				<span>No</span>
+				{{end}}
+			  </td>
+			</tr>
+		  </tbody>
+		</table>
+		{{end}}
+	  </div>
+	  
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+
+	<hr />
+	
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

@@ -30,12 +30,14 @@
 				<option {{if eq .IndexType "all/repository"}}selected{{end}} value="all/repository">All Repository</option>
 				<option {{if eq .IndexType "namespace"}}selected{{end}} value="namespace">Namespace</option>
 				<option {{if eq .IndexType "repository"}}selected{{end}} value="repository">Repository</option>
-				<option {{if eq .IndexType "static"}}selected{{end}} value="static">Static file</option>
+				<option {{if eq .IndexType "static/html"}}selected{{end}} value="static">HTML text</option>
+				<option {{if eq .IndexType "static/markdown"}}selected{{end}} value="static">Markdown text</option>
+				<option {{if eq .IndexType "static/text"}}selected{{end}} value="static">Plain text</option>
+				<option {{if eq .IndexType "static/org"}}selected{{end}} value="static">Org-mode text</option>
 			  </select>
 			</div>
 			<div class="field"><label class="field-label" for="namespace">Namespace:</label><input class="field-tf" name="namespace" id="namespace" value="{{.IndexNamespace}}"></div>
 			<div class="field"><label class="field-label" for="repository">Repository:</label><input class="field-tf" name="repository" id="repository" value="{{.IndexRepository}}"></div>
-			<div class="field"><label class="field-label" for="file name">File name:</label><input class="field-tf" name="file-name" id="file-name" value="{{.IndexFileName}}" /></div>
 			<div class="field"><label class="field-label" for="file-content">File content:</label><textarea name="file-content" id="file-content">{{.IndexFileContent}}</textarea></div>
 			<input class="field-submit" type="submit" value="Save" />
 		  </form>

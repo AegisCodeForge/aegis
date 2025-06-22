@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>	  
+	</header>
+
+	<hr />
+	<!-- step 4: mailer config -->
+	<h2>Step 4: Mailer Config</h2>
+
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label">Mailer Config</label>
+		<p class="field-description">This is used in cases where the system needs to send an email.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="mailer-type" class="field-sub-label">mailer.type</label></td>
+			  <td>
+				<select name="mailer-type" id="mailer-type">
+				  <option value="gmail-plain" {{if eq .Config.Mailer.Type "gmail-plain"}}selected{{end}}>GMail (Plain)</option>
+				</select>
+			  </td>
+			</tr>
+			<tr><td><label for="mailer-smtp-server" class="field-sub-label">mailer.smtpServer</label><br />
+				(Not used when mailer type is "GMail (Plain)")
+			  </td>
+			  <td><input name="mailer-smtp-server" id="mailer-smtp-server" value="{{htmlEscape .Config.Mailer.SMTPServer}}" /></td>
+			</tr>
+			
+			<tr><td><label for="mailer-smtp-port" class="field-sub-label">mailer.smtpPort</label><br />
+				(Not used when mailer type is "GMail (Plain)")
+			  </td>
+			  <td><input name="mailer-smtp-port" id="mailer-smtp-port" value="{{.Config.Mailer.SMTPPort}}" /></td>
+			</tr>
+			
+			<tr><td><label for="mailer-user" class="field-sub-label">mailer.user</label></td>
+			  <td><input name="mailer-user" id="mailer-user" value="{{htmlEscape .Config.Mailer.User}}" /></td>
+			</tr>
+			
+			<tr><td><label for="mailer-password" class="field-sub-label">session.password</label></td>
+			  <td><input type="password" name="mailer-password" id="mailer-password" value="{{htmlEscape .Config.Mailer.Password}}" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+	<hr />
+
+	{{if .ConfirmStageReached}}
+	<p><a href="/confirm">Back to the finish line</a></p>
+	{{end}}
+
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

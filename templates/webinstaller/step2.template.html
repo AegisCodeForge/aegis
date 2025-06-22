@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	</header>
+
+	<hr />
+	<!-- step 2: database config -->
+	<h2>Step 2: Database Config</h2>
+
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label">Database Config</label>
+		<p class="field-description">This is the main database configuration.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="database-type" class="field-sub-label">database.type</label></td>
+			  <td>
+				<select name="database-type" id="database-type">
+				  <option value="sqlite" {{if eq .Config.Database.Type "sqlite"}}selected{{end}}>SQLite</option>
+				</select>
+			  </td>
+			</tr>
+			
+			<tr><td><label for="database-path" class="field-sub-label">database.path</label><br />
+				(Valid only when type is SQLite.)
+			  </td>
+			  <td><input name="database-path" id="database-path" value="{{htmlEscape .Config.Database.Path}}" /></td>
+			</tr>
+			
+			<tr><td><label for="database-url" class="field-sub-label">database.url</label>
+			  </td>
+			  <td><input name="database-url" id="database-url" value="{{htmlEscape .Config.Database.URL}}" /></td>
+			</tr>
+			
+			<tr><td><label for="database-username" class="field-sub-label">database.userName</label></td>
+			  <td><input name="database-username" id="database-username" value="{{htmlEscape .Config.Database.UserName}}" /></td>
+			</tr>
+			
+			<tr><td><label for="database-database-name" class="field-sub-label">database.databaseName</label></td>
+			  <td><input name="database-database-name" id="database-database-name" value="{{htmlEscape .Config.Database.DatabaseName}}" /></td>
+			</tr>
+			
+			<tr><td><label for="database-table-prefix" class="field-sub-label">database.tablePrefix</label></td>
+			  <td><input name="database-table-prefix" id="database-table-prefix" value="{{htmlEscape .Config.Database.TablePrefix}}" /></td>
+			  
+			<tr><td><label for="database-password" class="field-sub-label">database.password</label></td>
+			  <td><input type="password" name="database-password" id="database-password" value="{{htmlEscape .Config.Database.Password}}" /></td>
+			</tr>
+			
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+	
+	{{if .ConfirmStageReached}}
+	<p><a href="/confirm">Back to the finish line</a></p>
+	{{end}}
+	
+	<hr />
+	
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

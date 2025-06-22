@@ -37,7 +37,9 @@ func main() {
 	initFlag := argparse.Bool("init", false, "Create an initial configuration file at the location specified with [config].")
 	configArg := argparse.String("config", "", "Speicfy the path to the config fire.")
 	argparse.Parse(os.Args[1:])
-	
+
+	// attempt to resolve config file path.
+	// if the provided path is relative, resolve it against os.Executable.
 	configPath := *configArg
 	root, err := os.Executable()
 	if err != nil {
@@ -48,26 +50,36 @@ func main() {
 		configPath = path.Join(path.Dir(root), configPath)
 	}
 
+	// check if init. if init, we start web installer or generate
+	// config. if we *don't* use the web installer, we don't perform
+	// installation of databases because we don't know what kind of
+	// config the user want; this is different from web installer
+	// because we ask the user to provide required info during the
+	// process.
 	if *initFlag {
 		if askYesNo("Start web installer?") {
 			WebInstaller()
 			os.Exit(0)
 		}
-
 		err := aegis.CreateConfigFile(configPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create configuration file: %s\n", err.Error())
 			os.Exit(1)
-		} else {
-			fmt.Printf("Configuration file created. (Please further edit it to fit your exact requirements.)\n")
-			os.Exit(0)
 		}
+		fmt.Printf("Configuration file created. (Please further edit it to fit your exact requirements.)\n")
+		os.Exit(0)
 	}
 
 	mainCall := argparse.Args()
 
 	config, err := aegis.LoadConfigFile(configPath)
 	noConfig := err != nil
+	// we use the same executable for the web server and the ssh handling command,
+	// this is necessary to separate the two situations.
+	// when aegis executable is called through ssh it's a completely different
+	// situation where we would absolutely not have the config file path. a
+	// `last-config` file is used as a hack to provide this info. see
+	// `docs/ssh.org` for more info.
 	if noConfig && len(mainCall) > 0 && mainCall[0] == "ssh" {
 		// assumes that we have a clone/push through ssh and assumes the program to be
 		// in the git user's ~/git-shell-commands. go doc said os.Executable may return
@@ -79,6 +91,9 @@ func main() {
 			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
 			os.Exit(1)
 		}
+		// we attempt to resolve config file location. this also means
+		// that on the same server one git user can only run one aegis
+		// instance on the same server.
 		lastCfgPath := path.Join(path.Dir(path.Dir(p)), "last-config")
 		f, err := os.ReadFile(lastCfgPath)
 		if err != nil {
@@ -93,21 +108,22 @@ func main() {
 		}
 		noConfig = false
 	}
-	
+
+	// if we still failed to resolve config file we refuse to go further,
+	// since whatever comes next would require info only provided by config.
 	if noConfig {
 		fmt.Fprintf(os.Stderr, "Failed to load configuration file: %s\n", err.Error())
 		os.Exit(1)
 	}
-
-	masterTemplate := templates.LoadTemplate()
 	
+	masterTemplate := templates.LoadTemplate()
 	context := routes.RouterContext{
 		Config: config,
 		MasterTemplate: masterTemplate,
 	}
-	
-	if !noConfig && !config.PlainMode {
-		// check db if plainmode is false.
+
+	// if it's not plain mode we need to setup database.
+	if !config.PlainMode {
 		dbif, err := dbinit.InitializeDatabase(config)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to load database: %s\n", err.Error())
@@ -168,6 +184,8 @@ func main() {
 			os.Exit(1)
 		}
 
+		// the features of these commands are meaningless in the use case of
+		// plain mode, so the dispatching is done within this if branch.
 		if len(mainCall) > 0 {
 			switch mainCall[0] {
 			case "install":
