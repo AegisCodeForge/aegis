@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"os"
-	"path"
 	"strings"
 
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 	"github.com/gomarkdown/markdown"
 	"github.com/microcosm-cc/bluemonday"
+	"github.com/niklasfasching/go-org/org"
 )
 
 func bindIndexController(ctx *RouterContext) {
@@ -21,36 +20,37 @@ func bindIndexController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if strings.HasPrefix(ctx.Config.FrontPageConfig, "/") {
-			p := path.Join(ctx.Config.StaticAssetDirectory, ctx.Config.FrontPageConfig[1:])
+		if strings.HasPrefix(ctx.Config.FrontPageType, "static/") {
+			frontPageContentType := ctx.Config.FrontPageType[len("static/"):]
+			f := ctx.Config.FrontPageContent
 			var frontPageHtml string
-			f, err := os.ReadFile(p)
-			if err != nil {
-				frontPageHtml = fmt.Sprintf("<p>Failed to read preset index page: %s. Please contact the site owner about this.</p>", err.Error())
-			} else {
-				switch path.Ext(p) {
-				case ".txt":
-					frontPageHtml = fmt.Sprintf("<pre>%s</pre>", html.EscapeString(string(f)))
-				case ".md":
-					rs := string(markdown.ToHTML(f, nil, nil))
-					rs = bluemonday.UGCPolicy().Sanitize(rs)
-					frontPageHtml = rs
-				case ".htm": fallthrough
-				case ".html":
-					frontPageHtml = bluemonday.UGCPolicy().Sanitize(string(f))
+			switch frontPageContentType {
+			case "text":
+				frontPageHtml = fmt.Sprintf("<pre>%s</pre>", html.EscapeString(f))
+			case "markdown":
+				frontPageHtml = string(markdown.ToHTML([]byte(f), nil, nil))
+			case "org":
+				out, err := org.New().Parse(strings.NewReader(f), "").Write(org.NewHTMLWriter())
+				if err != nil {
+					frontPageHtml = fmt.Sprintf("<pre>%s</pre>", f)
+				} else {
+					frontPageHtml = out
 				}
+			case "html":
+				frontPageHtml = f
 			}
+			frontPageHtml = bluemonday.UGCPolicy().Sanitize(frontPageHtml)
 			LogTemplateError(ctx.LoadTemplate("index-static").Execute(w, templates.IndexStaticTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: loginInfo,
 				FrontPage: frontPageHtml,
 			}))
 			return
-		} else if ctx.Config.FrontPageConfig == "all/namespace" {
+		} else if ctx.Config.FrontPageType == "all/namespace" {
 			FoundAt(w, "/all/namespace")
-		} else if ctx.Config.FrontPageConfig == "all/repository" {
+		} else if ctx.Config.FrontPageType == "all/repository" {
 			FoundAt(w, "/all/repo")
-		} else if strings.HasPrefix(ctx.Config.FrontPageConfig, "namespace/") {
+		} else if strings.HasPrefix(ctx.Config.FrontPageType, "namespace/") {
 			if !ctx.Config.UseNamespace {
 				frontPageHtml := "<p>Misconfiguration: a namespace is used for the front page, but the depot itself is configured to not support namespaces. Please contact the site owner about this issue.</p>"
 				LogTemplateError(ctx.LoadTemplate("index-static").Execute(w, templates.IndexStaticTemplateModel{
@@ -60,9 +60,9 @@ func bindIndexController(ctx *RouterContext) {
 				}))
 				return
 			}
-			FoundAt(w, fmt.Sprintf("/s/%s", ctx.Config.FrontPageConfig[len("namespace/"):]))
-		} else if strings.HasPrefix(ctx.Config.FrontPageConfig, "repository/") {
-			FoundAt(w, fmt.Sprintf("/repo/%s", ctx.Config.FrontPageConfig[len("repository/"):]))
+			FoundAt(w, fmt.Sprintf("/s/%s", ctx.Config.FrontPageType[len("namespace/"):]))
+		} else if strings.HasPrefix(ctx.Config.FrontPageType, "repository/") {
+			FoundAt(w, fmt.Sprintf("/repo/%s", ctx.Config.FrontPageType[len("repository/"):]))
 		} else {
 			if ctx.Config.UseNamespace {
 				FoundAt(w, "/all/namespace")
