@@ -4,12 +4,20 @@ A web frontend for Git.
 
 ** Build
 
+Requires Go v1.24+
+
 #+begin_src
 make all
 #+end_src
 
-** Usage
+** Installation
 
-#+begin_src
-  
+Run the following command:
+
+#+begin_src sh
+  ./aegis -init
 #+end_src
+
+And choose to start the web installer. It will guide you through the configuration process. 
+
+
