@@ -510,6 +510,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		FoundAt(w, fmt.Sprintf("/repo/%s/member", rfn))
 	}))
 
+	/*
 	http.HandleFunc("GET /repo/{repoName}/hooks", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
@@ -861,5 +862,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		}
 		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), timeout, msgTitle, msgText, w, r)
 	}))
+	*/
 }
 
