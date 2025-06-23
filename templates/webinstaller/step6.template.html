@@ -18,7 +18,7 @@
 	  <div class="field">
 		<label class="field-label" for="git-user">Git User</label>
 		{{if .Config.PlainMode}}
-		<p>This field is skipped because if you've chosen to enable Plain Mode. With Plain Mode, the Git user would be whichever user that runs the web server; for this reason, the path you've configured below must be readable by the user running the web server.</p>
+		<p>This field is skipped because if you've chosen to enable Plain Mode. With Plain Mode, the Git user would be whichever user that runs the current web installer. For this reason, the path you've configured below must be readable by the user running the web server.</p>
 		{{else}}
 		<p class="field-description">The name of the user Aegis will use to carry out its actions. This user should also be the user that runs the Aegis web server.</p>
 		<table>
