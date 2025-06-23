@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"os/user"
 	"path"
 	"strings"
 	"syscall"
@@ -22,7 +23,6 @@ import (
 	ssinit "github.com/bctnry/aegis/pkg/aegis/session/init"
 	"github.com/bctnry/aegis/pkg/aegis/ssh"
 	"github.com/bctnry/aegis/pkg/gitlib"
-	"github.com/bctnry/aegis/pkg/passwd"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/routes/controller"
 	"github.com/bctnry/aegis/templates"
@@ -169,7 +169,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		u, err := passwd.GetUser(config.GitUser)
+		u, err := user.Lookup(config.GitUser)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to read /etc/passwd while setting up last-config link: %s\n", err.Error())
 			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")

@@ -10,13 +10,15 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"os/user"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/passwd"
 	"github.com/bctnry/aegis/routes"
+	"github.com/bctnry/aegis/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -38,7 +40,9 @@ func whereIs(cmdname string) (string, error) {
 	return preres, nil
 }
 
-func createOtherOwnedFile(p string, uid int, gid int) error {
+func createOtherOwnedFile(p string, uids string, gids string) error {
+	uid, _ := strconv.Atoi(uids)
+	gid, _ := strconv.Atoi(gids)
 	f, err := os.OpenFile(p, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		if os.IsExist(err) {
@@ -56,7 +60,9 @@ func createOtherOwnedFile(p string, uid int, gid int) error {
 	return nil
 }
 
-func createOtherOwnedDirectory(p string, uid int, gid int) error {
+func createOtherOwnedDirectory(p string, uids string, gids string) error {
+	uid, _ := strconv.Atoi(uids)
+	gid, _ := strconv.Atoi(gids)
 	err := os.MkdirAll(p, os.ModeDir|0755)
 	if err != nil && !os.IsExist(err) { return err }
 	err = os.Chown(p, uid, gid)
@@ -82,9 +88,8 @@ func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 	b, err = ctx.ReceiptSystem.IsReceiptSystemUsable()
 	if err != nil { return b, err }
 	if !b { return false, errors.New("Receipt system not usable") }
-	verdict, err := passwd.HasUser(ctx.Config.GitUser)
-	if err != nil { return verdict, err }
-	if !verdict { return false, errors.New(fmt.Sprintf("%s cannot be found in passwd", ctx.Config.GitUser))  }
+	_, err = user.Lookup(ctx.Config.GitUser)
+	if err != nil { return false, errors.New(fmt.Sprintf("%s cannot be found in passwd", ctx.Config.GitUser)) }
 	return true, nil
 }
 
@@ -162,14 +167,9 @@ func gitUserSetupCheckPrompt() {
 }
 
 func gitUserCheck(ctx routes.RouterContext) bool {
-	x, err := passwd.HasUser(ctx.Config.GitUser)
+	gitUser, err := user.Lookup(ctx.Config.GitUser)
 	br := bufio.NewReader(os.Stdin)
 	if err != nil {
-		fmt.Printf("Failed to check if user exist.\n")
-		gitUserSetupCheckPrompt()
-		return false
-	}
-	if !x {
 		r := askYesNo(fmt.Sprintf("User %s does not exist. Create it?", ctx.Config.GitUser))
 		if !r {
 			gitUserSetupCheckPrompt()
@@ -220,8 +220,6 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 			gitUserSetupCheckPrompt(); return false
 		}
 	}
-	pwd, err := passwd.LoadPasswdFile()
-	gitUser := pwd[ctx.Config.GitUser]
 	homeDir := gitUser.HomeDir
 	if homeDir == "" {
 		fmt.Printf("Cannot find the home directory for the Git user. ")
@@ -246,28 +244,28 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 		}
 		homeDir = p
 	}
-	err = createOtherOwnedDirectory(homeDir, gitUser.UID, gitUser.GID)
+	err = createOtherOwnedDirectory(homeDir, gitUser.Uid, gitUser.Gid)
 	if err != nil {
 		fmt.Printf("Cannot set the true owner of the Git user's home directory.")
 		gitUserSetupCheckPrompt(); return false
 	}
 
 	gitShellCommandPath := path.Join(homeDir, "git-shell-commands")
-	err = createOtherOwnedDirectory(gitShellCommandPath, gitUser.UID, gitUser.GID)
+	err = createOtherOwnedDirectory(gitShellCommandPath, gitUser.Uid, gitUser.Gid)
 	if err != nil {
 		fmt.Printf("Failed to create the git-shell-commands directory: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 
 	sshPath := path.Join(homeDir, ".ssh")
-	err = createOtherOwnedDirectory(sshPath, gitUser.UID, gitUser.GID)
+	err = createOtherOwnedDirectory(sshPath, gitUser.Uid, gitUser.Gid)
 	if err != nil {
 		fmt.Printf("Failed to create the .ssh directory: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 
 	authorizedKeysPath := path.Join(homeDir, ".ssh", "authorized_keys")
-	err = createOtherOwnedFile(authorizedKeysPath, gitUser.UID, gitUser.GID)
+	err = createOtherOwnedFile(authorizedKeysPath, gitUser.Uid, gitUser.Gid)
 	if err != nil {
 		fmt.Printf("Failed to create the authorized_keys file: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
@@ -297,7 +295,9 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
-	err = os.Chown(aegisPath, gitUser.UID, gitUser.GID)
+	guUid, _ := strconv.Atoi(gitUser.Uid)
+	guGid, _ := strconv.Atoi(gitUser.Gid)
+	err = os.Chown(aegisPath, guUid, guGid)
 	if err != nil {
 		fmt.Printf("Failed to chown Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
@@ -413,7 +413,6 @@ func InstallAegis(ctx routes.RouterContext) {
 		}
 	}
 	
-
 	// setting up admin user
 	fmt.Println("Setting up admin user...")
 	adminExists := false
@@ -451,38 +450,29 @@ func InstallAegis(ctx routes.RouterContext) {
 	}
 
 	fmt.Println("Setting up static assets used by the web UI...")
-	staticZipPath, err := askString("Please enter the location to the static asset .zip file:", "static.zip")
+	
+	// when we reached here, gitUser shouldn't be nil, since if it's nil we
+	// would've created it with the code above.
+	gitUser, _ := user.Lookup(ctx.Config.GitUser)
+	staticPath := path.Join(gitUser.HomeDir, "aegis-static")
+	err = templates.UnpackStaticFileTo(staticPath)
 	if err != nil {
 		fmt.Printf("Failed to setup static assets: %s\n", err.Error())
 		fmt.Printf("You need to fix the problem or run the installer again, or set up the static assets manually.\n")
-	} else {
-		zr, err := zip.OpenReader(staticZipPath)
-		if err != nil {
-			fmt.Printf("Failed to setup static assets: %s\n", err.Error())
-			fmt.Printf("You need to fix the problem or run the installer again, or set up the static assets manually.\n")
-		}
-		defer zr.Close()
-		err = unzipStaticAssets(ctx.Config.StaticAssetDirectory, zr)
-		if err != nil {
-			fmt.Printf("Failed to setup static assets: %s\n", err.Error())
-			fmt.Printf("You need to fix the problem or run the installer again, or set up the static assets manually.\n")
-		}
 	}
-	
-	
+	ctx.Config.StaticAssetDirectory = staticPath
+	ctx.Config.Sync()
+
 	// one last chown just to be sure.
 	// we do things that we can do, but if we ever fail we don't bother and
 	// leave the job of checking to the user.
-	gitUser, err := passwd.GetUser(ctx.Config.GitUser)
-	// when we reached here, gitUser shouldn't be nil, since if it's nil we
-	// would've created it with the code above.
-	if err == nil {
-		if ctx.Config.Database.Type == "sqlite" {
-			err = os.Chown(ctx.Config.Database.Path, gitUser.UID, gitUser.GID)
-		}
-		if ctx.Config.Session.Type == "sqlite" {
-			err = os.Chown(ctx.Config.Session.Path, gitUser.UID, gitUser.GID)
-		}
+	guUid, err := strconv.Atoi(gitUser.Uid)
+	guGid, err := strconv.Atoi(gitUser.Gid)
+	if ctx.Config.Database.Type == "sqlite" {
+		err = os.Chown(ctx.Config.Database.Path, guUid, guGid)
+	}
+	if ctx.Config.Session.Type == "sqlite" {
+		err = os.Chown(ctx.Config.Session.Path, guUid, guGid)
 	}
 	
 	fmt.Println("Done. Please restart the program to start the server.")

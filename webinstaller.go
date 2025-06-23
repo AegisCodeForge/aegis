@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"os/user"
 	"path"
 	"strconv"
 	"strings"
@@ -18,7 +19,6 @@ import (
 	dbinit "github.com/bctnry/aegis/pkg/aegis/db/init"
 	rsinit "github.com/bctnry/aegis/pkg/aegis/receipt/init"
 	ssinit "github.com/bctnry/aegis/pkg/aegis/session/init"
-	"github.com/bctnry/aegis/pkg/passwd"
 	"github.com/bctnry/aegis/templates"
 )
 
@@ -314,8 +314,8 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}))
 	}))
 	http.HandleFunc("POST /confirm", withLog(func(w http.ResponseWriter, r *http.Request) {
-		
-		pwusr, err := passwd.GetUser(ctx.Config.GitUser)
+
+		pwusr, err := user.Lookup(ctx.Config.GitUser)
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed to retrieve info about the specified Git user %s. Please fix this and restart the web installer.", ctx.Config.GitUser),

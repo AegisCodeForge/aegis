@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"os/user"
 	"path"
 	"regexp"
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/passwd"
 )
 
 type SSHKeyManagingContext struct {
@@ -29,7 +29,7 @@ func parseKey(s string) (bool, string, string, string, error) {
 }
 
 func ToContext(cfg *aegis.AegisConfig) (*SSHKeyManagingContext, error) {
-	u, err := passwd.GetUser(cfg.GitUser)
+	u, err := user.Lookup(cfg.GitUser)
 	if err != nil { return nil, err }
 	p := path.Join(u.HomeDir, ".ssh", "authorized_keys")
 	f, err := os.ReadFile(p)
