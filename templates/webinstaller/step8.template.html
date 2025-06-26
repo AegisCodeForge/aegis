@@ -7,7 +7,8 @@
   </head>
   <body>
 	<header>
-	  <h1><a href="/">Aegis Web Installer</a></h1>	  
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	  {{template "webinstaller/_nav"}}
 	</header>
 
 	<hr />
@@ -33,10 +34,10 @@
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
 			<tr><td><label for="bind-address">bindAddress</label></td>
-			  <td><input name="bind-address" id="bind-address" /></td>
+			  <td><input name="bind-address" id="bind-address" value="{{htmlEscape .Config.BindAddress}}" /></td>
 			</tr>
 			<tr><td><label for="bind-port">bindPort</label></td>
-			  <td><input name="bind-port" id="bind-port" /></td>
+			  <td><input name="bind-port" id="bind-port" value="{{.Config.BindPort}}" /></td>
 			</tr>
 		  </tbody>
 		</table>
@@ -48,7 +49,7 @@
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
 			<tr><td>httpHostName</td>
-			  <td><input name="http-host-name" id="http-host-name" /></td>
+			  <td><input name="http-host-name" id="http-host-name" value="{{htmlEscape .Config.HttpHostName}}"/></td>
 			</tr>
 		  </tbody>
 		</table>
@@ -60,7 +61,7 @@
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
 			<tr><td>sshHostName</td>
-			  <td><input name="ssh-host-name" id="ssh-host-name" /></td>
+			  <td><input name="ssh-host-name" id="ssh-host-name" value="{{htmlEscape .Config.SshHostName}}" /></td>
 			</tr>
 		  </tbody>
 		</table>
@@ -74,14 +75,14 @@
 			<tr><td class="field-sub-label">frontPageType</td>
 			  <td>
 				<select name="front-page-type" id="front-page-type">
-				  <option value="all/namespace">All Namespaces</option>
-				  <option value="all/repository">All Repositories</option>
-				  <option value="namespace">Specified namespace</option>
-				  <option value="repository">Specified repository</option>
-				  <option value="static/html">HTML Text</option>
-				  <option value="static/text">Plain Text</option>
-				  <option value="static/markdown">Markdown Text</option>
-				  <option value="static/org">Org-mode Text</option>
+				  <option value="all/namespace" {{if eq .Config.FrontPageType "all/namespace"}}selected{{end}}>All Namespaces</option>
+				  <option value="all/repository" {{if eq .Config.FrontPageType "all/repository"}}selected{{end}}>All Repositories</option>
+				  <option value="namespace" {{if hasPrefix .Config.FrontPageType "namespace/"}}selected{{end}}>Specified namespace</option>
+				  <option value="repository" {{if hasPrefix .Config.FrontPageType "repository/"}}selected{{end}}>Specified repository</option>
+				  <option value="static/html" {{if eq .Config.FrontPageType "static/html"}}selected{{end}}>HTML Text</option>
+				  <option value="static/text" {{if eq .Config.FrontPageType "static/text"}}selected{{end}}>Plain Text</option>
+				  <option value="static/markdown" {{if eq .Config.FrontPageType "static/markdown"}}selected{{end}}>Markdown Text</option>
+				  <option value="static/org" {{if eq .Config.FrontPageType "static/org"}}selected{{end}}>Org-mode Text</option>
 				</select>
 			  </td>
 			</tr>

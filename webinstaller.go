@@ -64,7 +64,7 @@ func (ctx *WebInstallerRoutingContext) loadTemplate(name string) *template.Templ
 
 func withLog(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println(fmt.Sprintf(" %s %s", r.Method, r.URL.Path))
+		log.Printf(" %s %s\n", r.Method, r.URL.Path)
 		f(w, r)
 	}
 }
@@ -189,7 +189,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			Type: strings.TrimSpace(r.Form.Get("mailer-type")),
 			SMTPServer: strings.TrimSpace(r.Form.Get("mailer-smtp-server")),
 			SMTPPort: int(i),
-			User: strings.TrimSpace(r.Form.Get("mailer-username")),
+			User: strings.TrimSpace(r.Form.Get("mailer-user")),
 			Password: strings.TrimSpace(r.Form.Get("mailer-password")),
 		}
 		foundAt(w, "/step5")
@@ -220,6 +220,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	}))
 	
 	http.HandleFunc("GET /step6", withLog(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(ctx.Config.GitUser, ctx.Config.GitRoot)
 		logTemplateError(ctx.loadTemplate("webinstaller/step6").Execute(w, &templates.WebInstallerTemplateModel{
 			Config: ctx.Config,
 			ConfirmStageReached: ctx.ConfirmStageReached,
@@ -243,7 +244,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				return
 			}
 		}
-		ctx.Config.GitUser = u.Name
+		ctx.Config.GitUser = u.Username
 		ctx.Config.StaticAssetDirectory = path.Join(u.HomeDir, "aegis-static")
 		next := ""
 		if ctx.Config.PlainMode {
@@ -322,6 +323,9 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			v := r.Form.Get("front-page-value")
 			ctx.Config.FrontPageType = "namespace/" + v
 		}
+		ctx.Config.AllowRegistration = len(strings.TrimSpace(r.Form.Get("allow-registration"))) > 0
+		ctx.Config.EmailConfirmationRequired = len(strings.TrimSpace(r.Form.Get("email-confirmation-required"))) > 0
+		ctx.Config.ManualApproval = len(strings.TrimSpace(r.Form.Get("manual-approval"))) > 0
 		foundAt(w, "/confirm")
 	}))
 	

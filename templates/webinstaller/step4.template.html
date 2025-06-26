@@ -7,7 +7,8 @@
   </head>
   <body>
 	<header>
-	  <h1><a href="/">Aegis Web Installer</a></h1>	  
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	  {{template "webinstaller/_nav"}}
 	</header>
 
 	<hr />
@@ -44,7 +45,7 @@
 			  <td><input name="mailer-user" id="mailer-user" value="{{htmlEscape .Config.Mailer.User}}" /></td>
 			</tr>
 			
-			<tr><td><label for="mailer-password" class="field-sub-label">session.password</label></td>
+			<tr><td><label for="mailer-password" class="field-sub-label">mailer.password</label></td>
 			  <td><input type="password" name="mailer-password" id="mailer-password" value="{{htmlEscape .Config.Mailer.Password}}" /></td>
 			</tr>
 		  </tbody>

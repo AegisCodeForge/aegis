@@ -8,6 +8,7 @@
   <body>
 	<header>
 	  <h1><a href="/">Aegis Web Installer</a></h1>
+	  {{template "webinstaller/_nav"}}
 	</header>
 
 	<hr />
@@ -251,7 +252,7 @@
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
 			<tr><td class="field-sub-label"><label for="git-user">gitUser</label></td>
-			  <td>{{.Config.GitRoot}}</td>
+			  <td>{{.Config.GitUser}}</td>
 			</tr>
 		  </tbody>
 		</table>
@@ -265,7 +266,7 @@
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
 			<tr><td class="field-sub-label"><label for="git-root">gitRoot</label></td>
-			  <td>{{.Config.GitUser}}</td>
+			  <td>{{.Config.GitRoot}}</td>
 			</tr>
 		  </tbody>
 		</table>

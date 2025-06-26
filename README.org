@@ -18,6 +18,20 @@ Run the following command:
   ./aegis -init
 #+end_src
 
-And choose to start the web installer. It will guide you through the configuration process. 
+And choose to start the web installer. It will guide you through the configuration process.
+
+After the configuration process, run:
+
+#+begin_src sh
+  ./aegis -config {config_file_path}
+#+end_src
+
+This would set up everything that's required. After the setup process is completed, run the same command again to start the "main" web server.
+
+This process would show you the password for the admin user, which is randomly generated. You can override this password by running:
+
+#+begin_src sh
+  ./aegis -config {config_file_path} reset-admin
+#+end_src
 
 

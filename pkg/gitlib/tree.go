@@ -33,6 +33,12 @@ import (
 //    https://github.com/git/git/blob/ab336e8f1c8009c8b1aab8deb592148e69217085/cache.h#L285-L294
 
 const (
+	// yes unix mode (where git mode takes its values from is
+	// technically in octal, but within git they're only stored as
+	// ascii strings and are only used as a tag for discrimination;
+	// bit operations that are common for unix mode are completely not
+	// involved, so this *should* be okay despite everything that
+	// works with these values in this library is technically wrong.
 	TREE_NORMAL_FILE = 100644
 	TREE_EXECUTABLE_FILE = 100755
 	TREE_SYMBOLIC_LINK = 120000
