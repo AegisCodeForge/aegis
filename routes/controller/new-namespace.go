@@ -42,7 +42,7 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		ns, err := ctx.DatabaseInterface.RegisterNamespace(newNamespaceName, userName)
 		if err != nil {
 			if err == db.ErrEntityAlreadyExists {
-				ctx.ReportRedirect("/new/namespace", 5, "Already Exists", fmt.Sprintf("Namespace \"%s\" already exists; please choose another name.", w, r))
+				ctx.ReportRedirect("/new/namespace", 5, "Already Exists", fmt.Sprintf("Namespace \"%s\" already exists; please choose another name.", newNamespaceName) , w, r)
 			} else {
 				ctx.ReportInternalError(err.Error(), w, r)
 			}
