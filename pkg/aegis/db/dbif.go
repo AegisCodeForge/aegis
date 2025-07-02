@@ -1,6 +1,9 @@
 package db
 
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import (
+	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/gitlib"
+)
 
 type AegisDatabaseInterface interface {
 	// we have to discern between "database unusable" and "error while detecting".
@@ -98,9 +101,23 @@ type AegisDatabaseInterface interface {
 	GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error)
 	NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error
 	HardDeleteRepositoryIssueEvent(eventAbsId int64) error
-	
+
+	// return all namespace that `viewingUser` is a member of
 	GetAllBelongingNamespace(viewingUser string, user string) ([]*model.Namespace, error)
+	// return all repository that `viewingUser` is a member of
 	GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error)
+
+	GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error)
+	NewPullRequest(username string, receiverNamespace string, receiverName string, receiverBranch string, providerNamespace string, providerName string, providerBranch string) error
+	GetPullRequest(namespace string, name string, id int64) (*model.PullRequest, error)
+	GetPullRequestByAbsId(absId int64) (*model.PullRequest, error)
+	CheckPullRequestMergeConflict(absId int64) (*gitlib.MergeCheckResult, error)
+	DeletePullRequest(absId int64) error
+	GetAllPullRequestEventPaginated(absId int64, pageNum int, pageSize int) ([]*model.PullRequestEvent, error)
+	CheckAndMergePullRequest(absId int64, username string) error
+	CommentOnPullRequest(absId int64, author string, content string) (*model.PullRequestEvent, error)
+	CommentOnPullRequestCode(absId int64, comment *model.PullRequestCommentOnCode) (*model.PullRequestEvent, error)
+	ClosePullRequestAsNotMerged(absid int64, author string) error
 }
 
 // the fact that golang has no parameter default values is

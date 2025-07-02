@@ -1,7 +1,10 @@
 package sqlite
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -781,7 +784,7 @@ VALUES (?,?,?,?,?,?,?,?,?)
 	err = os.RemoveAll(targetP)
 	if err != nil { return nil, err }
 	originRepo := gitlib.NewLocalGitRepository(originNs, originName, originP)
-	err = originRepo.LocalForkTo(targetP)
+	err = originRepo.LocalForkTo(fmt.Sprintf("%s/%s", targetNs, targetName), targetP)
 	if err != nil { return nil, err }
 	if err = tx.Commit(); err != nil { return nil, err }
 	r, err := model.NewRepository(targetNs, targetName, gitlib.NewLocalGitRepository(targetNs, targetName, targetP))
@@ -1993,5 +1996,368 @@ WHERE (%s) AND (repo_owner = ?)
 		})
 	}
 	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, pull_request_id, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+FROM %spull_request
+WHERE receiver_namespace = ? AND receiver_name = ?
+ORDER BY pull_request_id ASC LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	r, err := stmt.Query(namespace, name, pageSize, pageNum*pageSize)
+	if err != nil { return nil, err }
+	res := make([]*model.PullRequest, 0)
+	for r.Next() {
+		var prid, absid, prtime int64
+		var status int
+		var receiverBranch string
+		var providerNamespace, providerName, provideBranch string
+		var mergeCheckResultString string
+		var mergeCheckTimestamp int64
+		err = r.Scan(&absid, &prid, &receiverBranch, &providerNamespace, &providerName, &provideBranch, &mergeCheckResultString, &mergeCheckTimestamp, &status, &prtime)
+		if err != nil { return nil, err }
+		var mergeCheckResult gitlib.MergeCheckResult
+		err = json.Unmarshal([]byte(mergeCheckResultString), &mergeCheckResult)
+		if err != nil { return nil, err }
+		res = append(res, &model.PullRequest{
+			PRId: prid,
+			PRAbsId: absid,
+			Timestamp: prtime,
+			ReceiverNamespace: namespace,
+			ReceiverName: name,
+			ReceiverBranch: receiverBranch,
+			ProviderNamespace: providerNamespace,
+			ProviderName: providerName,
+			ProviderBranch: provideBranch,
+			Status: status,
+			MergeCheckResult: &mergeCheckResult,
+			MergeCheckTimestamp: mergeCheckTimestamp,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) NewPullRequest(username string, receiverNamespace string, receiverName string, receiverBranch string, providerNamespace string, providerName string, providerBranch string) error {
+	pfx := dbif.config.Database.TablePrefix
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %spull_request
+WHERE receiver_namespace = ? AND receiver_name = ?
+`, pfx))
+	if err != nil { return err }
+	var newid int64
+	err = stmt1.QueryRow(receiverNamespace, receiverName).Scan(&newid)
+	if err != nil { return err }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %spull_request(
+    username, pull_request_id,
+    receiver_namespace, receiver_name, receiver_branch,
+    provider_namespace, provider_name, provider_branch,
+    merge_conflict_check_result, merge_conflict_check_timestamp,
+    pull_request_status, pull_request_timestamp
+) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(
+		username, newid,
+		receiverNamespace, receiverName, receiverBranch,
+		providerNamespace, providerName, providerBranch,
+		new(string), 0,
+		model.PULL_REQUEST_OPEN, time.Now().Unix(),
+	)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetPullRequest(namespace string, name string, id int64) (*model.PullRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, username, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+FROM %spull_request
+WHERE receiver_namespace = ? AND receiver_name = ? AND pull_request_id = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(namespace, name, id)
+	if r.Err() != nil { return nil, r.Err() }
+	var rowid, prtime, mchtime int64
+	var username, receiverBranch string
+	var providerNamespace, providerName, providerBranch string
+	var mchResult string
+	var prstatus int
+	err = r.Scan(&rowid, &username, &receiverBranch, &providerNamespace, &providerName, &providerBranch, &mchResult, &mchtime, &prstatus, &prtime)
+	if err != nil { return nil, err }
+	var mergeCheckResult gitlib.MergeCheckResult
+	err = json.Unmarshal([]byte(mchResult), &mergeCheckResult)
+	if err != nil { return nil, err }
+	return &model.PullRequest{
+		PRId: id,
+		PRAbsId: rowid,
+		ReceiverNamespace: namespace,
+		ReceiverName: name,
+		ReceiverBranch: receiverBranch,
+		ProviderNamespace: providerNamespace,
+		ProviderName: providerName,
+		ProviderBranch: providerBranch,
+		MergeCheckResult: &mergeCheckResult,
+		MergeCheckTimestamp: mchtime,
+		Status: prstatus,
+		Timestamp: prtime,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetPullRequestByAbsId(absId int64) (*model.PullRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT username, pull_request_id, receiver_namespace, receiver_name, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+FROM %spull_request
+WHERE rowid = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(absId)
+	if r.Err() != nil { return nil, r.Err() }
+	var prid, prtime, mchtime int64
+	var username, receiverNamespace, receiverName, receiverBranch string
+	var providerNamespace, providerName, providerBranch string
+	var mchResult string
+	var prstatus int
+	err = r.Scan(&username, &prid, &receiverNamespace, &receiverName, &receiverBranch, &providerNamespace, &providerName, &providerBranch, &mchResult, &mchtime, &prstatus, &prtime)
+	if err != nil { return nil, err }
+	var mergeCheckResult gitlib.MergeCheckResult
+	err = json.Unmarshal([]byte(mchResult), &mergeCheckResult)
+	if err != nil { return nil, err }
+	return &model.PullRequest{
+		PRId: prid,
+		PRAbsId: absId,
+		ReceiverNamespace: receiverNamespace,
+		ReceiverName: receiverName,
+		ReceiverBranch: receiverBranch,
+		ProviderNamespace: providerNamespace,
+		ProviderName: providerName,
+		ProviderBranch: providerBranch,
+		MergeCheckResult: &mergeCheckResult,
+		MergeCheckTimestamp: mchtime,
+		Status: prstatus,
+		Timestamp: prtime,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CheckPullRequestMergeConflict(absId int64) (*gitlib.MergeCheckResult, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT receiver_namespace, receiver_name, receiver_branch, provider_namespace, provider_name, provider_branch
+FROM %spull_request
+WHERE rowid = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(absId)
+	if r.Err() != nil { return nil, r.Err() }
+	var receiverNamespace, receiverName, receiverBranch string
+	var providerNamespace, providerName, providerBranch string
+	err = r.Scan(&receiverNamespace, &receiverName, &receiverBranch, &providerNamespace, &providerName, &providerBranch)
+	if err != nil { return nil, err }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return nil, err }
+	defer tx.Rollback()
+	p := path.Join(dbif.config.GitRoot, receiverNamespace, receiverName)
+	lgr := gitlib.NewLocalGitRepository(receiverNamespace, receiverName, p)
+	remoteName := fmt.Sprintf("%s/%s", providerNamespace, providerName)
+	mr, err := lgr.CheckBranchMergeConflict(receiverBranch, remoteName, providerBranch)
+	if err != nil { return nil, err }
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %spull_request
+SET merge_conflict_check_result = ?, merge_conflict_check_timestamp = ?
+WHERE rowid = ?
+`, pfx))
+	if err != nil { return nil, err }
+	mrstr, err := json.Marshal(mr)
+	if err != nil { return nil, err }
+	_, err = stmt2.Exec(string(mrstr), time.Now().Unix())
+	if err != nil { return nil, err }
+	err = tx.Commit()
+	if err != nil { return nil, err }
+	return mr, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) DeletePullRequest(absId int64) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %spull_request WHERE rowid = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(absId)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllPullRequestEventPaginated(absId int64, pageNum int, pageSize int) ([]*model.PullRequestEvent, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT event_type, event_timestamp, event_author, event_content
+FROM %spull_request_event
+WHERE pull_request_abs_id = ?
+ORDER BY event_timestamp ASC LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	res := make([]*model.PullRequestEvent, 0)
+	r, err := stmt.Query(absId, pageSize, pageNum*pageSize)
+	if err != nil { return nil, err }
+	for r.Next() {
+		var eventType int
+		var eventTime int64
+		var eventAuthor, eventContent string
+		err = r.Scan(&eventType, &eventTime, &eventAuthor, &eventContent)
+		if err != nil { return nil, err }
+		res = append(res, &model.PullRequestEvent{
+			PRAbsId: absId,
+			EventType: eventType,
+			EventTimestamp: eventTime,
+			EventAuthor: eventAuthor,
+			EventContent: eventContent,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CheckAndMergePullRequest(absId int64, username string) error {
+	r, err := dbif.CheckPullRequestMergeConflict(absId)
+	if err != nil { return err }
+	if !r.Successful { return nil }
+	
+	buf := new(bytes.Buffer)
+	// fetch
+	cmd1 := exec.Command("git", "fetch", r.ProviderRemoteName, r.ProviderBranch)
+	cmd1.Dir = r.ReceiverLocation
+	cmd1.Stderr = buf
+	err = cmd1.Run()
+	if err != nil { return errors.New(err.Error() + ": " + buf.String()) }
+	buf.Reset()
+	providerFullName := fmt.Sprintf("%s/%s", r.ProviderRemoteName, r.ProviderBranch)
+	cmd2 := exec.Command("git", "merge-tree", "--write-tree", r.ReceiverBranch, providerFullName)
+	cmd2.Dir = r.ReceiverLocation
+	cmd2.Stdout = buf
+	err = cmd2.Run()
+	if err != nil { return fmt.Errorf("Failed while merge-tree: %s", err.Error()) }
+	treeId := buf.String()
+	mergeMessage := fmt.Sprintf("merge: from %s/%s to %s", r.ProviderRemoteName, r.ProviderBranch, r.ReceiverBranch)
+	buf.Reset()
+	cmd3 := exec.Command("git", "commit-tree", treeId, "-m", mergeMessage, "-p", r.ReceiverBranch, "-p", providerFullName)
+	cmd3.Dir = r.ReceiverLocation
+	cmd3.Stdout = buf
+	err = cmd3.Run()
+	if err != nil { return fmt.Errorf("Failed while commit-tree: %s", err.Error()) }
+	commitId := buf.String()
+	buf.Reset()
+	receiverBranchFullName := fmt.Sprintf("refs/heads/%s", r.ReceiverBranch)
+	cmd4 := exec.Command("git", "update-ref", receiverBranchFullName, commitId)
+	cmd4.Dir = r.ReceiverLocation
+	cmd4.Stderr = buf
+	err = cmd4.Run()
+	if err != nil { return fmt.Errorf("Failed while update-ref: %s; %s", err.Error(), buf.String()) }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	t := time.Now().Unix()
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %spull_request SET pull_request_status = ?, pull_request_timestamp = ? WHERE rowid = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(model.PULL_REQUEST_CLOSED_AS_MERGED, t)
+	if err != nil { return err }
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %spull_request_event(pull_request_abs_id, event_type, event_timestamp, event_author, event_content)
+VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt2.Exec(absId, model.PULL_REQUEST_EVENT_CLOSE_AS_MERGED, t, username, "")
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CommentOnPullRequest(absId int64, author string, content string) (*model.PullRequestEvent, error) {
+	pfx := dbif.config.Database.TablePrefix
+	t := time.Now().Unix()
+	tx, err := dbif.connection.Begin()
+	if err != nil { return nil, err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %spull_request_event(pull_request_absid, event_type, event_timestamp, event_author, event_content) VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return nil, err }
+	eventContent := model.PullRequestComment{
+		Username: author,
+		Content: content,
+	}
+	eventContentBytes, _ := json.Marshal(eventContent)
+	eventContentString := string(eventContentBytes)
+	_, err = stmt.Exec(absId, model.PULL_REQUEST_EVENT_COMMENT, t, author, eventContentString)
+	if err != nil { return nil, err }
+	err = tx.Commit()
+	if err != nil { return nil, err }
+	return &model.PullRequestEvent{
+		PRAbsId: absId,
+		EventType: model.PULL_REQUEST_EVENT_COMMENT,
+		EventTimestamp: t,
+		EventAuthor: author,
+		EventContent: eventContentString,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CommentOnPullRequestCode(absId int64, comment *model.PullRequestCommentOnCode) (*model.PullRequestEvent, error) {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return nil, err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %spull_request_event(pull_request_abs_id, event_type, event_timestamp, event_author, event_content)
+VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return nil, err }
+	t := time.Now().Unix()
+	contentBytes, _ := json.Marshal(comment)
+	contentString := string(contentBytes)
+	_, err = stmt.Exec(absId, model.PULL_REQUEST_EVENT_COMMENT_ON_CODE, t, comment.Username, contentString)
+	if err != nil { return nil, err }
+	err = tx.Commit()
+	if err != nil { return nil, err }
+	return &model.PullRequestEvent{
+		PRAbsId: absId,
+		EventType: model.PULL_REQUEST_EVENT_COMMENT_ON_CODE,
+		EventTimestamp: t,
+		EventAuthor: comment.Username,
+		EventContent: contentString,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) ClosePullRequestAsNotMerged(absid int64, author string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %spull_request_event(pull_request_abs_id, event_type, event_timestamp, event_author, event_content)
+VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return err }
+	t := time.Now().Unix()
+	_, err = stmt.Exec(absid, model.PULL_REQUEST_EVENT_CLOSE_AS_NOT_MERGED, t, author, new(string))
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
 }
 

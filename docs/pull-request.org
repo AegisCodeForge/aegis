@@ -1,0 +1,92 @@
+* notes on pull-request
+
+the current way of creating a fork is to:
+
++ clone repo A to location B;
++ have repo A set up a new remote pointing to location B
+  + (the new cloned repo already have a remote pointing to repo A, which is the "origin" remote.).
+
+this is config-ed under the =config= file of the git dir, which means theoretically you can perform this action by directly editing the =config= file atomically instead of spawning =git=, but without fully understanding what we actually need to do it's better to just spawn =git= for now.
+
+a pull request is purely an "external" construct that only exists in the eyes of the surrounding tools (in this case, Aegis itself). something like this is to be used:
+
+#+begin_src sql
+  DROP TABLE IF EXISTS aegis_pull_request;;
+  CREATE TABLE IF NOT EXISTS aegis_pull_request (
+      username TEXT,
+      pull_request_id INT,
+      -- the receiving repo
+      receiver_namespace TEXT,
+  	receiver_name TEXT,
+  	receiver_branch TEXT,
+  	-- the repo you're pulling from
+  	provider_namespace TEXT,
+  	provider_name TEXT,
+  	provider_branch TEXT,
+  	-- in json.
+  	merge_conflict_check_result TEXT,
+  	merge_conflict_check_timestamp INT,
+  	-- 1 - open.
+  	-- 2 - closed (merged) 
+  	-- 3 - closed (not merged)
+  	pull_request_status INT,
+  	pull_request_timestamp INT,
+  	FOREIGN KEY (username) REFERENCES aegis_user(user_name)
+  );;
+  DROP TABLE IF EXISTS aegis_pull_request_event;;
+  CREATE TABLE IF NOT EXISTS aegis_pull_request_event (
+      pull_request_abs_id INTEGER,
+  	-- 1 - normal comment.
+  	-- 2 - comment on code.
+  	-- 3 - update on provider branch.
+  	-- 4 - merge conflict check.
+  	-- 5 - close as not merged.
+  	-- 6 - close (merged).
+  	event_type INTEGER,
+  	event_timestamp INTEGER,
+  	event_author TEXT,
+  	event_content TEXT,
+  	FOREIGN KEY (pull_request_abs_id) REFERENCES aegis_pull_request(rowid)
+  )
+
+#+end_src
+
+
+** merge conflict check
+
+merge conflict check is currently done by using these two commands:
+
++ =git fetch {remote} {branch}=: fetch fork updates
++ =git merge-tree {self} {pull_source}=: check for possible merge conflict
+
+
+*** conflicted file info
+
+the conflicted file info line seems to be formatted as follows:
+
++ file mode (within the tree), 6 characters ascii of octal digits.
++ one (1) space.
++ the object id of the file, in ascii hex string.
++ one (1) space.
++ a "stage". seems to be in ascii of digits.
++ one (1) tab.
++ file name of the file which has the conflict.
+
+as stated in [[https://git-scm.com/docs/git-merge-tree#OUTPUT][the document of git-merge-tree]] only the file name would be returned if the =--name-only= option is passed. the file name would be quoted if the config =core.quotePath= is set to true (which is the default value) and you don't provide the =-z= option to git-merge-tree, so it's better to use the =-z= option, with which there is no quoting and the file name part can be used as-is.
+
+
+** merge
+
+Aegis deals with bare repository so common commands like =git-merge= will not work. Fortunately Git documentation provides an example for using the low-level "plumbing commands" (as per Git lingo). The process shall goes as follows:
+
++ (=$provider= would be =$providerRemote/$providerBranch=, e.g. with branch "myBranch" of remote "myRemote", =$provider= would be =myRemote/myBranch=.)
++ =git merge-tree --write-tree $receiverBranch $provider=
+  + The command line option =--write-tree= must be present. If this is not present, =git merge-tree= would only perform a dry-run with no trees being actually merged and written into the repo. Use =--write-tree= if you need to write the merged result to the repo. The output is the same for both - if the merge is conflict free, the id of the resulting tree would be written to stdout.
++ =git commit-tree $TREEID -m {message} -p $receiverBranch -p $provider=
+  + This writes the commit to the repo and write the commit id to stdout.
++ =git update-ref $receiverBranchFullName $commitId=
+  + =$receiverBranchFullName= must be "local full name", i.e. the one that starts with =refs/=. For any local branch =$branch=, this would be =refs/heads/$branch= (e.g. the local full name of branch =myLocal= would be =refs/heads/myLocal=).
+  
+
+
+

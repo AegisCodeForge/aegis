@@ -6,6 +6,7 @@ func (dbif *SqliteAegisDatabaseInterface) InstallTables() error {
 	pfx := dbif.config.Database.TablePrefix
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
+	defer tx.Rollback()
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %suser (
     user_name TEXT UNIQUE,
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS %suser (
     user_password_hash TEXT,
     user_status INTEGER
 )`, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %suser_authkey (
     user_name TEXT,
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS %suser_authkey (
     key_text TEXT,
     FOREIGN KEY (user_name) REFERENCES %suser(user_name)
 )`, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %suser_signkey (
     user_name TEXT,
@@ -33,7 +34,7 @@ CREATE TABLE IF NOT EXISTS %suser_signkey (
     key_text TEXT,
     FOREIGN KEY (user_name) REFERENCES %suser(user_name)
 )`, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %snamespace (
       ns_name TEXT UNIQUE,
@@ -46,7 +47,7 @@ CREATE TABLE IF NOT EXISTS %snamespace (
   	ns_status INTEGER,
       FOREIGN KEY (ns_owner) REFERENCES %suser(user_name)
 )`, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %srepository (
       repo_fullname TEXT UNIQUE,
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS %srepository (
   	repo_fork_origin_name TEXT,
       FOREIGN KEY (repo_namespace) REFERENCES %snamespace(ns_name)
 )`, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %srepo_redirect (
@@ -70,31 +71,70 @@ CREATE TABLE IF NOT EXISTS %srepo_redirect (
 	new_name TEXT,
 	redirect_timestamp INTEGER
 )`, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE UNIQUE INDEX IF NOT EXISTS idx_%suser_user_name
 ON %suser (user_name)
 `, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE INDEX IF NOT EXISTS idx_%suser_authkey_user_name
 ON %suser_authkey (user_name);
 `, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE INDEX IF NOT EXISTS idx_%suser_signkey_user_name
 ON %suser_signkey (user_name);
 `, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE INDEX IF NOT EXISTS idx_%snamespace_ns_name
 ON %snamespace (ns_name);
 `, pfx, pfx))
-	if err != nil { tx.Rollback(); return err }
+	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %spull_request (
+    -- the receiving repo
+    receiver_namespace TEXT,
+    receiver_name TEXT,
+    -- the repo you're pulling from
+    provider_namespace TEXT,
+    provider_name TEXT,
+    -- in json.
+    merge_conflict_check_result TEXT,
+    merge_conflict_check_timestamp INT
+  )
+`, pfx))
+	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS aegis_pull_request_event (
+    pull_request_abs_id INTEGER,
+	-- 1 - normal comment.
+	-- 2 - comment on code.
+	-- 3 - update on provider branch.
+	-- 4 - merge conflict check.
+	-- 5 - close as not merged.
+	-- 6 - close (merged).
+	event_type INTEGER,
+	event_timestamp INTEGER,
+	event_author TEXT,
+	event_content TEXT,
+	FOREIGN KEY (pull_request_abs_id) REFERENCES aegis_pull_request(rowid)
+  )
+`, pfx))
+	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE INDEX IF NOT EXISTS idx_%spull_request_event_pull_request_abs_id
+ON %spull_request_event (pull_request_abs_id);
+`, pfx, pfx))
+	if err != nil { return err }
 	
 	tx.Commit()
 	return nil

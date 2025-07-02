@@ -117,7 +117,7 @@ func (gr LocalGitRepository) OpenDirectlyAccessibleObject(h string) (io.ReadClos
 }
 
 // targetAbsDir must be absolute path.
-func (gr LocalGitRepository) LocalForkTo(targetAbsDir string) error {
+func (gr LocalGitRepository) LocalForkTo(targetName string, targetAbsDir string) error {
 	cmd := exec.Command("git", "clone", "--bare", gr.GitDirectoryPath, targetAbsDir)
 	stderrBuf := new(bytes.Buffer)
 	cmd.Stderr = stderrBuf
@@ -125,8 +125,14 @@ func (gr LocalGitRepository) LocalForkTo(targetAbsDir string) error {
 	if err != nil {
 		return errors.New(err.Error() + ": " + stderrBuf.String())
 	}
-	// NOTE: we don't need to set up a remote here - the "origin" remote
-	// already points to the original repo.
+	cmd2 := exec.Command("git", "remote", "add", targetName, targetAbsDir)
+	stderrBuf.Reset()
+	cmd2.Stderr = stderrBuf
+	cmd2.Dir = gr.GitDirectoryPath
+	err = cmd.Run()
+	if err != nil {
+		return errors.New(err.Error() + ": " + stderrBuf.String())
+	}
 	return nil
 }
 
@@ -270,4 +276,3 @@ func (gr LocalGitRepository) GetBranchCommitHistory(b Branch) ([]CommitObject, e
 func (gr LocalGitRepository) GetBranchCommitHistoryN(b Branch, n int) ([]CommitObject, error) {
 	return gr.GetCommitHistoryN(b.HeadId, n)
 }
-
