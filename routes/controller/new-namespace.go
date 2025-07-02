@@ -35,11 +35,16 @@ func bindNewNamespaceController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		fmt.Println(loginInfo)
 		userName := loginInfo.UserName
 		newNamespaceName := r.Form.Get("name")
 		ns, err := ctx.DatabaseInterface.RegisterNamespace(newNamespaceName, userName)
 		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
+			if err == db.ErrEntityAlreadyExists {
+				ctx.ReportNormalError(fmt.Sprintf("Namespace %s already exists", newNamespaceName), w, r)
+			} else {
+				ctx.ReportInternalError(err.Error(), w, r)
+			}
 			return
 		}
 		newNamespaceTitle := r.Form.Get("title")

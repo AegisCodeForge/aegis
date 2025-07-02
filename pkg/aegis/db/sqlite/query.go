@@ -439,21 +439,31 @@ func (dbif *SqliteAegisDatabaseInterface) RegisterNamespace(name string, ownerUs
 	pfx := dbif.config.Database.TablePrefix
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }
+	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
 INSERT INTO %snamespace(ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl)
 VALUES (?,?,?,?,?,?,?, ?)
 `, pfx))
-	if err != nil { tx.Rollback(); return nil, err }
+	if err != nil { return nil, err }
 	_, err = stmt.Exec(name, name, "", "", ownerUsername, time.Now().Unix(), model.NAMESPACE_NORMAL_PUBLIC, "")
-	if err != nil { tx.Rollback(); return nil, err }
+	if err != nil {
+		// NOTE: this is here since the error value cannot be tested with
+		// errors.Is w/ any error value defined in sqlite3 - you can but
+		// the result wouldn't be right.
+		// that's golang for you, a language without a proper, sane way
+		// of dealing with errors.
+		if strings.Contains(err.Error(), "UNIQUE") {
+			return nil, db.ErrEntityAlreadyExists
+		}
+		return nil, err
+	}
 	nsPath := path.Join(dbif.config.GitRoot, name)
 	err = os.RemoveAll(nsPath)
-	if err != nil { tx.Rollback(); return nil, err }
+	if err != nil { return nil, err }
 	err = os.Mkdir(nsPath, os.ModeDir|0755)
-	if err != nil { tx.Rollback(); return nil, err }
-	// TODO: chown.
+	if err != nil { return nil, err }
 	err = tx.Commit()
-	if err != nil { tx.Rollback(); return nil, err }
+	if err != nil { return nil, err }
 	return &model.Namespace{
 		Name: name,
 		Title: name,
