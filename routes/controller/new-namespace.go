@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis/db"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
@@ -27,7 +28,7 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
-			return
+ 			return
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		err = r.ParseForm()
@@ -41,7 +42,7 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		ns, err := ctx.DatabaseInterface.RegisterNamespace(newNamespaceName, userName)
 		if err != nil {
 			if err == db.ErrEntityAlreadyExists {
-				ctx.ReportNormalError(fmt.Sprintf("Namespace %s already exists", newNamespaceName), w, r)
+				ctx.ReportRedirect("/new/namespace", 5, "Already Exists", fmt.Sprintf("Namespace \"%s\" already exists; please choose another name.", w, r))
 			} else {
 				ctx.ReportInternalError(err.Error(), w, r)
 			}
