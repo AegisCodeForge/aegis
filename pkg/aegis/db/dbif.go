@@ -107,6 +107,11 @@ type AegisDatabaseInterface interface {
 	// return all repository that `viewingUser` is a member of
 	GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error)
 
+	// implementers can choose to return nil or empty slice if there
+	// isn't any fork repo of the specified repo; the caller should
+	// check for both.
+	GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error)
+
 	GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error)
 	NewPullRequest(username string, receiverNamespace string, receiverName string, receiverBranch string, providerNamespace string, providerName string, providerBranch string) error
 	GetPullRequest(namespace string, name string, id int64) (*model.PullRequest, error)

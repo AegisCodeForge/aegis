@@ -599,7 +599,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(u
 	pfx := dbif.config.Database.TablePrefix
 	privateSelectClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)", )
+		privateSelectClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
@@ -2011,6 +2011,42 @@ WHERE (%s) AND (repo_owner = ?)
 			ForkOriginNamespace: forkOriginNamespace,
 			ForkOriginName: forkOriginName,
 		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_namespace, repo_name, repo_description, repo_acl, repo_status
+FROM %srepository
+WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r, err := stmt.Query(username, originNamespace, originName)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.Repository, 0)
+	for r.Next() {
+		var ns, name, desc, acl string
+		var status int
+		err = r.Scan(&ns, &name, &desc, &acl, &status)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return nil, nil
+			}
+			return nil, err
+		}
+		p := path.Join(dbif.config.GitRoot, ns, name)
+		mr, err := model.NewRepository(ns, name, gitlib.NewLocalGitRepository(ns, name, p))
+		mr.Owner = username
+		mr.Status = model.AegisRepositoryStatus(status)
+		mr.ForkOriginNamespace = originNamespace
+		mr.ForkOriginName = originName
+		aclobj, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		mr.AccessControlList = aclobj
+		res = append(res, mr)
 	}
 	return res, nil
 }

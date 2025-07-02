@@ -98,6 +98,39 @@ ON %snamespace (ns_name);
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %sissue (
+    repo_namespace TEXT,
+	repo_name TEXT,
+	issue_id INTEGER,
+	issue_timestamp INTEGER,
+	issue_author TEXT,
+	issue_title TEXT,
+	issue_content TEXT,
+	-- 1 - opened.  2 - close as solved.  3 - close as discarded.
+	issue_status INTEGER,
+	FOREIGN KEY (repo_namespace, repo_name)
+      REFERENCES gitus_repository(repo_namespace, repo_name),
+	FOREIGN KEY (issue_author)
+	  REFERENCES gitus_user(user_name)
+);
+`, pfx))
+	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS gitus_issue_event (
+    issue_abs_id INTEGER,
+	-- 1 - comment.  2 - close as solved.  3 - close as discarded.
+	-- 4 - reopened.
+	issue_event_type INTEGER,
+	issue_event_time INTEGER,
+	issue_event_author TEXT,
+	issue_event_content TEXT,
+    FOREIGN KEY (issue_abs_id) REFERENCES gitus_issue(rowid)
+);
+`, pfx))
+	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %spull_request (
     -- the receiving repo
     receiver_namespace TEXT,
@@ -111,7 +144,7 @@ CREATE TABLE IF NOT EXISTS %spull_request (
   )
 `, pfx))
 	if err != nil { return err }
-
+	
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS aegis_pull_request_event (
     pull_request_abs_id INTEGER,

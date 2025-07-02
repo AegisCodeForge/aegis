@@ -9,6 +9,7 @@ type ForkTemplateModel struct {
 	Config *aegis.AegisConfig
 	LoginInfo *LoginInfoModel
 	SourceRepository *model.Repository
+	ForkedRepoList []*model.Repository
 	NamespaceList map[string]*model.Namespace
 }
 

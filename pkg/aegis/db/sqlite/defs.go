@@ -20,6 +20,10 @@ var requiredTableList = []string{
 	"namespace",
 	"repository",
 	"repo_redirect",
+	"issue",
+	"issue_event",
+	"pull_request",
+	"pull_request_event",
 }
 
 func (dbif *SqliteAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {

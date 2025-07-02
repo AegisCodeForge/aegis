@@ -129,7 +129,7 @@ func (gr LocalGitRepository) LocalForkTo(targetName string, targetAbsDir string)
 	stderrBuf.Reset()
 	cmd2.Stderr = stderrBuf
 	cmd2.Dir = gr.GitDirectoryPath
-	err = cmd.Run()
+	err = cmd2.Run()
 	if err != nil {
 		return errors.New(err.Error() + ": " + stderrBuf.String())
 	}

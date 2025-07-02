@@ -23,8 +23,24 @@
 	  </div>
 
 	  <div class="setting-main main-side">
+		<h2>Existing Fork</h2>
+		{{if .ForkedRepoList}}
+		{{if gt (len .ForkedRepoList) 0}}
+		<ul>
+		  {{range $p := .ForkedRepoList}}
+		  <li><a href="{{getRepoPath $p.Namespace $p.Name}}">{{getRepoName $p.Namespace $p.Name}}</a></li>
+		  {{end}}
+		</ul>
+		{{else}}
+		<p>No fork exists.</p>
+		{{end}}
+		{{else}}
+		<p>No fork exists.</p>
+		{{end}}
+		<h2>Fork Repository</h2>
 		<div>Forking repository  <a href="{{$repoPath}}">{{$repoName}}</a> to:</div>
 		<form action="" method="POST">
+		  {{if .Config.UseNamespace}}
 		  <div class="field"><label class="field-label" for="namespace">Namespace:</label>
 			<select name="namespace" style="width:unset;">
 			  {{if .NamespaceList}}
@@ -34,7 +50,10 @@
 			  {{end}}
 			</select>
 		  </div>
-		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
+		  {{else}}
+		  <input type="hidden" name="namespace" id="namespace" value="" />
+		  {{end}}
+		  <div class="field"><label class="field-label" for="name">Repository Name:</label> <input name="name" /></div>
 		<input type="submit" value="Fork" />
 		</form>
 

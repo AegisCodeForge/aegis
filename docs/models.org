@@ -97,7 +97,7 @@
   	redirect_timestamp INTEGER
   );
 
-  CREATE TABLE IF NOT EXISTS gitus_issue (
+  CREATE TABLE IF NOT EXISTS aegis_issue (
       repo_namespace TEXT,
   	repo_name TEXT,
   	issue_id INTEGER,
@@ -112,7 +112,7 @@
   	FOREIGN KEY (issue_author)
   	  REFERENCES gitus_user(user_name)
   );
-  CREATE TABLE IF NOT EXISTS gitus_issue_event (
+  CREATE TABLE IF NOT EXISTS aegis_issue_event (
       issue_abs_id INTEGER,
   	-- 1 - comment.  2 - close as solved.  3 - close as discarded.
   	-- 4 - reopened.
