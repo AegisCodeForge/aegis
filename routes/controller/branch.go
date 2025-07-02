@@ -183,7 +183,7 @@ func bindBranchController(ctx *RouterContext) {
 				Config: ctx.Config,
 			}))
 		case gitlib.BLOB:
-			dirPath := path.Dir(treePath)
+			dirPath := path.Dir(treePath) + "/"
 			dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
