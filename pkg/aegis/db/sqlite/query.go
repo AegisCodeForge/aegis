@@ -442,10 +442,11 @@ func (dbif *SqliteAegisDatabaseInterface) RegisterNamespace(name string, ownerUs
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
 INSERT INTO %snamespace(ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl)
-VALUES (?,?,?,?,?,?,?, ?)
+VALUES (?,?,?,?,?,?,?,?)
 `, pfx))
+	t := time.Now().Unix()
 	if err != nil { return nil, err }
-	_, err = stmt.Exec(name, name, "", "", ownerUsername, time.Now().Unix(), model.NAMESPACE_NORMAL_PUBLIC, "")
+	_, err = stmt.Exec(name, name, "", "", ownerUsername, t, model.NAMESPACE_NORMAL_PUBLIC, "")
 	if err != nil {
 		// NOTE: this is here since the error value cannot be tested with
 		// errors.Is w/ any error value defined in sqlite3 - you can but
@@ -468,7 +469,13 @@ VALUES (?,?,?,?,?,?,?, ?)
 		Name: name,
 		Title: name,
 		Description: "",
+		Email: "",
+		Owner: ownerUsername,
+		RegisterTime: t,
 		Status: model.NAMESPACE_NORMAL_PUBLIC,
+		ACL: nil,
+		RepositoryList: nil,
+		LocalPath: nsPath,
 	}, nil
 }
 

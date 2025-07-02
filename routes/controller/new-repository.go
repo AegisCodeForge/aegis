@@ -65,7 +65,6 @@ func bindNewRepositoryController(ctx *RouterContext) {
 		newRepoName := r.Form.Get("name")
 		newRepoDescription := r.Form.Get("description")
 		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName, userName)
-		fmt.Println(repo)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
