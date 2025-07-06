@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -125,7 +126,7 @@ func (gr LocalGitRepository) CheckBranchMergeConflict(localBranch string, remote
 	buf.Reset()
 	cmd2.Stdout = buf
 	cmd2.Dir = gr.GitDirectoryPath
-	err = cmd.Run()
+	err = cmd2.Run()
 	// NOTE: we must check exit status because that's what the
 	// document says:
 	//   Do NOT interpret an empty Conflicted file info
@@ -135,7 +136,8 @@ func (gr LocalGitRepository) CheckBranchMergeConflict(localBranch string, remote
 	//   category, and others might also be added in the future).
 	// the command would not put things to stderr - everything is put
 	// to stdout.
-	preres := parseMergeCheckZResult(buf.String())
+	treeId := strings.TrimSpace(buf.String())
+	preres := parseMergeCheckZResult(treeId)
 	if err != nil {
 		preres.Successful = false
 	} else {
@@ -147,4 +149,42 @@ func (gr LocalGitRepository) CheckBranchMergeConflict(localBranch string, remote
 	preres.ProviderBranch = remoteBranch
 	return preres, nil
 }
+
+func (gr LocalGitRepository) Merge(remote string, remoteBranch string, localBranch string, author string, email string) error {
+	buf := new(bytes.Buffer)
+	cmd1 := exec.Command("git", "fetch", remote, remoteBranch)
+	cmd1.Dir = gr.GitDirectoryPath
+	cmd1.Stderr = buf
+	err := cmd1.Run()
+	if err != nil { return fmt.Errorf("%s: %s", err.Error(), buf.String()) }
+	buf.Reset()
+	providerFullName := fmt.Sprintf("%s/%s", remote, remoteBranch)
+	cmd2 := exec.Command("git", "merge-tree", "--write-tree", localBranch, providerFullName)
+	cmd2.Dir = gr.GitDirectoryPath
+	cmd2.Stdout = buf
+	err = cmd2.Run()
+	if err != nil { return fmt.Errorf("Failed while merge-tree: %s", err.Error()) }
+	treeId := strings.TrimSpace(buf.String())
+	mergeMessage := fmt.Sprintf("merge: from %s/%s to %s", remote, remoteBranch, localBranch)
+	buf.Reset()
+	cmd3 := exec.Command("git", "commit-tree", treeId, "-m", mergeMessage, "-p", localBranch, "-p", providerFullName)
+	cmd3.Dir = gr.GitDirectoryPath
+	cmd3.Env = os.Environ()
+	cmd3.Env = append(cmd3.Env, fmt.Sprintf("GIT_AUTHOR_NAME=%s", author))
+	cmd3.Env = append(cmd3.Env, fmt.Sprintf("GIT_AUTHOR_EMAIL=%s", email))
+	cmd3.Env = append(cmd3.Env, fmt.Sprintf("GIT_COMMITTER_NAME=%s", author))
+	cmd3.Env = append(cmd3.Env, fmt.Sprintf("GIT_COMMITTER_EMAIL=%s", email))
+	err = cmd3.Run()
+	if err != nil { return fmt.Errorf("Failed while commit-tree: %s", err.Error()) }
+	commitId := strings.TrimSpace(buf.String())
+	buf.Reset()
+	localBranchFullName := fmt.Sprintf("refs/heads/%s", localBranch)
+	cmd4 := exec.Command("git", "update-ref", localBranchFullName, commitId)
+	cmd4.Dir = gr.GitDirectoryPath
+	cmd4.Stderr = buf
+	err = cmd3.Run()
+	if err != nil { return fmt.Errorf("Failed while update-ref: %s; %s", err.Error(), buf.String()) }
+	return nil
+}
+
 

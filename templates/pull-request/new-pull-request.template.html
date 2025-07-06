@@ -1,0 +1,83 @@
+{{$repoName := getRepoName .Repository.Namespace .Repository.Name}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{$repoName}} :: Gitus</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-pull-request.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+    <hr />
+
+	<main>
+	  {{template "pull-request/_sidebar" .}}
+	  <div class="main-side">
+		<h2>Create New Pull Request</h2>
+		{{if .ProviderRepository}}
+		{{if gt (len .ProviderRepository) 0}}
+		<form action="" method="GET">
+		  <div class="field"><label class="field-label" for="recv-br">Receiver Branch:</label>
+			<select name="recv-br" style="width: unset;">
+			  {{range $k, $v := .Repository.Repository.BranchIndex}}
+			  <option value="{{$k}}">{{$k}}</option>
+			  {{end}}
+			</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="prov-repo">Provider Repository:</label>
+			<select name="repo" style="width: unset;">
+			  {{range $k := .ProviderRepository}}
+			  {{$fullname := getRepoName $k.Namespace $k.Name}}
+			  <option value="{{$fullname}}">{{$fullname}}</option>
+			  {{end}}
+			</select>
+		  </div>
+		  <input type="submit" value="Choose" />
+		</form>
+		{{else}}
+		<p>There is no repository available for creating a pull request. </p>
+		{{end}}
+		{{end}}
+
+		{{if .ProviderBranchList}}
+		{{if gt (len .ProviderBranchList) 0}}
+		<form action="" method="POST">
+		  <input type="hidden" name="receiver-branch" value="{{.ReceiverBranch}}" />
+		  <input type="hidden" name="provider-namespace" value="{{.ChosenProviderRepository.Namespace}}" />
+		  <input type="hidden" name="provider-name" value="{{.ChosenProviderRepository.Name}}" />
+		  <div class="field"><p>Receiver Branch: <a href="{{getRepoPath .Repository.Namespace .Repository.Name}}/branch/{{.ReceiverBranch}}">{{getRepoName .Repository.Namespace .Repository.Name}}@branch:{{.ReceiverBranch}}</a>  (<a href="{{getRepoPath .Repository.Namespace .Repository.Name}}/pull-request/new">Choose another branch</a>)</p></div>
+		  <input type="hidden" name="receiver-branch" value="{{.ReceiverBranch}}" />
+		  <div class="field"><p>Provider Repository: <a href="{{getRepoPath .ChosenProviderRepository.Namespace .ChosenProviderRepository.Name}}">{{getRepoName .ChosenProviderRepository.Namespace .ChosenProviderRepository.Name}}</a>  (<a href="{{getRepoPath .Repository.Namespace .Repository.Name}}/pull-request/new">Choose another repository</a>)</p></div>
+		  <div class="field"><label class="field-label" for="provider-branch">Provider Branch: </label>
+			<select name="provider-branch" style="width:unset;">
+			  {{range $k := .ProviderBranchList}}
+			  <option value="{{$k}}">{{$k}}</option>
+			  {{end}}
+			</select>
+		  </div>
+		  <div class="field"><label class="field-label" for="title">Title:</label>
+			<input class="field-tf" name="title" id="title" />
+		  </div>
+		  <input type="submit" value="New Pull Request" />
+		</form>
+		{{else}}
+		<p>There is no branch in this provider repository for creating a pull request.</p>
+		{{end}}
+		{{end}}
+	  </div>
+	</main>
+	
+
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>

@@ -215,6 +215,7 @@ func main() {
 	}
 
 	staticPrefix := config.StaticAssetDirectory
+	templates.UnpackStaticFileTo(staticPrefix)
 	var fs = http.FileServer(http.Dir(staticPrefix))
 	http.Handle("GET /favicon.ico", routes.WithLogHandler(fs))
 	http.Handle("GET /static/", http.StripPrefix("/static/", routes.WithLogHandler(fs)))

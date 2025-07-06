@@ -1,0 +1,7 @@
+{{define "pull-request/_sidebar"}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<div class="pull-request-sidebar left-side">
+  <a class="sidebar-item" href="{{$repoPath}}/pull-request">All Pull Requests</a>
+  <a class="sidebar-item" href="{{$repoPath}}/pull-request/new">Create New Pull Request</a>
+</div>
+{{end}}

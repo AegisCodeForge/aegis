@@ -5,9 +5,21 @@
 	border-bottom: 1px var(--foreground-color) solid;
 }
 .issue-list-item {	
-	background-color: #ffffff3f;
+	background-color: var(--white-shade-degree-1);
 	padding: 1em;
 	margin-bottom: 1em;
+}
+.issue-list-item {	
+	background-color: var(--white-shade-degree-1);
+    padding: 0.5em;
+    /* margin-bottom: 1em; */
+	border-bottom: 2px var(--white-shade-degree-2) solid;
+}
+.issue-list-item-closed {
+	background-color: unset;
+}
+.issue-list-item:first-child {
+	border-top: 2px var(--white-shade-degree-2) solid;
 }
 .issue-list-item a {
 	display: inline-block;
@@ -34,3 +46,8 @@
 	font-size: 1.5em;
 	font-weight: bold;
 }
+
+.precise-time {
+	color: #ffffff7f;
+}
+

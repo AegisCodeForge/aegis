@@ -113,7 +113,7 @@ type AegisDatabaseInterface interface {
 	GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error)
 
 	GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error)
-	NewPullRequest(username string, receiverNamespace string, receiverName string, receiverBranch string, providerNamespace string, providerName string, providerBranch string) error
+	NewPullRequest(username string, title string, receiverNamespace string, receiverName string, receiverBranch string, providerNamespace string, providerName string, providerBranch string) (int64, error)
 	GetPullRequest(namespace string, name string, id int64) (*model.PullRequest, error)
 	GetPullRequestByAbsId(absId int64) (*model.PullRequest, error)
 	CheckPullRequestMergeConflict(absId int64) (*gitlib.MergeCheckResult, error)
@@ -123,6 +123,7 @@ type AegisDatabaseInterface interface {
 	CommentOnPullRequest(absId int64, author string, content string) (*model.PullRequestEvent, error)
 	CommentOnPullRequestCode(absId int64, comment *model.PullRequestCommentOnCode) (*model.PullRequestEvent, error)
 	ClosePullRequestAsNotMerged(absid int64, author string) error
+	ReopenPullRequest(absid int64, author string) error
 }
 
 // the fact that golang has no parameter default values is

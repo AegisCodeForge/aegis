@@ -21,6 +21,7 @@ a pull request is purely an "external" construct that only exists in the eyes of
   CREATE TABLE IF NOT EXISTS aegis_pull_request (
       username TEXT,
       pull_request_id INT,
+  	title TEXT,
       -- the receiving repo
       receiver_namespace TEXT,
   	receiver_name TEXT,
@@ -48,6 +49,7 @@ a pull request is purely an "external" construct that only exists in the eyes of
   	-- 4 - merge conflict check.
   	-- 5 - close as not merged.
   	-- 6 - close (merged).
+  	-- 7 - reopen
   	event_type INTEGER,
   	event_timestamp INTEGER,
   	event_author TEXT,
@@ -90,6 +92,11 @@ Aegis deals with bare repository so common commands like =git-merge= will not wo
   + The command line option =--write-tree= must be present. If this is not present, =git merge-tree= would only perform a dry-run with no trees being actually merged and written into the repo. Use =--write-tree= if you need to write the merged result to the repo. The output is the same for both - if the merge is conflict free, the id of the resulting tree would be written to stdout.
 + =git commit-tree $TREEID -m {message} -p $receiverBranch -p $provider=
   + This writes the commit to the repo and write the commit id to stdout.
+  + This command needs to have the following envvar set:
+    + =GIT_AUTHOR_NAME=
+    + =GIT_AUTHOR_EMAIL=
+    + =GIT_COMMITTER_NAME=
+    + =GIT_AUTHOR_EMAIL=
 + =git update-ref $receiverBranchFullName $commitId=
   + =$receiverBranchFullName= must be "local full name", i.e. the one that starts with =refs/=. For any local branch =$branch=, this would be =refs/heads/$branch= (e.g. the local full name of branch =myLocal= would be =refs/heads/myLocal=).
   

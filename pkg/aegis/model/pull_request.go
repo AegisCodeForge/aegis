@@ -11,6 +11,8 @@ const (
 type PullRequest struct {
 	PRId int64
 	PRAbsId int64
+	Title string
+	Author string
 	Timestamp int64
 	ReceiverNamespace string
 	ReceiverName string
@@ -30,6 +32,7 @@ const (
 	PULL_REQUEST_EVENT_MERGE_CONFLICT_CHECK = 4
 	PULL_REQUEST_EVENT_CLOSE_AS_NOT_MERGED = 5
 	PULL_REQUEST_EVENT_CLOSE_AS_MERGED = 6
+	PULL_REQUEST_EVENT_REOPEN = 7
 )
 
 type PullRequestEvent struct {
@@ -43,34 +46,34 @@ type PullRequestEvent struct {
 	EventType int
 	EventTimestamp int64
 	EventAuthor string
+	// type=1: string (comment text)
+	// type=2: json dump of PullRequestCommentOnCode
+	// type=3: string (commit id)
+	// type=4: empty
+	// type=5: empty
+	// type=6: empty
+	// type=7: empty
 	EventContent string
 }
 
 type PullRequestComment struct {
-	Username string `json:"userName"`
 	Content string `json:"content"`
 }
 
 type PullRequestCommentOnCode struct {
+	RepoNamespace string `json:"repoNamespace"`
+	RepoName string `json:"repoName"`
 	CommitId string `json:"commitId"`
 	Path string `json:"path"`
 	LineRangeStart int `json:"lineRangeStart"`
 	LineRangeEnd int `json:"lineRangeEnd"`
 	Username string `json:"userName"`
 	Content string `json:"content"`
+	Code []string
 }
 
 type PullRequestUpdate struct {
 	CommitId string `json:"commitId"`
 }
 
-type PullRequestMergeConflictCheck gitlib.MergeCheckResult
-
-type PullRequestCloseAsNotMerged struct {
-	Username string `json:"userName"`
-}
-
-type PullRequestCloseAsMerged struct {
-	Username string `json:"userName"`
-}
 

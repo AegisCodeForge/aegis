@@ -91,11 +91,12 @@ func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 	if len(gitUserName) <= 0 {
 		u, _ := user.Current()
 		ctx.Config.GitUser = u.Name
-		fmt.Printf("You haven't configure any Git User. We've decided to set the field with your user name instead. If you don't want this behaviour, please change the configuration file after this.\n", u.Name)
+		fmt.Printf("You haven't configure any Git User. We've decided to set the field with your user name instead. If you don't want this behaviour, please change the configuration file after this.\n")
 		ctx.Config.Sync()
 	} else {
+		_, err := user.Lookup(ctx.Config.GitUser)
 		if err != nil {
-			return false, errors.New(fmt.Sprintf("%s cannot be found in passwd", ctx.Config.GitUser))
+			return false, fmt.Errorf("%s cannot be found in passwd", ctx.Config.GitUser)
 		}
 	}
 	return true, nil

@@ -31,7 +31,7 @@ func parseAuthorTime(s string) AuthorTime {
 		AuthorEmail: "",
 		Time: time.Unix(0, 0),
 	}
-	re, err := regexp.Compile("([^<>]+)\\s*<([^>]+)>\\s*([^\\s]+)\\s*([^\\s]+)")
+	re, err := regexp.Compile("([^<>]+)\\s*<([^>]*)>\\s*([^\\s]+)\\s*([^\\s]+)")
 	if err != nil { log.Fatal(err) }
 	matchres := re.FindSubmatch([]byte(s))
 	if len(matchres) <= 0 {

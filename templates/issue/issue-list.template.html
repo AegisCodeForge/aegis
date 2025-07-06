@@ -24,9 +24,10 @@
 		  There is no issue for this repository.
 		  {{else}}
 		  {{range .IssueList}}
-		  <div class="issue-list-item">
-			<div class="issue-title-bar"><span class="issue-id">#{{.IssueId}}:</span> <a href="{{$repoPath}}/issue/{{.IssueId}}"><span class="issue-title">{{.IssueTitle}}</span></a></div>
-			<div class="issue-desc-bar"><a href="/u/{{.IssueAuthor}}" class="issue-author">{{.IssueAuthor}}</a> @ {{toFuzzyTime .IssueTime}} ({{toPreciseTime .IssueTime}})</div>
+		  <div class="issue-list-item {{if eq .IssueStatus 1}}{{else}}issue-list-item-closed{{end}}">
+			<div class="issue-title-bar"><span class="issue-id">#{{.IssueId}}:</span> {{if eq .IssueStatus 1}}[OPEN]{{else if eq .IssueStatus 2}}[SOLVED]{{else if eq .IssueStatus 3}}[DISCARDED]{{end}} <a href="{{$repoPath}}/issue/{{.IssueId}}"><span class="issue-title">{{.IssueTitle}}</span></a></div>
+			<div class="issue-desc-bar"><a href="/u/{{.IssueAuthor}}" class="issue-author">{{.IssueAuthor}}</a> @ {{toFuzzyTime .IssueTime}}</div>
+			  <div class="precise-time">{{toPreciseTime .IssueTime}}</div>
 		  </div>
 		  {{end}}
 		  {{end}}

@@ -16,15 +16,16 @@
 <div class="fork-info">A fork of <a href="{{getRepoPath .Repository.ForkOriginNamespace .Repository.ForkOriginName}}">{{getRepoName .Repository.ForkOriginNamespace .Repository.ForkOriginName}}</a></div>
 {{end}}
 </div>
-{{if and .Config (not .Config.PlainMode)}}
 <div class="repo-header-nav">
+  <a href="{{$repoPath}}">Home</a>
+  {{if and .Config (not .Config.PlainMode)}}
   {{if and .LoginInfo (or .LoginInfo.IsOwner .LoginInfo.IsSettingMember .LoginInfo.IsAdmin)}}
   <a href="{{$repoPath}}/setting">Setting</a>
   {{end}}
   <a href="{{$repoPath}}/issue">Issue</a>
   <a href="{{$repoPath}}/pull-request">Pull Request</a>
+  {{end}}
 </div>
-{{end}}
 {{if .RepoHeaderInfo}}
   {{if gt (len .RepoHeaderInfo.TypeStr) 0}}
   <div class="header-node">@{{.RepoHeaderInfo.TypeStr}}:<a href="{{getRootPath $namespaceName $repoName .RepoHeaderInfo.TypeStr .RepoHeaderInfo.NodeName}}">{{if eq .RepoHeaderInfo.TypeStr "commit"}}{{slice .RepoHeaderInfo.NodeName 0 8}}<span style="font-size:80%">{{slice .RepoHeaderInfo.NodeName 8 40}}</span>{{if gt (len .RepoHeaderInfo.NodeName) 40}}<span style="font-size:60%">{{slice .RepoHeaderInfo.NodeName 40}}</span>{{end}}{{else}}{{.RepoHeaderInfo.NodeName}}{{end}}</a></div>

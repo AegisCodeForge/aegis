@@ -1,0 +1,184 @@
+{{$repoName := getRepoName .Repository.Namespace .Repository.Name}}
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pull Request #{{.PullRequest.PRId}} of {{$repoName}} :: Gitus</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-pull-request.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+    <hr />
+
+	<main>
+	  {{template "pull-request/_sidebar" .}}
+	  <div class="main-side">
+		<div class="pull-request-body">
+		  <h2 class="pull-request-header">#{{.PullRequest.PRId}}: <span class="pull-request-header-title">{{.PullRequest.Title}}</span></h2>
+		  <div class="pull-request-header-author"><a href="/u/{{.PullRequest.Author}}">{{.PullRequest.Author}}</a> @ {{toFuzzyTime .PullRequest.Timestamp}}</div>
+		  <div class="precise-time">{{toPreciseTime .PullRequest.Timestamp}}</div>
+		  <div>Request to merge
+			<a href="{{getRepoPath .PullRequest.ProviderNamespace .PullRequest.ProviderName}}/branch/{{.PullRequest.ProviderBranch}}">{{getRepoName .PullRequest.ProviderNamespace .PullRequest.ProviderName}}@branch:{{.PullRequest.ProviderBranch}}</a> to
+			<a href="{{getRepoPath .PullRequest.ReceiverNamespace .PullRequest.ReceiverName}}/branch/{{.PullRequest.ReceiverBranch}}">{{.PullRequest.ReceiverBranch}}</a></div>
+		</div>
+		<div class="pull-request-event-list">
+		  {{range .PullRequestEventList}}
+		  
+		  {{if eq .EventType 1}}
+		  <div class="pull-request-event-list-item pull-request-comment">
+			<div class="pull-request-comment-title-bar"><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> commented @ {{toFuzzyTime .EventTimestamp}}</div>
+			  <div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+			<div class="pull-request-comment-content">{{renderMarkdown .EventContent}}</div>
+		  </div>
+		  
+		  {{else if eq .EventType 2}}
+		  <div class="pull-request-event-list-item pull-request-comment-on-code">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> commented on code @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+			{{$coc := retrieveCommentOnCode .EventContent}}
+			<pre>{{$coc.Code}}</pre>
+		  </div>
+		  
+		  {{else if eq .EventType 3}}
+		  <div class="pull-request-event-list-item pull-request-update-on-branch">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> updated the branch related to this pull request @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+			<p>Commit ID: <a href="{{$repoPath}}/commit/{{.EventContent}}">{{.EventContent}}</a></p>
+		  </div>
+		  
+		  {{else if eq .EventType 4}}
+		  <div class="pull-request-event-list-item pull-request-merge-conflict-check">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> asked for a merge conflict check @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+			{{$mchres := parseMergeCheckResult .EventContent}}
+			<div class="merge-check-result">
+			  {{if $mchres.Successful}}
+			  <b>Merge Check: SUCCESSFUL</b>
+			  {{else}}
+			  <b>Merge Check: FAILED</b><br />
+			  <ul>
+				{{range $k := $mchres.Message}}
+				<li>
+				  {{$k.Type}}: {{$k.Message}}
+				  <ul>
+					{{range $kk := $k.Path}}
+					<li>{{$kk}}</li>
+					{{end}}
+				  </ul>
+				</li>
+				{{end}}
+			  </ul>
+			  {{end}}
+			</div>
+		  </div>
+
+		  {{else if eq .EventType 5}}
+		  <div class="pull-request-event-list-item pull-request-close-as-not-merged">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this pull request as not merged @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+		  </div>
+
+		  {{else if eq .EventType 6}}
+		  <div class="pull-request-event-list-item pull-request-close-as-merged">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this pull request as merged @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+		  </div>
+
+		  
+		  {{else if eq .EventType 6}}
+		  <div class="pull-request-event-list-item pull-request-close-as-merged">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> closed this pull request as merged @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+		  </div>
+
+		  {{else if eq .EventType 7}}
+		  <div class="pull-request-event-list-item pull-request-reopen">
+			<div><a href="/u/{{.EventAuthor}}">{{.EventAuthor}}</a> reopened this pull request @ {{toFuzzyTime .EventTimestamp}}</div>
+			<div class="precise-time">{{toPreciseTime .EventTimestamp}}</div>
+		  </div>
+		  
+		  {{end}}
+		  {{end}}
+		</div>
+		
+		<div class="pull-request-merge-conflict-check">
+		  {{if eq .PullRequest.Status 2}}
+		  <div>This merge request is <b>MERGED</b>.</div>
+		  {{else}}
+		  <div>Latest Merge Conflict Check Result:</div>
+		  {{if .PullRequest.MergeCheckResult}}
+		  <div>{{toFuzzyTime .PullRequest.MergeCheckTimestamp}}</div>
+		  <div class="precise-time">{{toPreciseTime .PullRequest.MergeCheckTimestamp}}</div>
+		  <div class="merge-check-result">
+		  {{if .PullRequest.MergeCheckResult.Successful}}
+		  <b>Merge Check: SUCCESSFUL</b>
+		  {{else}}
+		  <b>Merge Check: FAILED</b><br />
+		  <ul>
+			{{range $k := .PullRequest.MergeCheckResult.Message}}
+			<li>
+			  [{{$k.Type}}] {{$k.Message}}<br />
+			  Involved file:
+			  <ul>
+				{{range $kk := $k.Path}}
+				<li>File: {{$kk}}</li>
+				{{end}}
+			  </ul>
+			</li>
+			{{end}}
+		  </ul>
+		  {{end}}
+		  </div>
+		  {{else}}
+		  <p>There isn't a merge conflict check perfomed yet.</p>
+		  {{end}}
+		  {{end}}
+		</div>
+		
+		
+		<h3>Comment</h3>
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="comment" />
+		  <div class="field"><textarea name="content" id="content"></textarea></div>
+		  <input type="submit" value="Post Comment" />
+		</form>
+		{{if not (eq .PullRequest.Status 2)}}
+		{{if eq .PullRequest.Status 1}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="merge-check" />
+		  <input type="submit" value="Merge Check" />
+		</form>
+		{{if and .PullRequest.MergeCheckResult .PullRequest.MergeCheckResult.Successful}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="close-as-merged" />
+		  <input type="submit" value="Merge & Close" />
+		</form>
+		{{end}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="close-as-not-merged" />
+		  <input type="submit" value="Close As Not Merged" />
+		</form>
+		{{else}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="reopen" />
+		  <input type="submit" value="Reopen" />
+		</form>
+		{{end}}
+		{{end}}
+	  </div>
+	</main>
+	
+
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>

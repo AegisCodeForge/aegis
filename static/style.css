@@ -7,6 +7,9 @@
 :root {
 	--foreground-color: white;
 	--background-color: #1f1f1f;;
+	--white-shade-degree-1: #ffffff3f;
+	--white-shade-degree-2: #ffffff7f;
+	--white-shade-degree-3: #ffffffbf;
 	--file-list-height: 1rem;
 }
 

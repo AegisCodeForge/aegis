@@ -167,5 +167,6 @@ func bindRepositoryController(ctx *RouterContext) {
 	}))
 
 	bindRepositoryForkController(ctx)
+	bindRepositoryPullRequestController(ctx)
 }
 
