@@ -165,10 +165,14 @@ func (gr LocalGitRepository) GetAllBranchList() (map[string]*Branch, error) {
 		for _, item := range pi {
 			// skip tags when counting branches.
 			if !strings.HasPrefix(item.Name, "refs/heads/") { continue }
+			// update res only if we can't find ready-to-read ref
 			name := item.Name[len("refs/heads/"):]
-			res[name] = &Branch{
-				Name: name,
-				HeadId: item.Id,
+			_, ok := res[name]
+			if !ok {
+				res[name] = &Branch{
+					Name: name,
+					HeadId: item.Id,
+				}
 			}
 		}
 	}
