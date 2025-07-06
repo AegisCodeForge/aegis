@@ -9,6 +9,12 @@
     <meta charset="utf-8" />
 	<link rel="stylesheet" href="/static/style.css">
 	<title>history of {{$typeStr}}:{{$nodeName}} @ {{$repoName}} :: {{.Config.DepotName}}</title>
+	<style>
+	  .node-history-header {
+		  font-size: 1.5rem;
+		  font-weight: bold;
+	  }
+	</style>
   </head>
   <body>
 	<header>
@@ -17,20 +23,8 @@
 	</header>
 	
 	<div class="node-description">
-	  <div class="commit-info">
-		<b>Commit</b> <a href="{{$repoPath}}/commit/{{.Commit.Id}}">{{.Commit.Id}}</a> (<a href="{{$repoPath}}/diff/{{.Commit.Id}}">Diff</a>) (<a href="{{$repoPath}}/commit/{{.Commit.Id}}">Tree</a>) (<a href="{{$repoPath}}/history/commit:{{.Commit.Id}}">Full History</a>)<br />
-		<b>Author</b>:
-		<span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
-		(<span class="author-email commit-author-email"><a href="mailto:{{.Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
-		at <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} ({{.Commit.AuthorInfo.Time}})</span><br />
-		<b>Committer</b>: 
-		<span class="committer-name">{{.Commit.CommitterInfo.AuthorName}}</span>
-		(<span class="committer-email"><a href="mailto:{{.Commit.CommitterInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)
-		@ <span class="committer-time">{{toFuzzyTime .Commit.CommitterInfo.Time}} ({{.Commit.CommitterInfo.Time}})</span><br />
-		<b>Message</b>:<p class="commit-message">{{.Commit.CommitMessage}}</p>
-		{{if gt (len .Commit.Signature) 0}}
-		<details><summary><b>Commit Signature</b></summary><pre>{{.Commit.Signature}}</pre></details>
-		{{end}}
+	  <div class="node-history-header">
+		Commit History:
 	  </div>
 	</div>
 	
@@ -46,11 +40,11 @@
 		<b>Author</b>:
 		<span class="author-name commit-author-name">{{.AuthorInfo.AuthorName}}</span>
 		(<span class="author-email commit-author-email"><a href="mailto:{{.AuthorInfo.AuthorEmail}}">{{.AuthorInfo.AuthorEmail}}</a></span>)
-		@ <span class="author-time commit-author-time">{{toFuzzyTime .AuthorInfo.Time}} ({{.AuthorInfo.Time}})</span><br />
+		@ <span class="author-time commit-author-time">{{toFuzzyTime .AuthorInfo.Time}} <span class="precise-time">{{.AuthorInfo.Time}}</span></span><br />
 		<b>Committer</b>: 
 		<span class="committer-name">{{.CommitterInfo.AuthorName}}</span>
 		(<span class="committer-email"><a href="mailto:{{.CommitterInfo.AuthorEmail}}">{{.CommitterInfo.AuthorEmail}}</a></span>)
-		@ <span class="committer-time">{{toFuzzyTime .CommitterInfo.Time}} ({{.CommitterInfo.Time}})</span><br />
+		@ <span class="committer-time">{{toFuzzyTime .CommitterInfo.Time}} <span class="precise-time">{{.CommitterInfo.Time}}</span></span><br />
 		<b>Message</b>:<p class="commit-message">{{.CommitMessage}}</p>
 		{{if gt (len .Signature) 0}}
 		<details><summary><b>Commit Signature</b></summary><pre>{{.Signature}}</pre></details>

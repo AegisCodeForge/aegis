@@ -150,6 +150,20 @@ hr {
 .header-nav-submenu:target { display: inherit; }
 /* ======================================================== */
 
+
+/* ======================================================== */
+/* repo header.  */
+.repo-description {
+	font-size: 1.5em;
+	font-weight: normal;
+	font-style: italic;
+}
+@media (max-width: 920px) {
+	display: block;
+}
+
+/* ======================================================== */
+
 /* ======================================================== */
 /* file (source view) */
 .file-source-view {
@@ -462,4 +476,10 @@ form input[type="submit"]:hover, .form-submit:hover {
 	}
 }
 /* ======================================================== */
+
+
+.precise-time {
+	color: #ffffff7f;
+}
+
 

@@ -3,19 +3,38 @@
 {{$repoName := .Repository.Name}}
 {{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
 <div class="repo-info">
-<h1 class="header-name" style="margin-bottom: 0">
-  <a href="{{getNamespacePath $namespaceName}}">{{$namespaceName}}</a>:<a href="{{getRepoPath $namespaceName $repoName}}">{{$repoName}}</a>
-</h1>
-{{if .Repository.Owner}}
-<span>Owner: <a href="/u/{{.Repository.Owner}}">{{.Repository.Owner}}</a></span>
+  <h1 class="header-name" style="margin-bottom: 0">
+	<a href="{{getNamespacePath $namespaceName}}">{{$namespaceName}}</a>:<a href="{{getRepoPath $namespaceName $repoName}}">{{$repoName}}</a>
+  </h1>
+  
+  {{if not .Config.PlainMode}}
+  
+  {{if .Repository.Owner}}
+  <span>Owner: <a href="/u/{{.Repository.Owner}}">{{.Repository.Owner}}</a></span>
+  {{end}}
+  
+  {{if and (gt (len .Repository.ForkOriginNamespace) 0) (gt (len .Repository.ForkOriginName) 0)}}
+  <span class="fork-info">A fork of <a href="{{getRepoPath .Repository.ForkOriginNamespace .Repository.ForkOriginName}}">{{getRepoName .Repository.ForkOriginNamespace .Repository.ForkOriginName}}</a>.</span>
 {{end}}
-{{if not .Config.PlainMode}}
-<span>(<a href="{{$repoPath}}/fork">Fork</a>)</span>
-{{end}}
-{{if and (gt (len .Repository.ForkOriginNamespace) 0) (gt (len .Repository.ForkOriginName) 0)}}
-<div class="fork-info">A fork of <a href="{{getRepoPath .Repository.ForkOriginNamespace .Repository.ForkOriginName}}">{{getRepoName .Repository.ForkOriginNamespace .Repository.ForkOriginName}}</a></div>
-{{end}}
+
+  <span>(<a href="{{$repoPath}}/fork">Fork</a>)</span>
+  {{end}}
+
 </div>
+
+<div class="repo-description">{{.Repository.Description}}</div>
+
+  
+
+<div class="header-repo-label-list">
+  {{if .Repository.RepoLabelList}}
+  {{range .Repository.RepoLabelList}}
+  <span class="header-repo-label">{{.}}</span>
+  {{end}}
+  {{end}}
+</div>
+
+
 <div class="repo-header-nav">
   <a href="{{$repoPath}}">Home</a>
   {{if and .Config (not .Config.PlainMode)}}
@@ -26,27 +45,22 @@
   <a href="{{$repoPath}}/pull-request">Pull Request</a>
   {{end}}
 </div>
+
+<div class="header-clone-address">
+  {{$repoUrl := getRepoURL .Config .Repository}}
+  {{$repoSsh := getRepoSSH .Config .Repository}}
+  <table class="header-clone-address-table">
+	<tr><td></td><td><b>Clone address (click to copy)</b></td></tr>	  
+	<tr><td><b>HTTP (Read-only):</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape $repoUrl)}}')" >{{$repoUrl}}</a></td></tr>
+	<tr><td><b>SSH:</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape $repoSsh)}}')">{{$repoSsh}}</a></td></tr>
+  </table>
+</div>
+
 {{if .RepoHeaderInfo}}
-  {{if gt (len .RepoHeaderInfo.TypeStr) 0}}
-  <div class="header-node">@{{.RepoHeaderInfo.TypeStr}}:<a href="{{getRootPath $namespaceName $repoName .RepoHeaderInfo.TypeStr .RepoHeaderInfo.NodeName}}">{{if eq .RepoHeaderInfo.TypeStr "commit"}}{{slice .RepoHeaderInfo.NodeName 0 8}}<span style="font-size:80%">{{slice .RepoHeaderInfo.NodeName 8 40}}</span>{{if gt (len .RepoHeaderInfo.NodeName) 40}}<span style="font-size:60%">{{slice .RepoHeaderInfo.NodeName 40}}</span>{{end}}{{else}}{{.RepoHeaderInfo.NodeName}}{{end}}</a></div>
-  {{end}}
-  {{end}}
-  <div class="header-repo-label-list">
-	{{if .Repository.RepoLabelList}}
-	{{range .Repository.RepoLabelList}}
-	<span class="header-repo-label">{{.}}</span>
-	{{end}}
-	{{end}}
-  </div>
-  <div class="header-clone-address">
-	{{$repoUrl := getRepoURL .Config .Repository}}
-	{{$repoSsh := getRepoSSH .Config .Repository}}
-	<table class="header-clone-address-table">
-	  <tr><td></td><td><b>Clone address (click to copy)</b></td></tr>	  
-	  <tr><td><b>HTTP (Read-only):</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape $repoUrl)}}')" >{{$repoUrl}}</a></td></tr>
-	  <tr><td><b>SSH:</b></td><td><a onclick="navigator.clipboard.writeText('{{htmlEscape (jsStrEscape $repoSsh)}}')">{{$repoSsh}}</a></td></tr>
-	</table>
-  </div>
-  <div class="repo-description">{{.Repository.Description}}</div>
+{{if gt (len .RepoHeaderInfo.TypeStr) 0}}
+<div class="header-node">@{{.RepoHeaderInfo.TypeStr}}:<a href="{{getRootPath $namespaceName $repoName .RepoHeaderInfo.TypeStr .RepoHeaderInfo.NodeName}}">{{if eq .RepoHeaderInfo.TypeStr "commit"}}{{slice .RepoHeaderInfo.NodeName 0 8}}<span style="font-size:80%">{{slice .RepoHeaderInfo.NodeName 8 40}}</span>{{if gt (len .RepoHeaderInfo.NodeName) 40}}<span style="font-size:60%">{{slice .RepoHeaderInfo.NodeName 40}}</span>{{end}}{{else}}{{.RepoHeaderInfo.NodeName}}{{end}}</a></div>
+{{end}}
 {{end}}
 
+
+{{end}}

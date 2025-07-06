@@ -4,11 +4,11 @@
   <b>Author</b>:
   <span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
   (<span class="author-email commit-author-email"><a href="mailto:{{.Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
-  @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} ({{.Commit.AuthorInfo.Time}})</span><br />
+  @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} <span class="precise-time">{{.Commit.AuthorInfo.Time}}</span></span><br />
   <b>Committer</b>: 
   <span class="committer-name">{{.Commit.CommitterInfo.AuthorName}}</span>
   (<span class="committer-email"><a href="mailto:{{.Commit.CommitterInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)
-  @ <span class="committer-time">{{toFuzzyTime .Commit.CommitterInfo.Time}} ({{.Commit.CommitterInfo.Time}})</span><br />
+  @ <span class="committer-time">{{toFuzzyTime .Commit.CommitterInfo.Time}} <span class="precise-time">{{.Commit.CommitterInfo.Time}}</span></span><br />
   <b>Message</b>:<p class="commit-message">{{.Commit.CommitMessage}}</p>
   {{if gt (len .Commit.Signature) 0}}
   <details><summary><b>Commit Signature</b></summary><pre style="overflow:auto">{{.Commit.Signature}}</pre></details>
