@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS %sissue (
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS gitus_issue_event (
+CREATE TABLE IF NOT EXISTS %sissue_event (
     issue_abs_id INTEGER,
 	-- 1 - comment.  2 - close as solved.  3 - close as discarded.
 	-- 4 - reopened.
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS %spull_request (
 	if err != nil { return err }
 	
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS aegis_pull_request_event (
+CREATE TABLE IF NOT EXISTS %spull_request_event (
     pull_request_abs_id INTEGER,
 	-- 1 - normal comment.
 	-- 2 - comment on code.

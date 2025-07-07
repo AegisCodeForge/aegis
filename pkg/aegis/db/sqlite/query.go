@@ -483,7 +483,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespace(username string
 	pfx := dbif.config.Database.TablePrefix
 	privateSelectClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
@@ -494,10 +494,7 @@ WHERE ns_status = 1 %s
 	defer stmt1.Close()
 	var rs *sql.Rows
 	if len(username) > 0 {
-		pattern := strings.ReplaceAll(username, "\\", "\\\\")
-		pattern = strings.ReplaceAll(pattern, "%", "\\%")
-		pattern = strings.ReplaceAll(pattern, "_", "\\_")
-		pattern = "%" + pattern + "%"
+		pattern := ToSqlSearchPattern(username)
 		rs, err = stmt1.Query(username, pattern, "\\")
 	} else {
 		rs, err = stmt1.Query()
@@ -2466,5 +2463,94 @@ WHERE rowid = ?
 	err = tx.Commit()
 	if err != nil { return err }
 	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountPullRequest(query string, namespace string, name string, filterType int) (int, error) {
+	pfx := dbif.config.Database.TablePrefix
+	statusClause := ""
+	switch filterType {
+	case 0: statusClause = ""
+	case 1: statusClause = "AND pull_request_status = 1"
+	case 2: statusClause = "AND NOT (pull_request_status = 1)"
+	}
+	queryClause := ""
+	if query != "" { queryClause = "AND title LIKE ? ESCAPE ?" }
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %spull_request
+WHERE receiver_namespace = ? AND receiver_name = ? %s %s
+`, pfx, statusClause, queryClause))
+	if err != nil { return 0, err }
+	var r *sql.Row
+	if query == "" {
+		r = stmt.QueryRow(namespace, name)
+	} else {
+		pat := ToSqlSearchPattern(query)
+		r = stmt.QueryRow(namespace, name, pat, "\\")
+	}
+	if r.Err() != nil { return 0, r.Err() }
+	var res int
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.PullRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	statusClause := ""
+	switch filterType {
+	case 0: statusClause = ""
+	case 1: statusClause = "AND pull_request_status = 1"
+	case 2: statusClause = "AND NOT (pull_request_status = 1)"
+	}
+	queryClause := ""
+	if query != "" { queryClause = "AND title LIKE ? ESCAPE ?" }
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT username, pull_request_id, title, receiver_namespace, receiver_name, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+FROM %spull_request
+WHERE receiver_namespace = ? AND receiver_name = ? %s %s
+ORDER BY pull_request_timestamp DESC LIMIT ? OFFSET ?
+`, pfx, statusClause, queryClause))
+	if err != nil { return nil, err }
+	var r *sql.Rows
+	if query == "" {
+		r, err = stmt.Query(namespace, name, pageSize, pageNum*pageSize)
+	} else {
+		pat := ToSqlSearchPattern(query)
+		r, err = stmt.Query(namespace, name, pat, "\\", pageSize, pageNum*pageSize)
+	}
+	if r.Err() != nil { return nil, r.Err() }
+	res := make([]*model.PullRequest, 0)
+	for r.Next() {
+		var prid, absid, prtime int64
+		var status int
+		var username, title, receiverBranch string
+		var providerNamespace, providerName, provideBranch string
+		var mergeCheckResultString string
+		var mergeCheckTimestamp int64
+		err = r.Scan(&absid, &prid, &username, &title, &receiverBranch, &providerNamespace, &providerName, &provideBranch, &mergeCheckResultString, &mergeCheckTimestamp, &status, &prtime)
+		if err != nil { return nil, err }
+		var mergeCheckResult *gitlib.MergeCheckResult = nil
+		if len(mergeCheckResultString) > 0 {		
+			err = json.Unmarshal([]byte(mergeCheckResultString), &mergeCheckResult)
+			if err != nil { return nil, err }
+		}
+		res = append(res, &model.PullRequest{
+			PRId: prid,
+			PRAbsId: absid,
+			Title: title,
+			Author: username,
+			Timestamp: prtime,
+			ReceiverNamespace: namespace,
+			ReceiverName: name,
+			ReceiverBranch: receiverBranch,
+			ProviderNamespace: providerNamespace,
+			ProviderName: providerName,
+			ProviderBranch: provideBranch,
+			Status: status,
+			MergeCheckResult: mergeCheckResult,
+			MergeCheckTimestamp: mergeCheckTimestamp,
+		})
+	}
+	return res, nil
 }
 

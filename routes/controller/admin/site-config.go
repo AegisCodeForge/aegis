@@ -85,6 +85,7 @@ func bindAdminSiteConfigController(ctx *routes.RouterContext) {
 			if r.Form.Has("manual-approval") && r.Form.Get("manual-approval") == "on" {
 				ctx.Config.UseNamespace = true
 			}
+			ctx.Config.RecalculateProperPath()
 			err = ctx.Config.Sync()
 			if err != nil {
 				routes.LogTemplateError(ctx.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{

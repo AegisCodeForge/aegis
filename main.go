@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -175,7 +176,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
 			os.Exit(1)
 		}
-		
+
 		lastConfigFilePath := path.Join(u.HomeDir, "last-config")
 		err = os.WriteFile(lastConfigFilePath, []byte(configPath), 0644)
 		if err != nil {
@@ -183,6 +184,16 @@ func main() {
 			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
 			os.Exit(1)
 		}
+		gitUser, err := user.Lookup(context.Config.GitUser)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to find Git user %s: %s\n", context.Config.GitUser, err.Error())
+			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
+			os.Exit(1)
+		}
+		// peak of stdlib design, golang.
+		uid, _ := strconv.Atoi(gitUser.Uid)
+		gid, _ := strconv.Atoi(gitUser.Gid)
+		err = os.Chown(lastConfigFilePath, uid, gid)
 
 		// the features of these commands are meaningless in the use case of
 		// plain mode, so the dispatching is done within this if branch.

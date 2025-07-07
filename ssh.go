@@ -105,7 +105,6 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 	parsedOrigCmd[len(parsedOrigCmd)-1] = realGitPath
 	cmdobj := exec.Command(parsedOrigCmd[0], parsedOrigCmd[1:]...)
 
-	// r, w := io.Pipe()
 	cmdobj.Stdout = os.Stdout
 	cmdobj.Stdin = os.Stdin
 	cmdobj.Stderr = os.Stderr
