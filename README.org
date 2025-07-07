@@ -34,4 +34,17 @@ This process would show you the password for the admin user, which is randomly g
   ./aegis -config {config_file_path} reset-admin
 #+end_src
 
+Currently Aegis only supports the following systems for its components; support for other systems are planned:
+
++ Main database:
+  + SQLite3
++ Receipt system (see [[./docs/receipt.org]]):
+  + SQLite3
++ Session store:
+  + SQLite
+  + Redis & Redis-like (ValKey, KeyDB)
+  + Memcached
++ Mailer:
+  + GMail (through App Password)
+
 

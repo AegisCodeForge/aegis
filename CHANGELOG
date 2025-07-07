@@ -1,0 +1,18 @@
+Copyright 2025 Zetian Lin
+
+2025-07-07 Zetian Lin <bctnry@sdf.org>
+
+	* v0.0.1: First usable version
+	+ Basic views: commits, branches, tags, commit histories, trees & files
+	+ Rudimentary diff view
+	+ Namespaces
+	+ User SSH/GPG key management
+	+ Clone through HTTP & SSH
+	+ Push through SSH
+	+ Configurable instance front page
+	+ Issues
+	+ Pull requests
+	+ User ACL at both namespace and repository level
+	+ Web installer for easy(-er) installation
+
+
