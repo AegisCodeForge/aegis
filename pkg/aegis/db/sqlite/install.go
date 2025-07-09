@@ -132,17 +132,24 @@ CREATE TABLE IF NOT EXISTS %sissue_event (
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %spull_request (
+    username TEXT,
+    pull_request_id INT,
     -- the receiving repo
     receiver_namespace TEXT,
     receiver_name TEXT,
+    receiver_branch TEXT,
     -- the repo you're pulling from
     provider_namespace TEXT,
     provider_name TEXT,
+    provider_branch TEXT,
     -- in json.
     merge_conflict_check_result TEXT,
-    merge_conflict_check_timestamp INT
+    merge_conflict_check_timestamp INT,
+    pull_request_status INT,
+    pull_request_timestamp INT,
+	FOREIGN KEY (username) REFERENCES %suser(user_name)
   )
-`, pfx))
+`, pfx, pfx))
 	if err != nil { return err }
 	
 	_, err = tx.Exec(fmt.Sprintf(`
@@ -154,13 +161,14 @@ CREATE TABLE IF NOT EXISTS %spull_request_event (
 	-- 4 - merge conflict check.
 	-- 5 - close as not merged.
 	-- 6 - close (merged).
+    -- 7 - reopen
 	event_type INTEGER,
 	event_timestamp INTEGER,
 	event_author TEXT,
 	event_content TEXT,
-	FOREIGN KEY (pull_request_abs_id) REFERENCES aegis_pull_request(rowid)
+	FOREIGN KEY (pull_request_abs_id) REFERENCES %spull_request(rowid)
   )
-`, pfx))
+`, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
