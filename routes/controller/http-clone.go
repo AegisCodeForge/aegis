@@ -29,9 +29,9 @@ func bindHttpCloneController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		isNamespacePublic := ns.Status != model.NAMESPACE_NORMAL_PUBLIC
-		isRepoPublic := repo.Status != model.REPO_NORMAL_PUBLIC
-		isRepoArchived := repo.Status != model.REPO_ARCHIVED
+		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status == model.REPO_ARCHIVED
 		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
 			w.WriteHeader(404)
 			w.Write([]byte("404 Not Found"))
@@ -56,9 +56,9 @@ func bindHttpCloneController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		isNamespacePublic := ns.Status != model.NAMESPACE_NORMAL_PUBLIC
-		isRepoPublic := repo.Status != model.REPO_NORMAL_PUBLIC
-		isRepoArchived := repo.Status != model.REPO_ARCHIVED
+		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status == model.REPO_ARCHIVED
 		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
 			w.WriteHeader(404)
 			w.Write([]byte("404 Not Found"))
@@ -83,9 +83,9 @@ func bindHttpCloneController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		isNamespacePublic := ns.Status != model.NAMESPACE_NORMAL_PUBLIC
-		isRepoPublic := repo.Status != model.REPO_NORMAL_PUBLIC
-		isRepoArchived := repo.Status != model.REPO_ARCHIVED
+		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status == model.REPO_ARCHIVED
 		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
 			w.WriteHeader(404)
 			w.Write([]byte("404 Not Found"))
