@@ -134,6 +134,7 @@ CREATE TABLE IF NOT EXISTS %sissue_event (
 CREATE TABLE IF NOT EXISTS %spull_request (
     username TEXT,
     pull_request_id INT,
+    title TEXT,
     -- the receiving repo
     receiver_namespace TEXT,
     receiver_name TEXT,
