@@ -1,7 +1,7 @@
-* models of gitus
+* models of aegis
 
 #+begin_src sql
-  CREATE TABLE IF NOT EXISTS gitus_user (
+  CREATE TABLE IF NOT EXISTS aegis_user (
       user_name TEXT UNIQUE,
   	user_title TEXT,
   	user_email TEXT,
@@ -21,8 +21,8 @@
   	-- admin status while admin can't.
   	user_status INTEGER,
   );
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_gitus_user_user_name
-  ON gitus_user (user_name);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_aegis_user_user_name
+  ON aegis_user (user_name);
   -- for the next two tables (for the keys) the pair `user_name`
   -- and `key_name` together should be unique (i.e. one user
   -- can have multiple keys and multiple user can have (different)
@@ -30,23 +30,23 @@
   -- one key with the same name). we will enforce this at the
   -- golang side for now before i find an easy & cheap way to
   -- do this constraint.
-  CREATE TABLE IF NOT EXISTS gitus_user_authkey (
+  CREATE TABLE IF NOT EXISTS aegis_user_authkey (
       user_name TEXT,
   	key_name TEXT,
   	key_text TEXT,
-      FOREIGN KEY (user_name) REFERENCES gitus_user(user_name)
+      FOREIGN KEY (user_name) REFERENCES aegis_user(user_name)
   );
-  CREATE INDEX IF NOT EXISTS idx_gitus_user_authkey_user_name
-  ON gitus_user_authkey (user_name);
-  CREATE TABLE IF NOT EXISTS gitus_user_signkey (
+  CREATE INDEX IF NOT EXISTS idx_aegis_user_authkey_user_name
+  ON aegis_user_authkey (user_name);
+  CREATE TABLE IF NOT EXISTS aegis_user_signkey (
       user_name TEXT,
   	key_name TEXT,
   	key_text TEXT,
-  	FOREIGN KEY (user_name) REFERENCES gitus_user(user_name)
+  	FOREIGN KEY (user_name) REFERENCES aegis_user(user_name)
   );
-  CREATE INDEX IF NOT EXISTS idx_gitus_user_signkey_user_name
-  ON gitus_user_signkey (user_name);
-  CREATE TABLE IF NOT EXISTS gitus_namespace (
+  CREATE INDEX IF NOT EXISTS idx_aegis_user_signkey_user_name
+  ON aegis_user_signkey (user_name);
+  CREATE TABLE IF NOT EXISTS aegis_namespace (
       ns_name TEXT UNIQUE,
   	ns_title TEXT,
   	ns_description TEXT,
@@ -66,11 +66,11 @@
   	-- should be tinyint.
   	-- 1 - normal (public). 2 - normal (private).
   	ns_status INT
-  	FOREIGN KEY (ns_owner) REFERENCES gitus_user(user_name)
+  	FOREIGN KEY (ns_owner) REFERENCES aegis_user(user_name)
   );
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_gitus_namespace_ns_name
-  ON gitus_namespace (ns_name);
-  CREATE TABLE IF NOT EXISTS gitus_repository (
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_aegis_namespace_ns_name
+  ON aegis_namespace (ns_name);
+  CREATE TABLE IF NOT EXISTS aegis_repository (
       -- this field is here for the constraint only, but you should
   	-- always kept it as `{namespace}:{name}`.
       repo_fullname TEXT UNIQUE,
@@ -89,7 +89,7 @@
   	repo_fork_origin_namespace TEXT
   	repo_fork_origin_name TEXT
   );
-  CREATE TABLE IF NOT EXISTS gitus_repo_redirect (
+  CREATE TABLE IF NOT EXISTS aegis_repo_redirect (
       old_ns TEXT,
       old_name TEXT,
   	new_ns TEXT,
@@ -108,9 +108,9 @@
   	-- 1 - opened.  2 - close as solved.  3 - close as discarded.
   	issue_status INTEGER,
   	FOREIGN KEY (repo_namespace, repo_name)
-        REFERENCES gitus_repository(repo_namespace, repo_name),
+        REFERENCES aegis_repository(repo_namespace, repo_name),
   	FOREIGN KEY (issue_author)
-  	  REFERENCES gitus_user(user_name)
+  	  REFERENCES aegis_user(user_name)
   );
   CREATE TABLE IF NOT EXISTS aegis_issue_event (
       issue_abs_id INTEGER,
@@ -120,7 +120,7 @@
   	issue_event_time INTEGER,
   	issue_event_author TEXT,
   	issue_event_content TEXT,
-      FOREIGN KEY (issue_abs_id) REFERENCES gitus_issue(rowid)
+      FOREIGN KEY (issue_abs_id) REFERENCES aegis_issue(rowid)
   );
 #+end_src
 
