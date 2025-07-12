@@ -2596,11 +2596,13 @@ func (dbif *SqliteAegisDatabaseInterface) SearchPullRequestPaginated(query strin
 	case 0: statusClause = ""
 	case 1: statusClause = "AND pull_request_status = 1"
 	case 2: statusClause = "AND NOT (pull_request_status = 1)"
+	case 3: statusClause = "AND pull_request_status = 2"
+	case 4: statusClause = "AND pull_request_status = 3"
 	}
 	queryClause := ""
 	if query != "" { queryClause = "AND title LIKE ? ESCAPE ?" }
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT username, pull_request_id, title, receiver_namespace, receiver_name, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+SELECT rowid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
 FROM %spull_request
 WHERE receiver_namespace = ? AND receiver_name = ? %s %s
 ORDER BY pull_request_timestamp DESC LIMIT ? OFFSET ?
@@ -2622,7 +2624,7 @@ ORDER BY pull_request_timestamp DESC LIMIT ? OFFSET ?
 		var providerNamespace, providerName, provideBranch string
 		var mergeCheckResultString string
 		var mergeCheckTimestamp int64
-		err = r.Scan(&absid, &prid, &username, &title, &receiverBranch, &providerNamespace, &providerName, &provideBranch, &mergeCheckResultString, &mergeCheckTimestamp, &status, &prtime)
+		err = r.Scan(&absid, &username, &prid, &title, &receiverBranch, &providerNamespace, &providerName, &provideBranch, &mergeCheckResultString, &mergeCheckTimestamp, &status, &prtime)
 		if err != nil { return nil, err }
 		var mergeCheckResult *gitlib.MergeCheckResult = nil
 		if len(mergeCheckResultString) > 0 {		

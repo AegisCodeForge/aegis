@@ -50,6 +50,25 @@
     padding-bottom: 1em;
 }
 
+.pull-request-search-bar {
+	display: flex;
+	height: 1.5em;
+	margin-bottom: 1em;
+	vertical-align: center;;
+}
+.pull-request-search-bar input {
+	flex: 2;
+}
+.pull-request-search-bar select {
+	width: unset;
+}
+.pull-request-search-bar input[type="submit"] {
+	margin: 0;
+	flex: unset;
+}
+.pull-request-page-nav {
+	margin-right: 1em;
+}
 .precise-time {
 	color: #ffffff7f;
 }

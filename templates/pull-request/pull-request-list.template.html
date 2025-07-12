@@ -19,22 +19,34 @@
 	<main>
 	  {{template "pull-request/_sidebar" .}}
 	  <div class="main-side">
+		<form class="pull-request-search-bar" action="" method="GET">
+		  <div class="pull-request-page-nav">
+			{{if gt .PageInfo.PageNum 1}}<a href="?q={{.Query}}&s={{.PageInfo.PageSize}}&p={{sub .PageInfo.PageNum 1}}">&lt;&lt;</a>{{end}}
+			{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}
+			{{if lt .PageInfo.PageNum .PageInfo.TotalPage}}<a href="?q={{.Query}}&s={{.PageInfo.PageSize}}&p={{add .PageInfo.PageNum 1}}">&gt;&gt;</a>{{end}}
+		  </div>
+		  <input name="q" id="q" value="{{.Query}}" placeholder="Search title..."/>
+		  <select name="f">
+			<option value="0" {{if eq .FilterType 0}}selected{{end}}>All</option>
+			<option value="1" {{if eq .FilterType 1}}selected{{end}}>Open</option>
+			<option value="2" {{if eq .FilterType 2}}selected{{end}}>Closed</option>
+			<option value="3" {{if eq .FilterType 3}}selected{{end}}>Merged</option>
+			<option value="4" {{if eq .FilterType 4}}selected{{end}}>Discarded</option>
+		  </select>
+		<input type="submit" value="Search" />
+		</form>
 		<div class="pull-request-list">
 		  {{if or (not .PullRequestList) (le (len .PullRequestList) 0) }}
 		  There is no pull request for this repository.
 		  {{else}}
 		  {{range .PullRequestList}}
 		  <div class="pull-request-list-item {{if eq .Status 1}}{{else}}pull-request-list-item-closed{{end}}">
-			<div class="pull-request-title-bar"><span class="pull-request-id">#{{.PRId}}:</span> <b>[{{if eq .Status 1}}OPEN{{else}}CLOSE{{end}}]</b> <a href="{{$repoPath}}/pull-request/{{.PRId}}"><span class="pull-request-title">{{.Title}}</span></a></div>
+			<div class="pull-request-title-bar"><span class="pull-request-id">#{{.PRId}}:</span> <b>[{{if eq .Status 1}}OPEN{{else if eq .Status 2}}MERGED{{else if eq .Status 3}}DISCARDED{{end}}]</b> <a href="{{$repoPath}}/pull-request/{{.PRId}}"><span class="pull-request-title">{{.Title}}</span></a></div>
 			<div class="pull-request-desc-bar"><a href="/u/{{.Author}}" class="pull-request-author">{{.Author}}</a> @ {{toFuzzyTime .Timestamp}}</div>
 			<div class="precise-time">{{toPreciseTime .Timestamp}}</div>
 		  </div>
 		  {{end}}
 		  {{end}}
-		</div>
-		<div>
-		  {{if gt .PageNum 1}}<a href="?p={{sub .PageNum 1}}">Previous Page</a>{{end}}
-		  <a href="?p={{add .PageNum 1}}">Next Page</a>
 		</div>
 	  </div>
 	</main>

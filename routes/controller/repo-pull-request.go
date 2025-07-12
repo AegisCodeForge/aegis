@@ -27,10 +27,32 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		pnstr := r.URL.Query().Get("p")
-		pn, err := strconv.ParseInt(pnstr, 10, 64)
-		if err != nil { pn = 1 }
-		prList, err := ctx.DatabaseInterface.GetAllPullRequestPaginated(s.Namespace, s.Name, int(pn-1), 30)
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		pStr := strings.TrimSpace(r.URL.Query().Get("p"))
+		sStr := strings.TrimSpace(r.URL.Query().Get("s"))
+		fStr := strings.TrimSpace(r.URL.Query().Get("f"))
+		p64, err := strconv.ParseInt(pStr, 10, 64)
+		if err != nil { p64 = 1 }
+		ps, err := strconv.ParseInt(sStr, 10, 64)
+		if err != nil { ps = 30 }
+		f, err := strconv.ParseInt(fStr, 10, 64)
+		if err != nil { f = 0 }
+		count, err := ctx.DatabaseInterface.CountPullRequest(q, s.Namespace, s.Name, int(f))
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		pageCount := int(count) / int(ps)
+		if (int(count) % int(ps)) > 0 { pageCount += 1 }
+		p := int(p64)
+		if p < 1 { p = 1 }
+		if p > pageCount { p = pageCount }
+		pageInfo := &templates.PageInfoModel{
+			PageNum: int(p),
+			PageSize: int(ps),
+			TotalPage: pageCount,
+		}
+		prList, err := ctx.DatabaseInterface.SearchPullRequestPaginated(q, s.Namespace, s.Name, int(f), int(p-1), int(ps))
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -48,7 +70,9 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			},
 			LoginInfo: loginInfo,
 			PullRequestList: prList,
-			PageNum: int(pn),
+			PageInfo: pageInfo,
+			Query: q,
+			FilterType: int(f),
 		}))
 	}))
 	

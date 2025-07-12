@@ -62,11 +62,10 @@
 	margin: 0;
 	flex: unset;
 }
-
-.precise-time {
-	color: #ffffff7f;
-}
 .issue-page-nav {
 	margin-right: 1em;
 }
 
+.precise-time {
+	color: #ffffff7f;
+}
