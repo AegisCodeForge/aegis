@@ -1864,11 +1864,12 @@ INSERT INTO %sissue_event(issue_abs_id, issue_event_type, issue_event_time, issu
 	_, err = stmt2.Exec(issueAbsId, eType, time.Now().Unix(), author, content)
 	if err != nil { return err }
 	newIssueStatus := issueStatus
-	if eType == model.EVENT_CLOSED_AS_SOLVED {
+	switch eType {
+	case model.EVENT_CLOSED_AS_SOLVED:
 		newIssueStatus = model.ISSUE_CLOSED_AS_SOLVED
-	} else if eType == model.EVENT_CLOSED_AS_DISCARDED {
-		newIssueStatus = model.ISSUE_CLOSED_AS_SOLVED
-	} else if eType == model.EVENT_REOPENED {
+	case model.EVENT_CLOSED_AS_DISCARDED:
+		newIssueStatus = model.ISSUE_CLOSED_AS_DISCARDED
+	case model.EVENT_REOPENED:
 		newIssueStatus = model.ISSUE_OPENED
 	}
 	if newIssueStatus != issueStatus {
@@ -2090,6 +2091,100 @@ ORDER BY pull_request_id ASC LIMIT ? OFFSET ?
 			Status: status,
 			MergeCheckResult: mergeCheckResult,
 			MergeCheckTimestamp: mergeCheckTimestamp,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountIssue(query string, namespace string, name string, filterType int) (int, error) {
+	pfx := dbif.config.Database.TablePrefix
+	statusClause := ""
+	switch filterType {
+    case 1: statusClause = "issue_status = 1"
+	case 2: statusClause = "NOT (issue_status = 1)"
+	case 3: statusClause = "issue_status = 2"
+	case 4: statusClause = "issue_status = 3"
+	}
+	queryClause := ""
+	if query == "" {
+		queryClause = "issue_title LIKE ? ESCAPE ?"
+	}
+	condition := ""
+	if statusClause == "" {
+		if queryClause == "" {
+		} else {
+			condition = fmt.Sprintf("WHERE %s", queryClause)
+		}
+	} else {
+		if queryClause == "" {
+			condition = fmt.Sprintf("WHERE %s", statusClause)
+		} else {
+			condition = fmt.Sprintf("WHERE %s AND %s", queryClause, statusClause)
+		}
+	}
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %sissue %s
+`, pfx, condition))
+	if err != nil { return 0, err }
+	var cnt int
+	var r *sql.Row
+	if queryClause == "" {
+		r = stmt1.QueryRow()
+	} else {
+		queryPattern := ToSqlSearchPattern(query)
+		r = stmt1.QueryRow(queryPattern, "\\")
+	}
+	if r.Err() != nil { return 0, r.Err() }
+	err = r.Scan(&cnt)
+	if err != nil { return 0, err }
+	return cnt, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.Issue, error) {
+	pfx := dbif.config.Database.TablePrefix
+	statusClause := ""
+	switch filterType {
+    case 1: statusClause = "AND issue_status = 1"
+	case 2: statusClause = "AND NOT (issue_status = 1)"
+	case 3: statusClause = "AND issue_status = 2"
+	case 4: statusClause = "AND issue_status = 3"
+	}
+	queryClause := ""
+	if query != "" {
+		queryClause = "AND issue_title LIKE ? ESCAPE ?"
+	}
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, issue_id, issue_author, issue_status, issue_title, issue_content, issue_timestamp
+FROM %sissue
+WHERE repo_namespace = ? AND repo_name = ? %s %s
+ORDER BY issue_timestamp DESC LIMIT ? OFFSET ?
+`, pfx, statusClause, queryClause))
+	if err != nil { return nil, err }
+	var r *sql.Rows
+	if queryClause == "" {
+		r, err = stmt1.Query(namespace, name, pageSize, pageNum*pageSize)
+	} else {
+		queryPattern := ToSqlSearchPattern(query)
+		r, err = stmt1.Query(namespace, name, queryPattern, "\\", pageSize, pageNum*pageSize)
+	}
+	if err != nil { return nil, err }
+	res := make([]*model.Issue, 0)
+	for r.Next() {
+		var issueAbsId, issueTimestamp int64
+		var issueId, issueStatus int
+		var issueAuthor, issueTitle, issueContent string
+		err = r.Scan(&issueAbsId, &issueId, &issueAuthor, &issueStatus, &issueTitle, &issueContent, &issueTimestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.Issue{
+			IssueAbsId: issueAbsId,
+			RepoNamespace: namespace,
+			RepoName: name,
+			IssueStatus: issueStatus,
+			IssueId: issueId,
+			IssueTime: issueTimestamp,
+			IssueTitle: issueTitle,
+			IssueAuthor: issueAuthor,
+			IssueContent: issueContent,
 		})
 	}
 	return res, nil

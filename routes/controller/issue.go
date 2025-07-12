@@ -21,11 +21,33 @@ func bindIssueController(ctx *routes.RouterContext) {
 			return
 		}
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
-		issueList, err := ctx.DatabaseInterface.GetAllRepositoryIssue(nsName, repoName)
+		q := strings.TrimSpace(r.URL.Query().Get("q"))
+		pStr := strings.TrimSpace(r.URL.Query().Get("p"))
+		sStr := strings.TrimSpace(r.URL.Query().Get("s"))
+		fStr := strings.TrimSpace(r.URL.Query().Get("f"))
+		p64, err := strconv.ParseInt(pStr, 10, 64)
+		if err != nil { p64 = 1 }
+		s, err := strconv.ParseInt(sStr, 10, 64)
+		if err != nil { s = 30 }
+		f, err := strconv.ParseInt(fStr, 10, 64)
+		if err != nil { f = 0 }
+		count, err := ctx.DatabaseInterface.CountIssue(q, nsName, repoName, int(f))
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		pageCount := int(count) / int(s)
+		if (int(count) % int(s)) > 0 { pageCount += 1 }
+		p := int(p64)
+		if p < 1 { p = 1 }
+		if p > pageCount { p = pageCount }
+		pageInfo := &templates.PageInfoModel{
+			PageNum: int(p),
+			PageSize: int(s),
+			TotalPage: pageCount,
+		}
+		issueList, err := ctx.DatabaseInterface.SearchIssuePaginated(q, nsName, repoName, int(f), int(p-1), int(s))
+		for _, k := range issueList { fmt.Println("k", k, k.IssueStatus) }
 		routes.LogTemplateError(ctx.LoadTemplate("issue/issue-list").Execute(w, &templates.RepositoryIssueListTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
@@ -33,6 +55,9 @@ func bindIssueController(ctx *routes.RouterContext) {
 			LoginInfo: loginInfo,
 			ErrorMsg: "",
 			IssueList: issueList,
+			PageInfo: pageInfo,
+			FilterType: int(f),
+			Query: q,
 		}))
 	}))
 
@@ -82,8 +107,7 @@ func bindIssueController(ctx *routes.RouterContext) {
 		title := r.Form.Get("title")
 		content := r.Form.Get("content")
 		iid, err := ctx.DatabaseInterface.NewRepositoryIssue(nsName, repoName, loginInfo.UserName, title, content)
-		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/issue/%d", rfn, iid), 3, "Issue Created", "The issue has been created.", w, r)
-		return
+		routes.FoundAt(w, fmt.Sprintf("/repo/%s/issue/%d", rfn, iid))
 	}))
 	
 	http.HandleFunc("GET /repo/{repoName}/issue/{id}", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {

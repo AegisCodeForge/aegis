@@ -19,6 +19,22 @@
 	<main>
 	  {{template "issue/_sidebar" .}}
 	  <div class="main-side">
+		<form class="issue-search-bar" action="" method="GET">
+		  <div class="issue-page-nav">
+			{{if gt .PageInfo.PageNum 1}}<a href="?q={{.Query}}&s={{.PageInfo.PageSize}}&p={{sub .PageInfo.PageNum 1}}">&lt;&lt;</a>{{end}}
+			{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}
+			{{if lt .PageInfo.PageNum .PageInfo.TotalPage}}<a href="?q={{.Query}}&s={{.PageInfo.PageSize}}&p={{add .PageInfo.PageNum 1}}">&gt;&gt;</a>{{end}}
+		  </div>
+		  <input name="q" id="q" value="{{.Query}}" placeholder="Search title..."/>
+		  <select name="f">
+			<option value="0" {{if eq .FilterType 0}}selected{{end}}>All</option>
+			<option value="1" {{if eq .FilterType 1}}selected{{end}}>Open</option>
+			<option value="2" {{if eq .FilterType 2}}selected{{end}}>Closed</option>
+			<option value="3" {{if eq .FilterType 3}}selected{{end}}>Solved</option>
+			<option value="4" {{if eq .FilterType 4}}selected{{end}}>Discarded</option>
+		  </select>
+		<input type="submit" value="Search" />
+		</form>
 		<div class="issue-list">
 		  {{if or (not .IssueList) (le (len .IssueList) 0) }}
 		  There is no issue for this repository.

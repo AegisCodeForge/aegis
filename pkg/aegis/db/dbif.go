@@ -95,6 +95,10 @@ type AegisDatabaseInterface interface {
 	GetAllRepositoryIssue(ns string, name string) ([]*model.Issue, error)
 	GetRepositoryIssue(ns string, name string, iid int) (*model.Issue, error)
 	CountAllRepositoryIssue(ns string, name string) (int, error)
+	// filterType: 0 - all, 1 - open, 2 - closed, 3 - solved, 4 - discarded
+	// when query = "" it looks for all issue.
+	CountIssue(query string, namespace string, name string, filterType int) (int, error)
+	SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.Issue, error)
 	// returns the issue_id of the new issue.
 	NewRepositoryIssue(ns string, name string, author string, title string, content string) (int64, error)
 	HardDeleteRepositoryIssue(ns string, name string, issueId int) error
