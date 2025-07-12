@@ -128,7 +128,7 @@ type AegisDatabaseInterface interface {
 	CommentOnPullRequestCode(absId int64, comment *model.PullRequestCommentOnCode) (*model.PullRequestEvent, error)
 	ClosePullRequestAsNotMerged(absid int64, author string) error
 	ReopenPullRequest(absid int64, author string) error
-	// filterType: 0 - all, 1 - open, 2 - closed
+	// filterType: 0 - all, 1 - open, 2 - closed, 3 - merged, 4 - discarded
 	// when query = "" it looks for all pull request.
 	CountPullRequest(query string, namespace string, name string, filterType int) (int, error)
 	SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.PullRequest, error)

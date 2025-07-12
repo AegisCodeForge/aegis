@@ -12,6 +12,8 @@ type RepositoryPullRequestListTemplateModel struct {
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
 	PullRequestList []*model.PullRequest
-	PageNum int
+	PageInfo *PageInfoModel
+	Query string
+	FilterType int
 }
 
