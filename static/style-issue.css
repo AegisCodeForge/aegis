@@ -46,8 +46,27 @@
 	font-size: 1.5em;
 	font-weight: bold;
 }
+.issue-search-bar {
+	display: flex;
+	height: 1.5em;
+	margin-bottom: 1em;
+	vertical-align: center;;
+}
+.issue-search-bar input {
+	flex: 2;
+}
+.issue-search-bar select {
+	width: unset;
+}
+.issue-search-bar input[type="submit"] {
+	margin: 0;
+	flex: unset;
+}
 
 .precise-time {
 	color: #ffffff7f;
+}
+.issue-page-nav {
+	margin-right: 1em;
 }
 

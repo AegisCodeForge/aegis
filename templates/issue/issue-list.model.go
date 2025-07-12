@@ -12,5 +12,8 @@ type RepositoryIssueListTemplateModel struct {
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
 	IssueList []*model.Issue
+	PageInfo *PageInfoModel
+	Query string
+	FilterType int
 }
 
