@@ -18,10 +18,11 @@ type SSHKeyManagingContext struct {
 	notManaged []string
 }
 
+var reParseKey = regexp.MustCompile("\\s*command=\"aegis ssh ([^ ]*) ([^ ]*)\"\\s*(.*)")	
 func parseKey(s string) (bool, string, string, string, error) {
 	// we expect all keys managed by aegis should have the prefix
 	//     command="aegis ssh {username} {keyname}"
-	var r, err = regexp.Compile("\\s*command=\"aegis ssh ([^ ]*) ([^ ]*)\"\\s*(.*)")	
+	r := reParseKey
 	if err != nil { return false, "", "", "", err }
 	k := r.FindSubmatch([]byte(s))
 	if len(k) <= 0 { return false, "", "", "", nil }
@@ -117,3 +118,4 @@ func (ctx *SSHKeyManagingContext) GetAuthorizedKey(username string, keyname stri
 	if !ok { return "" }
 	return s
 }
+
