@@ -53,25 +53,26 @@ func processQuotedValueString(s string) string {
 	return res.String()
 }
 
+var reQuotedContinuedLine = regexp.MustCompile("^\\s*(.*?)((?:\\\\\\s*|\"\\s*(?:[#;].*)))$")
+
 func parseQuotedContinuedLine(line string) (string, bool, error) {
 	// [content] [\] ====> [content] (continued)
 	// [content] ["] [comment?] ====> [content] (ended)
 	// * ====> syntax error
-	re, err := regexp.Compile("^\\s*(.*?)((?:\\\\\\s*|\"\\s*(?:[#;].*)))$")
-	if err != nil { return "", false, err }
+	re := reQuotedContinuedLine
 	vs := re.FindStringSubmatch(line)
 	if strings.HasPrefix(vs[2], "\\") { return processQuotedValueString(vs[1]), true, nil }
 	if strings.HasPrefix(vs[2], "\"") { return processQuotedValueString(vs[1]), false, nil }
 	return "", false, errors.New("Line failed to explicitly end or continue.")
 }
 
+var reContinuedLine = regexp.MustCompile(`^\s*(.*?)(\s*)(\\?)\s*(?:[#;].*)?$`)
 func parseContinuedLine(line string) (string, bool, error) {
 	//  [content] [comment?]  ====>  [content] (ended)
 	//  [content] [ws] [comment?]  ====>  [content] (ended)
 	//  [content] [\] [comment?]  ====>  [content] (ended)
 	//  [content] [ws] [\] [comment?]  ====>  [content] [ws] (continued)
-	re, err := regexp.Compile("^\\s*(.*?)(\\s*)(\\\\?)\\s*(?:[#;].*)?$")
-	if err != nil { return "", false, err }
+	re := reContinuedLine
 	vs := re.FindStringSubmatch(line)
 	continued := len(vs[3]) <= 0
 	if len(vs[2]) <= 0 {
@@ -87,14 +88,14 @@ func parseContinuedLine(line string) (string, bool, error) {
 	}
 }
 
+var reProcessHeaderQuotedString = regexp.MustCompile(`\\(.)`)
 func processHeaderQuotedString(s string) (string, error) {
-	re, err := regexp.Compile("\\\\(.)")
-	if err != nil { return "", err }
+	re := reProcessHeaderQuotedString
 	return re.ReplaceAllString(s, "$1"), nil
 }
+var reHeader = regexp.MustCompile("^\\s*\\[\\s*([a-zA-Z0-9-.]+?)(?:\\.([a-zA-Z0-9-.]+)|\\s+\"((?:[^\\\"]|\\\\|\\\")*)\")?\\s*\\]\\s*(?:[#;].*)?$")
 func parseHeader(line string) (string, string, error) {
-	re, err := regexp.Compile("^\\s*\\[\\s*([a-zA-Z0-9-.]+?)(?:\\.([a-zA-Z0-9-.]+)|\\s+\"((?:[^\\\"]|\\\\|\\\")*)\")?\\s*\\]\\s*(?:[#;].*)?$")
-	if err != nil { return "", "", err }
+	re := reHeader
 	v := re.FindStringSubmatch(line)
 	if len(v[2]) <= 0 {
 		r, err := processHeaderQuotedString(v[3])
@@ -104,6 +105,9 @@ func parseHeader(line string) (string, string, error) {
 		return v[1], v[2], nil
 	}
 }
+var reKVPairLine = regexp.MustCompile(`^\s*([a-zA-Z0-9-.]+)\s*(?:(=)\s*(.*)|([#;].*))?\s*$`)
+var reKVPairLine2 = regexp.MustCompile("^\\s*([^\"].*?)(?:(\\\\)\\s*|[#;].*)$")
+var reKVPairLine3 = regexp.MustCompile("^\\s*(\\\")((?:[^\"\\\\]|\\\\\"|\\\\\\\\)*)(?:(\")(?:[#;].*)?|(\\\\)\\s*)")
 func parseKVPairLine(line string) (string, string, bool, bool, error) {
 	// return value: key, value (first line), quoted, continued, error
 	// [key] [comment?] ==> [key], "true", unquoted, ended
@@ -113,15 +117,13 @@ func parseKVPairLine(line string) (string, string, bool, bool, error) {
 	// [key] [=] ["] [value] *  ==> syntax error: quoted value
 	// * ==> syntax error
 	// 1.  check for [key] and [=]
-	re, err := regexp.Compile("^\\s*([a-zA-Z0-9-.]+)\\s*(?:(=)\\s*(.*)|([#;].*))?\\s*$")
-	if err != nil { return "", "", false, false, err }
+	re := reKVPairLine
 	v := re.FindStringSubmatch(line)
 	if len(v[2]) <= 0 { return v[1], v[1], false, false, nil }
 	key := v[1]
 	subj := v[3]
 	// 2.  check that if there's no ["]
-	re2, err := regexp.Compile("^\\s*([^\"].*?)(?:(\\\\)\\s*|[#;].*)$")
-	if err != nil { return "", "", false, false, err }
+	re2 := reKVPairLine2
 	v = re2.FindStringSubmatch(subj)
 	quoted := false
 	continued := false
@@ -130,13 +132,12 @@ func parseKVPairLine(line string) (string, string, bool, bool, error) {
 		return key, v[1], quoted, continued, nil
 	}
 	// 3. check for ["]
-	re3, err := regexp.Compile("^\\s*(\\\")((?:[^\"\\\\]|\\\\\"|\\\\\\\\)*)(?:(\")(?:[#;].*)?|(\\\\)\\s*)")
-	if err != nil { return "", "", false, false, err }
+	re3 := reKVPairLine3
 	v = re3.FindStringSubmatch(subj)
 	if len(v) <= 0 {
 		return key, strings.TrimSpace(subj), false, false, nil
 	}
-	if len(v[1]) < 0 { return "", "", false, false, errors.New("Invalid syntax") }
+	if len(v[1]) <= 0 { return "", "", false, false, errors.New("Invalid syntax") }
 	if len(v[3]) > 0 {
 		// the value is ending within this line.
 		return key, processQuotedValueString(v[2]), true, false, nil

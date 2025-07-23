@@ -10,6 +10,6 @@ type DiffTemplateModel struct {
 	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	CommitInfo CommitInfoTemplateModel
-	Diff string
+	Diff *gitlib.Diff
 	LoginInfo *LoginInfoModel
 }

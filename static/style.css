@@ -7,6 +7,7 @@
 :root {
 	--foreground-color: white;
 	--background-color: #1f1f1f;;
+	--white-shade-degree-0: #ffffff1f;
 	--white-shade-degree-1: #ffffff3f;
 	--white-shade-degree-2: #ffffff7f;
 	--white-shade-degree-3: #ffffffbf;
@@ -249,10 +250,6 @@ hr {
 }
 .repo-clone-address-tf:target {
 	display: inherit;
-}
-:target {
-	background-color: var(--foreground-color);
-	color: var(--background-color);
 }
 .header-clone-address input {
 	background-color: var(--background-color);
