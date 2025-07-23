@@ -32,7 +32,7 @@ func parseAuthorTime(s string) AuthorTime {
 		AuthorEmail: "",
 		Time: time.Unix(0, 0),
 	}
-	re = reAuthorTime
+	re := reAuthorTime
 	matchres := re.FindSubmatch([]byte(s))
 	if len(matchres) <= 0 {
 		log.Fatalf("Cannot parse author-time: %s\n", s)

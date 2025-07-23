@@ -23,7 +23,6 @@ func parseKey(s string) (bool, string, string, string, error) {
 	// we expect all keys managed by aegis should have the prefix
 	//     command="aegis ssh {username} {keyname}"
 	r := reParseKey
-	if err != nil { return false, "", "", "", err }
 	k := r.FindSubmatch([]byte(s))
 	if len(k) <= 0 { return false, "", "", "", nil }
 	return true, string(k[1]), string(k[2]), string(k[3]), nil

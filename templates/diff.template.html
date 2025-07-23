@@ -16,11 +16,65 @@
 	
 	<hr />
 
-	<pre>{{if .Diff}}{{.Diff}}{{else}}No diff available.{{end}}</pre>
+	{{if .Diff}}
+	{{range $i, $k := .Diff.ItemList}}
+	<div id="I{{$i}}" class="diff-item">
+	  <div class="diff-item-link"><a href="#I{{$i}}">#</a></div>
+	  <div class="diff-item-header">
+		<div>From: <span class="diff-item-header-from">{{$k.File1}}</span></div>
+		<div>To: <span class="diff-item-header-to">{{$k.File2}}</span></div>
+	  </div>
+	  <div class="diff-item-patch-list">
+		{{range $kk := $k.PatchList}}
+		<div class="diff-item-patch">
+		  <div class="diff-item-patch-header">
+			<span class="diff-item-patch-range">{{$kk.LStart}} ({{$kk.LLineCount}}) - {{$kk.RStart}} ({{$kk.RLineCount}})</span>
+		  </div>
+		  <div class="diff-item-patch-table">
+			<div class="diff-item-line-number-panel">
+			  {{range $l := $kk.LineList}}
+			  {{$t := ""}}
+			  {{if eq $l.Type 1}}{{$t = "append"}}{{else if eq $l.Type 2}}{{$t = "delete"}}{{else if eq $l.Type 4}}{{$t = "same"}}{{else}}{{$t = "same"}}{{end}}
+			  <div class="diff-item-line-number-pair diff-item-line-number-pair-{{$t}}">
+				{{if or (eq $l.Type 4) (eq $l.Type 2)}}
+				<div class="diff-item-line-number diff-item-line-number-{{$t}}">{{$l.F1LineNum}}</div>
+				{{else}}
+				<div class="diff-item-line-number">
+				  &nbsp;
+				</div>
+				{{end}}
+				{{if or (eq $l.Type 4) (eq $l.Type 1)}}
+				<div class="diff-item-line-number diff-item-line-number-{{$t}}">{{$l.F2LineNum}}</div>
+				{{else}}
+				<div class="diff-item-line-number">
+				  &nbsp;
+				</div>
+				{{end}}
+			  </div>
+			  {{end}}
+			</div>
+			
+			<div class="diff-item-line">
+			  {{range $l := $kk.LineList}}
+			  {{$t := ""}}
+			  {{if eq $l.Type 1}}{{$t = "append"}}{{else if eq $l.Type 2}}{{$t = "delete"}}{{else if eq $l.Type 4}}{{$t = "same"}}{{else}}{{$t = "same"}}{{end}}
+			  <div class="diff-item-content-line-content diff-item-content-line-content-{{$t}}">{{$l.Line}}</div>
+			  {{end}}
+			</div>
+		  </div>
+		</div>
+
+		{{end}}
+	  </div>
+	</div>
+	{{end}}
+	{{else}}
+	<p>No diff available.</p>
+	{{end}}
 	
 	<hr />
 	<footer>
-	  <a href="{{getRepoPath .RepoHeaderInfo.RepoName}}">Back (Repository)</a>
+	  <a href="{{getRepoPath .Repository.Namespace .Repository.Name}}">Back (Repository)</a>
 	  <a href="/">Back (Depot)</a>
 	  {{template "_footer"}}
 	</footer>
