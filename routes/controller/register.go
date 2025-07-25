@@ -52,6 +52,26 @@ func bindRegisterController(ctx *routes.RouterContext) {
 		}
 		userName := r.Form.Get("username")
 		email := r.Form.Get("email")
+
+		// username & ns name check.
+		_, err = ctx.DatabaseInterface.GetUserByName(userName)
+		if err == nil {
+			routes.LogTemplateError(ctx.LoadTemplate("registration").Execute(w, &templates.RegistrationTemplateModel{
+				Config: ctx.Config,
+				LoginInfo: nil,
+				ErrorMsg: "Username/Namespace name already exists. Please try another name.",
+			}))
+			return
+		}
+		_, err = ctx.DatabaseInterface.GetNamespaceByName(userName)
+		if err == nil {
+			routes.LogTemplateError(ctx.LoadTemplate("registration").Execute(w, &templates.RegistrationTemplateModel{
+				Config: ctx.Config,
+				LoginInfo: nil,
+				ErrorMsg: "Username/Namespace name already exists. Please try another name.",
+			}))
+			return
+		}
 		password := r.Form.Get("password")
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
@@ -87,8 +107,6 @@ We wish you all the best in your future endeavours.
 %s
 `, ctx.Config.DepotName, ctx.Config.ProperHTTPHostName(), rid, ctx.Config.DepotName)
 			err = ctx.Mailer.SendPlainTextMail(email, title, body)
-			fmt.Println("title", title)
-			fmt.Println("body", body)
 			if err != nil {
 				routes.LogTemplateError(ctx.LoadTemplate("registration").Execute(w, &templates.RegistrationTemplateModel{
 					Config: ctx.Config,
