@@ -2,7 +2,6 @@ package log
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
@@ -14,19 +15,43 @@ func bindRepositoryForkController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/fork", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if ctx.Config.PlainMode {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/private-notice")
+				return
+			}
 			FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
+		}
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		_, _, _, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
 			return
 		}
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -41,7 +66,7 @@ func bindRepositoryForkController(ctx *RouterContext) {
 			return
 		}
 		if (!ctx.Config.UseNamespace) {
-			if fr != nil && len(fr) > 0 {
+			if len(fr) > 0 {
 				FoundAt(w, fmt.Sprintf("/repo/%s", fr[0].FullName()))
 				return
 			}
@@ -74,8 +99,37 @@ func bindRepositoryForkController(ctx *RouterContext) {
 	http.HandleFunc("POST /repo/{repoName}/fork", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if ctx.Config.PlainMode {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/private-notice")
+				return
+			}
 			FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
+		}
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		originNs, originName, _, _, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == ErrNotFound {
@@ -86,22 +140,6 @@ func bindRepositoryForkController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		/*
-		fr, err := ctx.DatabaseInterface.GetForkRepositoryOfUser(loginInfo.UserName, s.Namespace, s.Name)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if fr != nil {
-			FoundAt(w, fmt.Sprintf("/repo/%s", fr.FullName()))
-			return
-		}
-		*/
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportNormalError("Invalid request", w, r)

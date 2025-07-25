@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -14,7 +15,7 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter, r *http.Request) error {
+func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) error {
 	// would resolve tags that point to tags.
 	subj := obj
 	var err error = nil
@@ -27,7 +28,7 @@ func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string
 		repo.Namespace, repo.Name, branchName,
 	)
 	if subj.Type() == gitlib.TREE {
-		return responseWithTreeZip(repo, obj, filename, w, r)
+		return responseWithTreeZip(repo, obj, filename, w)
 	} else {
 		w.Write(subj.RawData())
 		return nil
@@ -37,6 +38,32 @@ func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string
 func bindTagController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tag/{tagId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		var err error
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				if !ctx.Config.PlainMode {
+					FoundAt(w, "/login")
+				} else {
+					FoundAt(w, "/private-notice")
+				}
+				return
+			}
+		}
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
@@ -46,16 +73,10 @@ func bindTagController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-
-		var loginInfo *templates.LoginInfoModel = nil
 		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
 			loginInfo.IsOwner = repo.Owner == loginInfo.UserName || ns.Owner == loginInfo.UserName
 		}
+
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 			if t == nil {
@@ -104,7 +125,7 @@ func bindTagController(ctx *RouterContext) {
 		}
 
 		if r.URL.Query().Has("snapshot") {
-			handleTagSnapshotRequest(repo.Repository, tagName, tobj, w, r)
+			handleTagSnapshotRequest(repo.Repository, tagName, tobj, w)
 			return
 		}
 

@@ -1,0 +1,28 @@
+* global visibility mode
+
+four modes: public, private, shutdown and maintenance.
+
+this settings affect plain mode as well. w/ plain mode, private, shutdown and maintenance are effectively the same, since their difference depends on the user system, which an instance w/ plain mode doesn't have, although aegis would still redirect to the corresponding route. the combination of plain mode + global private mode would lead to the use of the lesser-used route of "/private-notice" (non-plain mode + global private mode would lead visitors to "/login" instead).
+
+** private
+
++ http clone wouldn't work
++ ssh clone works.
++ user registration allowed.
++ user login allowed.
+
+** shutdown
+
++ http clone wouldn't work
++ ssh clone works
++ user registration not allowed.
++ only user login endpoint allowed
+  + endpoint accessible but restricted to pre-config-ed users
+
+** maintenance
+
++ http clone wouldn't work
++ ssh clone wouldn't work
++ no endpoint accessible
+
+

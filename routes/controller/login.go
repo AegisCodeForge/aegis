@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/session"
 	. "github.com/bctnry/aegis/routes"
@@ -13,6 +14,10 @@ import (
 
 func bindLoginController(ctx *RouterContext) {
 	http.HandleFunc("GET /login", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			FoundAt(w, "/maintenance-notice")
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			loginInfo.LoggedIn = false
@@ -22,10 +27,14 @@ func bindLoginController(ctx *RouterContext) {
 		LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 			Config: ctx.Config,
 			LoginInfo: loginInfo,
-		}))
+ 		}))
 	}))
 
 	http.HandleFunc("POST /login", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			FoundAt(w, "/maintenance-notice")
+			return
+		}
 		err := r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)

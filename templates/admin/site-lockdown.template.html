@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Site Lockdown :: Admin :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="setting-main main-side">
+		<h2>Current mode of operation</h2>
+		<div>
+		  <p>This instance is currently running in <span style="background-color:var(--foreground-color);color:var(--background-color)">{{.CurrentMode}}</span> mode.</p>
+		</div>
+		
+		<h2>Set to Public Mode</h2>
+		<div>
+		  <form action="" method="POST">
+			<input type="hidden" name="type" value="public" />
+			<input type="submit" value="Set to Public mode" />
+		  </form>
+		</div>
+		
+		<h2>Set to Private Mode</h2>
+		
+		<div class="setting-section">
+		  <form action="" method="POST">
+			<input type="hidden" name="type" value="private" />
+			<p>Under Private Mode, users cannot visit public namespaces and repositories without login; they cannot clone through HTTP either. All other functionalities work the same.</p>
+			<label class="field-label" for="private-notice-message">Message:</label>
+			<textarea name="private-notice-message" id="private-notice-message">{{.PrivateNoticeMessage}}</textarea>
+			<input type="submit" value="Set to Private mode" />
+		  </form>
+		</div>
+
+		<h2>Set to Shutdown Mode</h2>
+		<div class="setting-section">
+		  <form action="" method="POST">
+			<input type="hidden" name="type" value="shutdown" />
+			<p>Under Shutdown Mode, users:</p>
+			<ul>
+			  <li>cannot visit public namespaces/repositories;</li>
+			  <li>cannot clone through HTTP;</li>
+			  <li>cannot push/pull through SSH;</li>
+			  <li>cannot login, unless they are in the Full Access User list.</li>
+			</ul>
+			<label class="field-label" for="full-access-user">Full access user:</label>
+			<input class="field-tf" name="full-access-user" id="full-access-user" value="{{htmlEscape .FullAccessUser}}" />
+			<label class="field-label" for="shutdown-notice-message">Message:</label>
+			<textarea name="shutdown-notice-message" id="shutdown-notice-message">{{.ShutdownNoticeMessage}}</textarea>
+			<input type="submit" value="Set to Shutdown mode" />
+		  </form>
+		</div>
+
+
+		<h2>Set to Maintenance Mode</h2>
+		<div class="setting-section">
+		  <form action="" method="POST">
+			<input type="hidden" name="type" value="maintenance" />
+			<p>Under Maintenance Mode, all functionalities won't work. This is reserved for administrators who need to perform work directly on the server the instance resides.</p>
+			<label class="field-label" for="maintenance-notice-message">Message:</label>
+			<textarea name="maintenance-notice-message" id="maintenance-notice-message">{{.MaintenanceNoticeMessage}}</textarea>
+			<input type="submit" value="Set to Maintenance mode" />
+		  </form>
+		</div>
+
+				
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

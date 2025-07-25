@@ -24,7 +24,7 @@ import (
 const passchdict = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%_-"
 func mkpass() string {
 	res := make([]byte, 0)
-	for _ = range 16 {
+	for range 16 {
 		res = append(res, passchdict[rand.Intn(len(passchdict))])
 	}
 	return string(res)

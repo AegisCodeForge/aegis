@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Shutdown Mode :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+      <h1 class="header-name">Shutdown Mode</h1>
+	</header>
+    <hr />
+
+	<div class="message">
+	  <p>This instance is currently under Shutdown Mode. Please check again later.</p>
+	  <p>Message from administrators:</p>
+	  <blockquote>
+		<p>{{if le (len .Message) 0}}<i>No message available</i>{{else}}{{.Message}}{{end}}</p>
+	  </blockquote>
+	</div>
+
+	<hr />
+	<footer>
+	  <a href="/">Back to Depot</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+
+

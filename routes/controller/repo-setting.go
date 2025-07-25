@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
@@ -14,9 +15,28 @@ import (
 
 func bindRepositorySettingController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request){
-		
 		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
+		
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -26,19 +46,14 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		if repo == nil {
-			ctx.ReportNotFound(repo.Name, "Repository", repo.Namespace, w, r)
+			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
+		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 		// NOTE: we don't support editing namespace from web ui when in plain mode.
 		if ctx.Config.PlainMode { FoundAt(w, repoPath); return }
 		
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
@@ -64,6 +79,24 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("POST /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
@@ -79,14 +112,8 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-			
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-
+			
 		isRepoOwner := repo.Owner == loginInfo.UserName
 		isNsOwner := ns.Owner == loginInfo.UserName
 		loginInfo.IsOwner = isRepoOwner || isNsOwner
@@ -133,7 +160,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				LoginInfo: loginInfo,
 				Repository: repo,
 				RepoFullName: rfn,
-				ErrorMsg: fmt.Sprintf("Invalid status value. Please try again."),
+				ErrorMsg: "Invalid status value. Please try again.",
 			}))
 			return
 		}
@@ -144,7 +171,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				LoginInfo: loginInfo,
 				Repository: repo,
 				RepoFullName: rfn,
-				ErrorMsg: fmt.Sprintf("Not enough privilege."),
+				ErrorMsg: "Not enough privilege.",
 			}))
 			return
 		}
@@ -171,6 +198,24 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
@@ -186,14 +231,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
-		// NOTE: we don't support editing namespace from web ui when in plain mode.
-		if ctx.Config.PlainMode { FoundAt(w, repoPath); return }
-		
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 
 		isRepoOwner := repo.Owner == loginInfo.UserName
@@ -226,6 +263,24 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
@@ -241,11 +296,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
@@ -297,6 +347,24 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 	
 	http.HandleFunc("POST /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
@@ -312,12 +380,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-		
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
@@ -374,6 +436,24 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
@@ -389,12 +469,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
@@ -437,6 +511,24 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("POST /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
@@ -452,12 +544,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			return
 		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
 		
 		isRepoOwner := repo.Owner == loginInfo.UserName
@@ -510,358 +596,5 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		FoundAt(w, fmt.Sprintf("/repo/%s/member", rfn))
 	}))
 
-	/*
-	http.HandleFunc("GET /repo/{repoName}/hooks", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
-		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
-				"Not enough permission",
-				"You don't have enough permission to change the settings of this repository.",
-				w, r,
-			)
-			return
-		}
-		rs, err := repo.Repository.GetAllSetHooksName()
-		errMsg := ""
-		if err != nil {
-			errMsg = fmt.Sprintf("Failed to read hooks: %s", err.Error())
-			rs = nil
-		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/hook-list").Execute(w, templates.RepositorySettingHookListTemplateModel{
-			Config: ctx.Config,
-			Repository: repo,
-			RepoFullName: rfn,
-			LoginInfo: loginInfo,
-			ErrorMsg: errMsg,
-			HookList: rs,
-		}))
-	}))
-	
-	http.HandleFunc("GET /repo/{repoName}/hooks/add", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
-		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/add-hook").Execute(w, templates.RepositorySettingAddHookTemplateModel{
-			Config: ctx.Config,
-			Repository: repo,
-			RepoFullName: rfn,
-			LoginInfo: loginInfo, 
-			ErrorMsg: "",
-		}))
-	}))
-	
-	http.HandleFunc("POST /repo/{repoName}/hooks/add", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
-		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-
-		err = r.ParseForm()
-		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
-				"Invalid request",
-				fmt.Sprintf("Invalid request: %s", err.Error()),
-				w, r,
-			)
-			return
-		}
-
-		hookNameSelect := r.Form.Get("hookNameSelect")
-		hookNameSpecify := strings.TrimSpace(r.Form.Get("hookNameSpecify"))
-		hookName := hookNameSelect
-		if len(hookNameSpecify) > 0 { hookName = hookNameSpecify }
-		hookSource := r.Form.Get("source")
-		err = repo.Repository.SaveHook(hookName, hookSource)
-		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
-				"Failed to save hook",
-				fmt.Sprintf("Failed to save hook %s: %s. You should contact the site owner about this.", hookName, err.Error()),
-				w, r,
-			)
-			return
-		}
-		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
-			"Hook saved",
-			"Request hook is added to the repository.",
-			w, r,
-		)
-	}))
-	
-	http.HandleFunc("GET /repo/{repoName}/hooks/{hookName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
-		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		hookName := r.PathValue("hookName")
-		f, err := repo.Repository.GetHook(hookName)
-		errMsg := ""
-		if err != nil {
-			f = ""
-			errMsg = "Failed to read hook."
-		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/edit-hook").Execute(w, templates.RepositorySettingEditHookTemplateModel{
-			Config: ctx.Config,
-			Repository: repo,
-			RepoFullName: rfn,
-			LoginInfo: loginInfo,
-			HookName: hookName,
-			HookSource: f,
-			ErrorMsg: errMsg,
-		}))
-	}))
-	
-	http.HandleFunc("POST /repo/{repoName}/hooks/{hookName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
-		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		err = r.ParseForm()
-		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Invalid request",
-				fmt.Sprintf("Invalid request: %s", err.Error()),
-				w, r,
-			)
-			return
-		}
-		hookName := r.PathValue("hookName")
-		hookSource := r.Form.Get("source")
-		err = repo.Repository.SaveHook(hookName, hookSource)
-		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Failed while saving hook",
-				fmt.Sprintf("Failed while saving hook %s: %s. You should contact site owner for this", hookName, err.Error()),
-				w, r,
-			)
-			return
-		}
-		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 3,
-			"Hook updated",
-			"The specified hook is updated.",
-			w, r,
-		)
-	}))
-	
-	http.HandleFunc("GET /repo/{repoName}/hooks/{hookName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasEditHooksPriv := (nsPriv != nil && nsPriv.EditHooks) || (repoPriv != nil && repoPriv.EditHooks)
-		if !loginInfo.IsAdmin && !isOwner && !hasEditHooksPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		hookName := r.PathValue("hookName")
-		err = repo.Repository.DeleteHook(hookName)
-		var msgTitle, msgText string
-		var timeout int
-		if err != nil {
-			timeout = 0
-			msgTitle = "Failed to delete hook."
-			msgText = fmt.Sprintf("Failed to delete hook %s: %s. You should contact site owner about this.\n", hookName, err.Error())
-		} else {
-			timeout = 3
-			msgTitle = "Hook deleted."
-			msgText = "The specified hook is deleted."
-		}
-		ctx.ReportRedirect(fmt.Sprintf("/repo/%s/hooks", rfn), timeout, msgTitle, msgText, w, r)
-	}))
-	*/
 }
 

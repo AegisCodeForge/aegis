@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -15,6 +16,31 @@ func bindNamespaceController(ctx *RouterContext) {
 		var ns *model.Namespace
 		var ok bool
 		var err error
+		var loginInfo *templates.LoginInfoModel
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				if !ctx.Config.PlainMode {
+					FoundAt(w, "/login")
+				} else {
+					FoundAt(w, "/private-notice")
+				}
+				return
+			}
+		}
 		if ctx.Config.PlainMode {
 			ns, ok = ctx.GitNamespaceList[namespaceName]
 			if !ok {
@@ -35,11 +61,6 @@ func bindNamespaceController(ctx *RouterContext) {
 			}))
 		} else {
 			ns, err = ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			loginInfo, err := GenerateLoginInfoModel(ctx, r)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return

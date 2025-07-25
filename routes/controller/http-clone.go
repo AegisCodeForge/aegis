@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
@@ -19,6 +20,10 @@ import (
 
 func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/info/{p...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			ctx.ReportForbidden("", w, r)
+			return
+		}
 		rfn := r.PathValue("repoName")
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
@@ -46,6 +51,10 @@ func bindHttpCloneController(ctx *RouterContext) {
 		w.Write(s)
 	}))
 	http.HandleFunc("GET /repo/{repoName}/HEAD", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			ctx.ReportForbidden("", w, r)
+			return
+		}
 		rfn := r.PathValue("repoName")
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
@@ -73,6 +82,10 @@ func bindHttpCloneController(ctx *RouterContext) {
 		w.Write(s)
 	}))
 	http.HandleFunc("GET /repo/{repoName}/objects/{obj...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			ctx.ReportForbidden("", w, r)
+			return
+		}
 		rfn := r.PathValue("repoName")
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {

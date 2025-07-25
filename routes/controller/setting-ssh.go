@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -18,6 +19,19 @@ func bindSettingSSHController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
@@ -38,6 +52,19 @@ func bindSettingSSHController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
@@ -111,6 +138,19 @@ func bindSettingSSHController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
 		keyName := r.PathValue("keyName")
@@ -134,6 +174,19 @@ func bindSettingSSHController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
 		k, err := ctx.DatabaseInterface.GetAuthKeyByName(un, r.PathValue("keyName"))
@@ -153,6 +206,19 @@ func bindSettingSSHController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName

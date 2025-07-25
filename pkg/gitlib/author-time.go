@@ -25,7 +25,7 @@ func parseTimezoneOffset(s string) (int, error) {
 	return total, nil
 }
 
-var reAuthorTime = regexp.MustCompile("([^<>]+)\\s*<([^>]*)>\\s*([^\\s]+)\\s*([^\\s]+)")
+var reAuthorTime = regexp.MustCompile(`([^<>]+)\s*<([^>]*)>\s*([^\s]+)\s*([^\s]+)`)
 func parseAuthorTime(s string) AuthorTime {
 	res := AuthorTime {
 		AuthorName: "",

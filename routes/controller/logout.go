@@ -3,12 +3,17 @@ package controller
 import (
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	. "github.com/bctnry/aegis/routes"
 )
 
 
 func bindLogoutController(ctx *RouterContext) {
 	http.HandleFunc("GET /logout", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			FoundAt(w, "/maintenance-notice")
+			return
+		}
 		sk, err := r.Cookie(COOKIE_KEY_SESSION)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)

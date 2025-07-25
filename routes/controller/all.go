@@ -1,10 +1,11 @@
-package all
+package controller
 
 import (
 	"net/http"
 	"slices"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -12,13 +13,34 @@ import (
 
 // list of namespace if enabled,
 // list of repo if namespace is not used,
-func BindAllController(ctx *routes.RouterContext) {
+func bindAllController(ctx *routes.RouterContext) {
 	if ctx.Config.UseNamespace {
 		http.HandleFunc("GET /all/namespace", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-			loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
+			var err error
+			var loginInfo *templates.LoginInfoModel
+			if !ctx.Config.PlainMode {
+				loginInfo, err = routes.GenerateLoginInfoModel(ctx, r)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
+					return
+				}
+			}
+			if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+				switch ctx.Config.GlobalVisibility {
+				case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+					routes.FoundAt(w, "/maintenance-notice")
+					return
+				case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+					routes.FoundAt(w, "/shutdown-notice")
+					return
+				case aegis.GLOBAL_VISIBILITY_PRIVATE:
+					if !ctx.Config.PlainMode {
+						routes.FoundAt(w, "/login")
+					} else {
+						routes.FoundAt(w, "/private-notice")
+					}
+					return
+				}
 			}
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
 			var nsl map[string]*model.Namespace
@@ -76,10 +98,31 @@ func BindAllController(ctx *routes.RouterContext) {
 	}
 	
 	http.HandleFunc("GET /all/repo", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
+		var err error
+		var loginInfo *templates.LoginInfoModel
+		if !ctx.Config.PlainMode {
+			loginInfo, err = routes.GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				if !ctx.Config.PlainMode {
+					routes.FoundAt(w, "/login")
+				} else {
+					routes.FoundAt(w, "/private-notice")
+				}
+				return
+			}
 		}
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		var repol []*model.Repository

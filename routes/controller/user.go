@@ -3,15 +3,33 @@ package controller
 import (
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/db"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
-	"github.com/bctnry/aegis/pkg/aegis/db"
 )
 
 
 func bindUserController(ctx *RouterContext) {
 	http.HandleFunc("GET /u/{userName}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				if !ctx.Config.PlainMode {
+					FoundAt(w, "/login")
+				} else {
+					FoundAt(w, "/private-notice")
+				}
+				return
+			}
+		}
 		un := r.PathValue("userName")
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err == db.ErrEntityNotFound {

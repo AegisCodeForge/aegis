@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -18,6 +19,32 @@ import (
 
 func bindRepositoryController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		var err error
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				if !ctx.Config.PlainMode {
+					FoundAt(w, "/login")
+				} else {
+					FoundAt(w, "/private-notice")
+				}
+				return
+			}
+		}
 		rfn := r.PathValue("repoName")
 		branch := strings.TrimSpace(r.URL.Query().Get("branch"))
 		if len(branch) > 0 {
@@ -41,13 +68,7 @@ func bindRepositoryController(ctx *RouterContext) {
 			return
 		}
 		
-		var loginInfo *templates.LoginInfoModel = nil
 		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
 			loginInfo.IsOwner = s.Owner == loginInfo.UserName || ns.Owner == loginInfo.UserName
 		}
 		if !ctx.Config.PlainMode && s.Status == model.REPO_NORMAL_PRIVATE {
@@ -166,7 +187,9 @@ func bindRepositoryController(ctx *RouterContext) {
 		}))
 	}))
 
-	bindRepositoryForkController(ctx)
-	bindRepositoryPullRequestController(ctx)
+	if !ctx.Config.PlainMode {
+		bindRepositoryForkController(ctx)
+		bindRepositoryPullRequestController(ctx)
+	}
 }
 

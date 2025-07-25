@@ -236,7 +236,7 @@ func main() {
 	controller.InitializeRoute(&context)
 
 	go func() {
-		log.Println(fmt.Sprintf("Trying to serve at %s:%d", config.BindAddress, config.BindPort))
+		log.Printf("Trying to serve at %s:%d\n", config.BindAddress, config.BindPort)
 		err := server.ListenAndServe()
 		if err != http.ErrServerClosed {
 			log.Fatalf("HTTP server error: %v", err)

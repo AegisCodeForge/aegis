@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -13,6 +14,33 @@ import (
 
 func bindDiffController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", WithLog(func(w http.ResponseWriter, r *http.Request){
+		var err error
+		var loginInfo *templates.LoginInfoModel = nil
+		if !ctx.Config.PlainMode {
+			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+		}
+		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				if !ctx.Config.PlainMode {
+					FoundAt(w, "/login")
+				} else {
+					FoundAt(w, "/private-notice")
+				}
+				return
+			}
+		}
+		
 		rfn := r.PathValue("repoName")
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
@@ -23,16 +51,10 @@ func bindDiffController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		
-		var loginInfo *templates.LoginInfoModel = nil
 		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
 			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
+		
 		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
 			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 			if t == nil {

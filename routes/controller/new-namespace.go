@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
@@ -16,6 +18,19 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 
@@ -29,6 +44,19 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
  			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		err = r.ParseForm()

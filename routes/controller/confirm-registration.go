@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
 	"github.com/bctnry/aegis/routes"
@@ -13,6 +14,12 @@ import (
 
 func bindConfirmRegistrationController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /confirm-registration", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_SHUTDOWN {
+			routes.FoundAt(w, "/shutdown-notice")
+		}
+		if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			routes.FoundAt(w, "/maintenance-notice")
+		}
 		rid := r.URL.Query().Get("id")
 		re, err := ctx.ReceiptSystem.RetrieveReceipt(rid)
 		if err != nil { routes.FoundAt(w, "/"); return }
