@@ -112,6 +112,16 @@ We wish you all the best in your future endeavours.
 				}))
 				return
 			}
+			if ctx.Config.UseNamespace {
+				_, err = ctx.DatabaseInterface.RegisterNamespace(userName, userName)
+				if err != nil {
+					ctx.ReportInternalError(
+						fmt.Sprintf("Failed at registering namespace %s. Please contact site admin for this issue.", err.Error()),
+						w, r,
+					)
+					return
+				}
+			}
 		}
 		if ctx.Config.ManualApproval {
 			succeedMsg = "Registered. You should be able to use your account after admin approval."

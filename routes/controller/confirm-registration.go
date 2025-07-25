@@ -37,6 +37,7 @@ func bindConfirmRegistrationController(ctx *routes.RouterContext) {
 		passwordHash := re.Command[3]
 		status := model.NORMAL_USER
 		if ctx.Config.ManualApproval { status = model.NORMAL_USER_APPROVAL_NEEDED }
+		ctx.ReceiptSystem.CancelReceipt(rid)
 		_, err = ctx.DatabaseInterface.RegisterUser(username, email, passwordHash, status)
 		if err != nil {
 			ctx.ReportInternalError(
@@ -45,7 +46,16 @@ func bindConfirmRegistrationController(ctx *routes.RouterContext) {
 			)
 			return
 		}
-		ctx.ReceiptSystem.CancelReceipt(rid)
+		if ctx.Config.UseNamespace {
+			_, err = ctx.DatabaseInterface.RegisterNamespace(username, username)
+			if err != nil {
+				ctx.ReportInternalError(
+					fmt.Sprintf("Failed at registering namespace %s. Please contact site admin for this issue.", err.Error()),
+					w, r,
+				)
+				return
+			}
+		}
 		routes.LogTemplateError(ctx.LoadTemplate("error").Execute(w, &templates.ErrorTemplateModel{
 			Config: ctx.Config,
 			ErrorCode: 200,
