@@ -17,6 +17,14 @@ import (
 
 func bindResetPasswordController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /reset-password/request", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		switch ctx.Config.GlobalVisibility {
+		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			routes.FoundAt(w, "/maintenance-notice")
+			return
+		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			routes.FoundAt(w, "/shutdown-notice")
+			return
+		}
 		loginInfo, _ := routes.GenerateLoginInfoModel(ctx, r)
 		routes.LogTemplateError(ctx.LoadTemplate("reset-password-request").Execute(w, struct{
 			Config *aegis.AegisConfig
@@ -30,6 +38,14 @@ func bindResetPasswordController(ctx *routes.RouterContext) {
 	}))
 
 	http.HandleFunc("POST /reset-password/request", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		switch ctx.Config.GlobalVisibility {
+		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			routes.FoundAt(w, "/maintenance-notice")
+			return
+		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			routes.FoundAt(w, "/shutdown-notice")
+			return
+		}
 		err := r.ParseForm()
 		if err != nil {
 			ctx.ReportRedirect("/reset-password/request", 0, "Invalid Request", "Failed to parse request. Please try again.", w, r)
@@ -81,6 +97,14 @@ If this isn't you, you can simply ignore this message.`,
 	}))
 
 	http.HandleFunc("GET /reset-password/update-password", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		switch ctx.Config.GlobalVisibility {
+		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			routes.FoundAt(w, "/maintenance-notice")
+			return
+		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			routes.FoundAt(w, "/shutdown-notice")
+			return
+		}
 		rid := strings.TrimSpace(r.URL.Query().Get("id"))
 		if len(rid) <= 0 { routes.FoundAt(w, "/reset-password/request"); return }
 		re, err := ctx.ReceiptSystem.RetrieveReceipt(rid)
@@ -112,6 +136,14 @@ If this isn't you, you can simply ignore this message.`,
 	}))
 
 	http.HandleFunc("POST /reset-password/update-password", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		switch ctx.Config.GlobalVisibility {
+		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			routes.FoundAt(w, "/maintenance-notice")
+			return
+		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			routes.FoundAt(w, "/shutdown-notice")
+			return
+		}
 		err := r.ParseForm()
 		if err != nil {
 			ctx.ReportRedirect("/reset-password/request", 3, "Invalid Request", "Invalid request.", w, r)

@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -13,13 +14,26 @@ import (
 
 func bindIssueController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/issue", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		rfn := r.PathValue("repoName")
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		pStr := strings.TrimSpace(r.URL.Query().Get("p"))
@@ -62,13 +76,26 @@ func bindIssueController(ctx *routes.RouterContext) {
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/issue/new", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		rfn := r.PathValue("repoName")
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		routes.LogTemplateError(ctx.LoadTemplate("issue/new-issue").Execute(w, &templates.RepositoryNewIssueTemplateModel{
 			Config: ctx.Config,
@@ -80,13 +107,26 @@ func bindIssueController(ctx *routes.RouterContext) {
 	}))
 
 	http.HandleFunc("POST /repo/{repoName}/issue/new", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		rfn := r.PathValue("repoName")
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if !loginInfo.LoggedIn {
 			ctx.ReportRedirect("/login", 3, "Not Logged In", "You must log in before creating an issue.", w, r)
 			return
@@ -111,13 +151,26 @@ func bindIssueController(ctx *routes.RouterContext) {
 	}))
 	
 	http.HandleFunc("GET /repo/{repoName}/issue/{id}", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		rfn := r.PathValue("repoName")
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -153,13 +206,26 @@ func bindIssueController(ctx *routes.RouterContext) {
 	}))
 	
 	http.HandleFunc("POST /repo/{repoName}/issue/{id}", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		rfn := r.PathValue("repoName")
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		iid, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {
 			ctx.ReportNormalError(err.Error(), w, r)

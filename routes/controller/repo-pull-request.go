@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -15,8 +16,37 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/pull-request", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if ctx.Config.PlainMode {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/private-notice")
+				return
+			}
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
+		}
+		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
 		}
 		_, _, _, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
@@ -57,11 +87,6 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
 		routes.LogTemplateError(ctx.LoadTemplate("pull-request/pull-request-list").Execute(w, &templates.RepositoryPullRequestListTemplateModel{
 			Config: ctx.Config,
 			Repository: s,
@@ -79,19 +104,43 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/pull-request/{prid}", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if ctx.Config.PlainMode {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/private-notice")
+				return
+			}
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
+		}
+		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
 		}
 		_, _, _, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
 			return
 		}
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -135,16 +184,29 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
 		}
+		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
 		_, _, _, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
 			return
 		}
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -226,6 +288,28 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
 		}
+		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		if !loginInfo.LoggedIn {
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 5, "Not Logged In", "You must log in before creating a pull request.", w, r)
+			return
+		}
 		_, _, _, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
@@ -233,15 +317,6 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 		}
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 5, "Not Logged In", "You must log in before creating a pull request.", w, r)
 			return
 		}
 		err = s.Repository.SyncAllBranchList()
@@ -307,6 +382,28 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
 		}
+		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
+		}
+		if !loginInfo.LoggedIn {
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 5, "Not Logged In", "You must log in before creating a pull request.", w, r)
+			return
+		}
 		_, _, _, s, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
@@ -314,15 +411,6 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 		}
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !loginInfo.LoggedIn {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 5, "Not Logged In", "You must log in before creating a pull request.", w, r)
 			return
 		}
 		err = r.ParseForm()

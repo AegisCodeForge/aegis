@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
 	"github.com/bctnry/aegis/routes"
@@ -14,6 +15,14 @@ import (
 
 func bindRegisterController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /reg", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		switch ctx.Config.GlobalVisibility {
+		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			routes.FoundAt(w, "/maintenance-notice")
+			return
+		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			routes.FoundAt(w, "/shutdown-notice")
+			return
+		}
 		if !ctx.Config.AllowRegistration { routes.FoundAt(w, "/"); return }
 		loginInfo, _ := routes.GenerateLoginInfoModel(ctx, r)
 		routes.LogTemplateError(ctx.LoadTemplate("registration").Execute(w, templates.RegistrationTemplateModel{
@@ -24,6 +33,14 @@ func bindRegisterController(ctx *routes.RouterContext) {
 	}))
 	// TODO: rate limit.
 	http.HandleFunc("POST /reg", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
+		switch ctx.Config.GlobalVisibility {
+		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			routes.FoundAt(w, "/maintenance-notice")
+			return
+		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			routes.FoundAt(w, "/shutdown-notice")
+			return
+		}
 		if !ctx.Config.AllowRegistration {
 			ctx.ReportNormalError("Registration not allowed on this instance.", w, r)
 			return

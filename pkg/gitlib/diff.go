@@ -129,7 +129,7 @@ func parseGitDiffHeaderItem(s string) *DiffItemHeaderItem {
 
 
 var reGitDiffItemFile1Header = regexp.MustCompile("--- (.*)")
-var reGitDiffItemFile2Header = regexp.MustCompile("\\+\\+\\+ (.*)")
+var reGitDiffItemFile2Header = regexp.MustCompile(`\+\+\+ (.*)`)
 var reGitDiffItemLineHeader = regexp.MustCompile(`@@ -(\d+),(\d+) \+(\d+),(\d+) @@(.*)`)
 
 func parseGitDiff(br *bytes.Buffer) (*Diff, error) {

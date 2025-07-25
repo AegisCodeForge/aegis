@@ -75,7 +75,7 @@ func foundAt(w http.ResponseWriter, p string) {
 	w.WriteHeader(302)
 }
 
-func (ctx *WebInstallerRoutingContext) reportRedirect(target string, timeout int, title string, message string, w http.ResponseWriter, r *http.Request) {
+func (ctx *WebInstallerRoutingContext) reportRedirect(target string, timeout int, title string, message string, w http.ResponseWriter) {
 	logTemplateError(ctx.loadTemplate("webinstaller/_redirect").Execute(w, templates.WebInstRedirectWithMessageModel{
 		Timeout: timeout,
 		RedirectUrl: target,
@@ -101,7 +101,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step1", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.PlainMode = len(r.Form.Get("plain-mode")) > 0
@@ -122,7 +122,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step2", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step2", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step2", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.Database = aegis.AegisDatabaseConfig{
@@ -147,12 +147,12 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step3", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step3", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step3", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("session-database-number")), 10, 64)
 		if err != nil {
-			ctx.reportRedirect("/step3", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step3", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.Session = aegis.AegisSessionConfig{
@@ -177,12 +177,12 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step4", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step4", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step4", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("mailer-smtp-port")), 10, 64)
 		if err != nil {
-			ctx.reportRedirect("/step4", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step4", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.Mailer = aegis.AegisMailerConfig{
@@ -204,7 +204,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step5", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step5", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step5", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.ReceiptSystem = aegis.AegisReceiptSystemConfig{
@@ -229,7 +229,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step6", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step6", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step6", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.GitRoot = strings.TrimSpace(r.Form.Get("git-root"))
@@ -240,7 +240,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		} else {
 			u, err = user.Lookup(setUserName)
 			if err != nil {
-				ctx.reportRedirect("/step6", 0, "No User", fmt.Sprintf("The user name you've provided seems to not usable due to reason: %s. Please try again or use a different user.", err.Error()), w, r)
+				ctx.reportRedirect("/step6", 0, "No User", fmt.Sprintf("The user name you've provided seems to not usable due to reason: %s. Please try again or use a different user.", err.Error()), w)
 				return
 			}
 		}
@@ -254,7 +254,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}
 		err = templates.UnpackStaticFileTo(ctx.Config.StaticAssetDirectory)
 		if err != nil {
-			ctx.reportRedirect(next, 0, "Failed", fmt.Sprintf("Static file unpack is unsuccessful due to reason: %s. You can still move forward but would have to unpack static file yourself.", err.Error()), w, r)
+			ctx.reportRedirect(next, 0, "Failed", fmt.Sprintf("Static file unpack is unsuccessful due to reason: %s. You can still move forward but would have to unpack static file yourself.", err.Error()), w)
 			return
 		}
 		foundAt(w, next)
@@ -269,7 +269,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step7", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.IgnoreNamespace = make([]string, 0)
@@ -292,14 +292,14 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step8", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.DepotName = strings.TrimSpace(r.Form.Get("depot-name"))
 		ctx.Config.BindAddress = strings.TrimSpace(r.Form.Get("bind-address"))
 		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("bind-port")), 10, 64)
 		if err != nil {
-			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w, r)
+			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.BindPort = int(i)
@@ -342,13 +342,13 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed to retrieve info about the specified Git user %s. Please fix this and restart the web installer.", ctx.Config.GitUser),
-				w, r,
+				w,
 			)
 			return
 		} else if pwusr == nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Cannot find user %s. Please fix this and restart the web installer.", ctx.Config.GitUser),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -359,7 +359,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed to save config to %s: %s. Please fix this and restart the web installer.", p, err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -370,7 +370,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed while trying to initialize database for setup: %s. Please fix this and restart the web installer.", err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -378,7 +378,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed while trying to check the database: %s. Please fix this and restart the web installer.", err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -387,7 +387,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			if err != nil {
 				ctx.reportRedirect("/", 0, "Failure",
 					fmt.Sprintf("Failed while trying to set up the database: %s. Please fix this and restart the web installer.", err.Error()),
-					w, r,
+					w,
 				)
 				return
 			}
@@ -398,7 +398,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed while trying to initialize session store for setup: %s. Please fix this and restart the web installer.", err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -406,7 +406,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed while trying to check the session store: %s. Please fix this and restart the web installer.", err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -415,7 +415,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			if err != nil {
 				ctx.reportRedirect("/", 0, "Failure",
 					fmt.Sprintf("Failed while trying to set up the session store: %s. Please fix this and restart the web installer.", err.Error()),
-					w, r,
+					w,
 				)
 				return
 			}
@@ -426,7 +426,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed while trying to initialize receipt system for setup: %s. Please fix this and restart the web installer.", err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -434,7 +434,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		if err != nil {
 			ctx.reportRedirect("/", 0, "Failure",
 				fmt.Sprintf("Failed while trying to check the receipt system: %s. Please fix this and restart the web installer.", err.Error()),
-				w, r,
+				w,
 			)
 			return
 		}
@@ -443,7 +443,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			if err != nil {
 				ctx.reportRedirect("/", 0, "Failure",
 					fmt.Sprintf("Failed while trying to set up the receipt system: %s. Please fix this and restart the web installer.", err.Error()),
-					w, r,
+					w,
 				)
 				return
 			}
@@ -486,7 +486,7 @@ func WebInstaller() {
 		Config: &aegis.AegisConfig{},
 	})
 	go func() {
-		log.Println(fmt.Sprintf("Trying to serve at %s:%d", "0.0.0.0", portNum))
+		log.Printf("Trying to serve at %s:%d\n", "0.0.0.0", portNum)
 		err := server.ListenAndServe()
 		if err != http.ErrServerClosed {
 			log.Fatalf("HTTP server error: %v", err)

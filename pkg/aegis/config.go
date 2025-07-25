@@ -124,7 +124,32 @@ type AegisConfig struct {
 	// if not set, it's "all/repository" by default.
 	FrontPageType string `json:"frontPageType"`
 	FrontPageContent string `json:"frontPageContent"`
+
+	// global private/shutdown mode
+	// supports the following values:
+	// + "public" (unregistered users can view public repo)
+	// + "private" (only registered users can view any repo)
+	// + "shutdown"  (w/ allowed users) (only specified users can view any repo)
+	// + "maintenance" maintenance mode
+	GlobalVisibility string `json:"globalVisibility"`
+	// usernames that are allowed to access the instance when the instance
+	// is put in shutdown.
+	FullAccessUser []string `json:"fullAccessUser"`
+	// when the instance is put in shutdown mode, what content should we show
+	// to the visitor.
+	ShutdownMessage string `json:"shutdownMessage"`
+	// shown when the instance is in maintenance mode.
+	MaintenanceMessage string `json:"maintenanceMessage"`
+	// shown when the instance is in plain mode & private mode.
+	PrivateNoticeMessage string `json:"privateNoticeMessage"`
 }
+
+const (
+	GLOBAL_VISIBILITY_PUBLIC = "public"
+	GLOBAL_VISIBILITY_PRIVATE = "private"
+	GLOBAL_VISIBILITY_SHUTDOWN = "shutdown"
+	GLOBAL_VISIBILITY_MAINTENANCE = "maintenance"
+)
 
 type AegisDatabaseConfig struct {
 	// database type. currently only support "sqlite".
@@ -275,6 +300,8 @@ func CreateConfigFile(p string) error {
 		BindPort: 8000,
 		IgnoreNamespace: nil,
 		IgnoreRepository: nil,
+		GlobalVisibility: "public",
+		FullAccessUser: []string{"admin"},
 		Database: AegisDatabaseConfig{
 			Type: "sqlite",
 			Path: "",
@@ -322,9 +349,7 @@ func (c *AegisConfig) RecalculateProperPath() error {
 		if !strings.HasPrefix(c.properHttpHostName, "http://") && !strings.HasPrefix(c.properHttpHostName, "https://") {
 			c.properHttpHostName = "http://" + c.properHttpHostName
 		}
-		if strings.HasSuffix(c.properHttpHostName, "/") {
-			c.properHttpHostName = c.properHttpHostName[:len(c.properHttpHostName)-1]
-		}
+		c.properHttpHostName = strings.TrimSuffix(c.properHttpHostName, "/")
 	} else { c.properHttpHostName = "" }
 	
 	c.properSshHostName = c.SshHostName
@@ -332,9 +357,7 @@ func (c *AegisConfig) RecalculateProperPath() error {
 		if !strings.HasSuffix(c.properSshHostName, "ssh://") {
 			c.properSshHostName = "ssh://" + c.properSshHostName
 		}
-		if strings.HasSuffix(c.properSshHostName, "/") {
-			c.properSshHostName = c.properSshHostName[:len(c.properSshHostName)-1]
-		}
+		c.properSshHostName = strings.TrimSuffix(c.properSshHostName, "/")
 		u, err := url.Parse(c.properSshHostName)
 		if err != nil { return err }
 		// git username override.

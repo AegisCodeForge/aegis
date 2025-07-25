@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 	"github.com/gomarkdown/markdown"
@@ -18,6 +19,14 @@ func bindIndexController(ctx *RouterContext) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE: FoundAt(w, "/maintenance-notice")
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN: FoundAt(w, "/shutdown-notice")
+			case aegis.GLOBAL_VISIBILITY_PRIVATE: FoundAt(w, "/login")
+			}
 			return
 		}
 		if strings.HasPrefix(ctx.Config.FrontPageType, "static/") {

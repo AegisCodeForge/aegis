@@ -109,16 +109,3 @@ func readUntil(f io.Reader, c byte) ([]byte, error) {
 	return res, nil
 }
 
-func readLittleEndianVarint(f io.Reader, c byte) (int64, error) {
-	bytebuf := make([]byte, 1)
-	res := int64(0)
-	shift := 0
-	for {
-		_, err := io.ReadFull(f, bytebuf)
-		if err != nil { return 0, err }
-		res |= (int64(bytebuf[0])&0x7f)<<shift
-		if bytebuf[0]&0x80 <= 0 { break }
-	}
-	return res, nil
-}
-

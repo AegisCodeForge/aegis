@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	auxfuncs "github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
@@ -22,6 +23,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
@@ -57,6 +71,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
@@ -129,6 +156,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
 		if err != nil {
@@ -162,6 +202,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
@@ -220,6 +273,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
@@ -285,6 +351,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
 		if err != nil {
@@ -318,7 +397,6 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		}
 		FoundAt(w, fmt.Sprintf("/s/%s/member", namespaceName))
 	}))
-
 	
 	http.HandleFunc("GET /s/{namespace}/member/{username}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
@@ -328,6 +406,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
@@ -366,6 +457,19 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)

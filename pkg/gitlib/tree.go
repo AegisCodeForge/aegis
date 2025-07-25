@@ -167,7 +167,7 @@ func (gr LocalGitRepository) ResolveTreePath(t *TreeObject, p string) (GitObject
 			}
 		}
 		if !found {
-			return nil, errors.New(fmt.Sprintf("Cannot find object named %s in tree", item))
+			return nil, fmt.Errorf("Cannot find object named %s in tree", item)
 		}
 	}
 	return gobj, nil

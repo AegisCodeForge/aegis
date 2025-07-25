@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
@@ -19,6 +21,19 @@ func bindNewRepositoryController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		l, err := ctx.DatabaseInterface.GetAllComprisingNamespace(loginInfo.UserName)
@@ -38,6 +53,19 @@ func bindNewRepositoryController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				routes.FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				routes.FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				routes.FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn {
 			ctx.ReportRedirect("/", 3, "Not Logged In", "You need to log in before creating a new repository", w, r)

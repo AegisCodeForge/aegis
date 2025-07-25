@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -16,6 +17,19 @@ func bindSettingGPGController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
@@ -36,6 +50,19 @@ func bindSettingGPGController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
@@ -80,6 +107,19 @@ func bindSettingGPGController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
 		if !loginInfo.LoggedIn {
 			ctx.ReportRedirect("/", 3, "Not Logged In", "Please login before you perform this action.", w, r)
 			return
@@ -98,6 +138,19 @@ func bindSettingGPGController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn {
 			ctx.ReportRedirect("/", 3, "Not Logged In", "Please login before you perform this action.", w, r)
@@ -121,6 +174,19 @@ func bindSettingGPGController(ctx *RouterContext) {
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
 		}
 		if !loginInfo.LoggedIn {
 			ctx.ReportRedirect("/", 3, "Not Logged In", "Please login before you perform this action.", w, r)
@@ -150,3 +216,4 @@ func bindSettingGPGController(ctx *RouterContext) {
 		ctx.ReportRedirect(fmt.Sprintf("/setting/gpg/%s/edit", keyName), 3, "Updated", "Updated.", w, r)
 	}))
 }
+

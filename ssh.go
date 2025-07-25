@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/shellparse"
@@ -20,6 +21,11 @@ func printGitError(s string) {
 }
 
 func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) {
+	if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC &&
+		ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PRIVATE {
+		printGitError("This instance of Aegis is currently unavailable.")
+		os.Exit(1)
+	}
 	if ctx.Config.PlainMode {
 		printGitError("This instance of Aegis is in Plain Mode which does not allow Git over SSH.")
 		os.Exit(1)
@@ -72,7 +78,7 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 		os.Exit(1)
 	}
 	if r.Status == model.REPO_ARCHIVED && isPushingToRemote {
-		printGitError(fmt.Sprint("The repository %s is ARCHIVED; no push to remote is allowed. "))
+		printGitError(fmt.Sprintf("The repository %s/%s is ARCHIVED; no push to remote is allowed. ", namespaceName, repositoryName))
 		os.Exit(1)
 	}
 	ns, err := ctx.DatabaseInterface.GetNamespaceByName(namespaceName)

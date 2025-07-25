@@ -3,7 +3,6 @@ package controller
 import (
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/routes/controller/admin"
-	"github.com/bctnry/aegis/routes/controller/all"
 )
 
 func InitializeRoute(context *routes.RouterContext) {
@@ -14,11 +13,14 @@ func InitializeRoute(context *routes.RouterContext) {
 	bindHistoryController(context)
 	bindIndexController(context)
 	bindRepositoryController(context)
-	bindRepositorySettingController(context)
 	bindTagController(context)
 	bindTreeHandler(context)
-	all.BindAllController(context)
+	bindAllController(context)
 	bindHttpCloneController(context)
+	bindShutdownNoticeController(context)
+	bindMaintenanceNoticeController(context)
+	bindPrivateNoticeController(context)
+	
 	if context.Config.UseNamespace {
 		bindNamespaceController(context)
 		bindNamespaceSettingController(context)
@@ -31,6 +33,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindSettingController(context)
 		bindSettingSSHController(context)
 		bindSettingGPGController(context)
+		bindRepositorySettingController(context)
 		bindNewNamespaceController(context)
 		bindNewRepositoryController(context)
 
