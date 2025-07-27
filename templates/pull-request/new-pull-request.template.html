@@ -41,8 +41,10 @@
 		  <input type="submit" value="Choose" />
 		</form>
 		{{else}}
-		<p>There is no repository available for creating a pull request. </p>
+		<p>There is no repository available for creating a pull request. <a href="{{$repoPath}}/fork">Create a fork and push your changes to your fork first.</a></p>
 		{{end}}
+		{{else}}
+		<p>There is no repository available for creating a pull request. <a href="{{$repoPath}}/fork">Create a fork and push your changes to your fork first.</a></p>
 		{{end}}
 
 		{{if .ProviderBranchList}}
