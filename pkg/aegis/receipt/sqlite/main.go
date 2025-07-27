@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"net/url"
 	"strings"
 	"time"
 
@@ -20,7 +21,14 @@ var requiredTableList = []string{
 }
 
 func NewSqliteReceiptSystemInterface(cfg *aegis.AegisConfig) (*AegisSqliteReceiptSystemInterface, error) {
-	db, err := sql.Open("sqlite3", cfg.ProperReceiptSystemPath())
+	p := cfg.ProperReceiptSystemPath()
+	r, _ := url.Parse(p)
+	q := r.Query()
+	q.Set("cache", "shared")
+	q.Set("mode", "rwc")
+	q.Set("_journal_mode", "WAL")
+	r.RawQuery = q.Encode()
+	db, err := sql.Open("sqlite3", r.String())
 	if err != nil { return nil, err }
 	return &AegisSqliteReceiptSystemInterface{
 		config: cfg,
