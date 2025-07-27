@@ -50,7 +50,18 @@ func NewLocalGitRepository(namespace string, name string, p string) *LocalGitRep
 		Hooks: nil,
 	}
 	pi, err := res.readAllPackIndex()
-	if err != nil { log.Fatal(err) }
+	if err != nil {
+		errs := err.Error()
+		os.MkdirAll(p, os.ModeDir|0755)
+		cmd := exec.Command("git", "init", "--bare")
+		cmd.Dir = p
+		err := cmd.Run()
+		if err != nil {
+			log.Panicf("Failed to create a handle on local git repository:\n%s\n%s", errs, err.Error())
+		} else {
+			pi, err = res.readAllPackIndex()
+		}
+	}
 	res.PackIndex = pi
 	description, err := res.readDescription()
 	if err != nil { description = "Error due to: " + err.Error() }

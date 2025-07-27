@@ -1,0 +1,6 @@
+* gitlib
+
+** on using w/ path that does not have a git folder
+
+note that currently =gitlib.NewLocalGitRepository= would initialize a bare git repo if the provided directory does not exist / is not a git folder.
+
