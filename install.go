@@ -199,7 +199,6 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 			gitUserSetupCheckPrompt(); return false
 		}
 		cmd3 := exec.Command(useraddPath, "-d", p, "-m", "-s", gitShellPath, ctx.Config.GitUser)
-		fmt.Println(cmd3.String())
 		err = cmd3.Run()
 		if err != nil {
 			fmt.Printf("Failed to run useradd: %s\n", err.Error())
@@ -338,7 +337,7 @@ func InstallAegis(ctx routes.RouterContext) {
 	fmt.Println("If you've reached this point, it means the database is there but not ready, or you have invoked the install command manually.")
 
 
-	fmt.Println("Checking specifiec Git root...")
+	fmt.Println("Checking specified Git root...")
 	_, err := os.ReadDir(cfg.GitRoot)
 	if os.IsNotExist(err) {
 		fmt.Println("The root for storing Git repository according to the config file would be:")

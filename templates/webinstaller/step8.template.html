@@ -100,7 +100,7 @@
 		<table>
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
-			<tr><td class="field-sub-label"><label for="allow-registration">allowRegistration</label><br />(Whether to allow</td><td><input type="checkbox" name="allow-registration" id="allow-registration" {{if and .Config.AllowRegistration}}checked{{end}} /></td></tr>
+			<tr><td class="field-sub-label"><label for="allow-registration">allowRegistration</label><br />(Whether to allow new user registration)</td><td><input type="checkbox" name="allow-registration" id="allow-registration" {{if and .Config.AllowRegistration}}checked{{end}} /></td></tr>
 			<tr><td class="field-sub-label"><label for="email-confirmation-required">emailConfirmationRequired</label></td><td><input type="checkbox" name="email-confirmation-required" id="email-confirmation-required" {{if and .Config.EmailConfirmationRequired}}checked{{end}} /></td></tr>
 			<tr><td class="field-sub-label"><label for="manual-approval">manualApproval</label></td><td><input type="checkbox" name="manual-approval" id="manual-approval" {{if and .Config.ManualApproval}}checked{{end}} /></td></tr>
 		  </tbody>

@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"net/url"
 	"fmt"
 	"time"
 
@@ -16,7 +17,14 @@ type AegisSqliteSessionStore struct {
 }
 
 func NewAegisSqliteSessionStore(cfg *aegis.AegisConfig) (*AegisSqliteSessionStore, error) {
-	db, err := sql.Open("sqlite3", cfg.ProperSessionPath())
+	p := cfg.ProperSessionPath()
+	r, _ := url.Parse(p)
+	q := r.Query()
+	q.Set("cache", "shared")
+	q.Set("mode", "rwc")
+	q.Set("_journal_mode", "WAL")
+	r.RawQuery = q.Encode()
+	db, err := sql.Open("sqlite3", r.String())
 	if err != nil { return nil, err }
 	return &AegisSqliteSessionStore{
 		config: cfg,

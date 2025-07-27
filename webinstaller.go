@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
 	"os/user"
 	"path"
@@ -16,15 +19,18 @@ import (
 	"time"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/db"
 	dbinit "github.com/bctnry/aegis/pkg/aegis/db/init"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	rsinit "github.com/bctnry/aegis/pkg/aegis/receipt/init"
 	ssinit "github.com/bctnry/aegis/pkg/aegis/session/init"
 	"github.com/bctnry/aegis/templates"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type WebInstallerRoutingContext struct {
 	Template *template.Template
-	// yes, we do share the same object between multiple goroutine,
+	// yes, we do share the same object between multiple goroutie,
 	// but i don't think this would be a problem for a simple web
 	// installer.
 	// step 1 - plain mode or non-plain mode?
@@ -233,19 +239,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			return
 		}
 		ctx.Config.GitRoot = strings.TrimSpace(r.Form.Get("git-root"))
-		setUserName := strings.TrimSpace(r.Form.Get("git-user"))
-		var u *user.User
-		if len(setUserName) <= 0 {
-			u, _ = user.Current()
-		} else {
-			u, err = user.Lookup(setUserName)
-			if err != nil {
-				ctx.reportRedirect("/step6", 0, "No User", fmt.Sprintf("The user name you've provided seems to not usable due to reason: %s. Please try again or use a different user.", err.Error()), w)
-				return
-			}
-		}
-		ctx.Config.GitUser = u.Username
-		ctx.Config.StaticAssetDirectory = path.Join(u.HomeDir, "aegis-static")
+		ctx.Config.GitUser = strings.TrimSpace(r.Form.Get("git-user"))
 		next := ""
 		if ctx.Config.PlainMode {
 			next = "/step7"
@@ -336,124 +330,336 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			ConfirmStageReached: ctx.ConfirmStageReached,
 		}))
 	}))
-	http.HandleFunc("POST /confirm", withLog(func(w http.ResponseWriter, r *http.Request) {
 
-		pwusr, err := user.Lookup(ctx.Config.GitUser)
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed to retrieve info about the specified Git user %s. Please fix this and restart the web installer.", ctx.Config.GitUser),
-				w,
-			)
-			return
-		} else if pwusr == nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Cannot find user %s. Please fix this and restart the web installer.", ctx.Config.GitUser),
-				w,
-			)
-			return
-		}
-		p := path.Join(pwusr.HomeDir, fmt.Sprintf("aegis-config-%d.json", time.Now().Unix()))
-		ctx.Config.Version = 0
-		ctx.Config.FilePath = p
-		err = ctx.Config.Sync()
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed to save config to %s: %s. Please fix this and restart the web installer.", p, err.Error()),
-				w,
-			)
-			return
-		}
-		
-		ctx.Config.RecalculateProperPath()
-		
-		dbif, err := dbinit.InitializeDatabase(ctx.Config)
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed while trying to initialize database for setup: %s. Please fix this and restart the web installer.", err.Error()),
-				w,
-			)
-			return
-		}
-		dbifVerdict, err := dbif.IsDatabaseUsable()
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed while trying to check the database: %s. Please fix this and restart the web installer.", err.Error()),
-				w,
-			)
-			return
-		}
-		if !dbifVerdict {
-			err = dbif.InstallTables()
-			if err != nil {
-				ctx.reportRedirect("/", 0, "Failure",
-					fmt.Sprintf("Failed while trying to set up the database: %s. Please fix this and restart the web installer.", err.Error()),
-					w,
-				)
-				return
-			}
-		}
-		dbif.Dispose()
-		
-		ssif, err := ssinit.InitializeDatabase(ctx.Config)
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed while trying to initialize session store for setup: %s. Please fix this and restart the web installer.", err.Error()),
-				w,
-			)
-			return
-		}
-		ssifVerdict, err := ssif.IsSessionStoreUsable()
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed while trying to check the session store: %s. Please fix this and restart the web installer.", err.Error()),
-				w,
-			)
-			return
-		}
-		if !ssifVerdict {
-			err = ssif.Install()
-			if err != nil {
-				ctx.reportRedirect("/", 0, "Failure",
-					fmt.Sprintf("Failed while trying to set up the session store: %s. Please fix this and restart the web installer.", err.Error()),
-					w,
-				)
-				return
-			}
-		}
-		ssif.Dispose()
-		
-		rsif, err := rsinit.InitializeReceiptSystem(ctx.Config)
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed while trying to initialize receipt system for setup: %s. Please fix this and restart the web installer.", err.Error()),
-				w,
-			)
-			return
-		}
-		rsifVerdict, err := rsif.IsReceiptSystemUsable()
-		if err != nil {
-			ctx.reportRedirect("/", 0, "Failure",
-				fmt.Sprintf("Failed while trying to check the receipt system: %s. Please fix this and restart the web installer.", err.Error()),
-				w,
-			)
-			return
-		}
-		if !rsifVerdict {
-			err = rsif.Install()
-			if err != nil {
-				ctx.reportRedirect("/", 0, "Failure",
-					fmt.Sprintf("Failed while trying to set up the receipt system: %s. Please fix this and restart the web installer.", err.Error()),
-					w,
-				)
-				return
-			}
-		}
-		rsif.Dispose()
+	http.HandleFunc("GET /install", withLog(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>`)
+		ctx.loadTemplate("webinstaller/_style").Execute(w, nil)
+		fmt.Fprint(w, `
+  </head>
+  <body>
+    <header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	  <ul>
+        <li><a href="/step1">Step 1: Plain Mode; Use Namespace</a></li>
+        <li><a href="/step2">Step 2: Database Config</a></li>
+        <li><a href="/step3">Step 3: Session Config</a></li>
+        <li><a href="/step4">Step 4: Mailer Config</a></li>
+        <li><a href="/step5">Step 5: Receipt System Config</a></li>
+        <li><a href="/step6">Step 6: Git Root &amp; Git User</a></li>
+        <li><a href="/step7">Step 7: Ignored Namespace/Repositories</a></li>
+        <li><a href="/step8">Step 8: Misc. Setup</a></li>
+        <li><a href="/confirm">Confirm</a></li>
+      </ul>
+	</header>
 
-		foundAt(w, "/finish")
+	<hr />
+`)
+		if len(strings.TrimSpace(ctx.Config.GitUser)) <= 0 {
+			fmt.Fprint(w, "<p>Git user empty. Please fix this...</p>")
+			goto leave
+		}
+		if !func()bool{
+			_, err := user.Lookup(ctx.Config.GitUser)
+			if err == nil { return true }
+			fmt.Fprint(w, "<p>Creating Git user...</p>")
+			gitShellPath, err := whereIs("git-shell")
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to search for git-shell: %s</p>", err.Error())
+				return false
+			}
+			if len(gitShellPath) <= 0 {
+				fmt.Fprint(w, "<p>Failed to search for git-shell: git-shell path empty.</p>")
+				return false
+			}
+			homePath := fmt.Sprintf("/home/%s", ctx.Config.GitUser)
+			ctx.Config.StaticAssetDirectory = path.Join(homePath, "aegis-static-assets")
+			err = os.MkdirAll(homePath, os.ModeDir|0755)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to create home directory for user %s: %s</p>", ctx.Config.GitUser, homePath)
+				return false
+			}
+			ctx.Config.FilePath = path.Join(homePath, fmt.Sprintf("aegis-config-%d.json", time.Now().Unix()))
+			useraddPath, err := whereIs("useradd")
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to find command \"useradd\": %s</p>", err.Error())
+				return false
+			}
+			if len(useraddPath) <= 0 {
+				fmt.Fprint(w, "<p>Failed to find command \"useradd\": useradd path empty")
+				return false
+			}
+			cmd := exec.Command(useraddPath, "-d", homePath, "-m", "-s", gitShellPath, ctx.Config.GitUser)
+			err = cmd.Run()
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to run useradd: %s</p>", err.Error())
+				return false
+			}
+			gitUser, err := user.Lookup(ctx.Config.GitUser)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Somehow failed to retrieve user after registering: %s\n", err.Error())
+				return false
+			}
+			uid, _ := strconv.ParseInt(gitUser.Uid, 10, 64)
+			gid, _ := strconv.ParseInt(gitUser.Gid, 10, 64)
+			fmt.Fprint(w,"<p>Chown-ing git user home directory...</p>")
+			err = os.Chown(homePath, int(uid), int(gid))
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to chown the git user home directory: %s</p>", err.Error())
+				return false
+			}
+			fmt.Fprint(w, "<p>Creating git-shell-commands directory...</p>")
+			gitShellCommandPath := path.Join(homePath, "git-shell-commands")
+			err = createOtherOwnedDirectory(gitShellCommandPath, gitUser.Uid, gitUser.Gid)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to chown the git shell command directory: %s</p>", err.Error())
+				return false
+			}
+			fmt.Fprint(w, "<p>Creating .ssh directory...</p>")
+			sshPath := path.Join(homePath, ".ssh")
+			err = createOtherOwnedDirectory(sshPath, gitUser.Uid, gitUser.Gid)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to create the .ssh folder: %s</p>", err.Error())
+				return false
+			}
+			fmt.Fprint(w, "<p>Creating authorized_keys file...</p>")
+			authorizedKeysPath := path.Join(homePath, ".ssh", "authorized_keys")
+			err = createOtherOwnedFile(authorizedKeysPath, gitUser.Uid, gitUser.Gid)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to create the authorized_keys file: %s</p>", err.Error())
+				return false
+			}
+			fmt.Fprint(w, "<p>Copying aegis executable...</p>")
+			s, err := os.Executable()
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s</p>", err.Error())
+				return false
+			}
+			f, err := os.Open(s)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s</p>", err.Error())
+				return false
+			}
+			defer f.Close()
+			aegisPath := path.Join(homePath, "git-shell-commands", "aegis")
+			fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0754)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
+				return false
+			}
+			defer fout.Close()
+			_, err = io.Copy(fout, f)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
+				return false
+			}
+			err = os.Chown(aegisPath, int(uid), int(gid))
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
+				return false
+			}
+			err = os.MkdirAll(ctx.Config.GitRoot, os.ModeDir|0755)
+			if errors.Is(err, os.ErrExist) {
+				err = os.Chown(ctx.Config.GitRoot, int(uid), int(gid))
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to chown git root: %s\n</p>", err.Error())
+					return false
+				}
+			}
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to chown git root: %s\n</p>", err.Error())
+				return false
+			}
+			fmt.Fprint(w, "<p>Git user setup done.</p>")
+			ctx.Config.RecalculateProperPath()
+			err = ctx.Config.Sync()
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to save config file: %s\n. You might need to do this again or even manually.</p>", err.Error())
+				return false
+			}
+			return true
+		}() { goto leave }
+
+		if !func()bool{
+			fmt.Fprint(w, "<p>Initializing database...</p>")
+			dbif, err := dbinit.InitializeDatabase(ctx.Config)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to initialize database: %s</p>", err.Error())
+				return false
+			}
+			defer dbif.Dispose()
+			chkres, err := dbif.IsDatabaseUsable()
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to initialize database: %s</p>", err.Error())
+				return false
+			}
+			if !chkres {
+				err = dbif.InstallTables()
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to initialize database: %s</p>", err.Error())
+					return false
+				}
+			}
+			
+			fmt.Fprint(w, "<p>Initialization done.</p>")
+			return true
+		}() { goto leave }
+		
+		if !func()bool{
+			fmt.Fprint(w, "<p>Initializing session store...</p>")
+			ssif, err := ssinit.InitializeDatabase(ctx.Config)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to initialize session store: %s</p>", err.Error())
+				return false
+			}
+			defer ssif.Dispose()
+			chkres, err := ssif.IsSessionStoreUsable()
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to initialize session store: %s</p>", err.Error())
+				return false
+			}
+			if !chkres {
+				err = ssif.Install()
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to initialize session store: %s</p>", err.Error())
+					return false
+				}
+			}
+			fmt.Fprint(w, "<p>Initialization done.</p>")
+			return true
+		}() { goto leave }
+		
+		if !func()bool{
+			w.Write([]byte("<p>Initializing receipt system...</p>"))
+			rsif, err := rsinit.InitializeReceiptSystem(ctx.Config)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to initialize receipt system: %s</p>", err.Error())
+				return false
+			}
+			defer rsif.Dispose()
+			chkres, err := rsif.IsReceiptSystemUsable()
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to initialize receipt system: %s</p>", err.Error())
+				return false
+			}
+			if !chkres {
+				err = rsif.Install()
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to initialize receipt system: %s</p>", err.Error())
+					return false
+				}
+			}
+			fmt.Fprint(w, "<p>Initialization done.</p>")
+			return true
+		}() { goto leave }
+		
+		if !func()bool{
+			fmt.Fprint(w, "<p>Setting up admin user.</p>")
+			dbif, err := dbinit.InitializeDatabase(ctx.Config)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to open database while setting up admin user: %s</p>", err.Error())
+				return false
+			}
+			defer dbif.Dispose()
+			adminExists := false
+			_, err = dbif.GetUserByName("admin")
+			if err == db.ErrEntityNotFound {
+				adminExists = false
+			} else if err != nil {
+				fmt.Fprintf(w, "<p>Failed to check database while setting up admin user: %s</p>", err.Error())
+				return false
+			} else {
+				adminExists = true
+			}
+			if adminExists {
+				err = dbif.HardDeleteUserByName("admin")
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to remove original admin user while setting up new admin user: %s</p>", err.Error())
+					return false
+				}
+			}
+			userPassword := mkpass()
+			r, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to generate password: %s</p>", err.Error())
+				return false
+			}
+			_, err = dbif.RegisterUser("admin", "", string(r), model.SUPER_ADMIN)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to register user: %s</p>", err.Error())
+				return false
+			}
+			fmt.Fprintf(w, "<p>Admin user set up properly.</p><pre>Username: admin\nPassword: %s</pre><p>Please copy the password above because we don't store the plaintext; but, in the case you forgot, you can always run the following command to reset the admin user's password:</p><pre>aegis -config %s reset-admin</pre>", userPassword, ctx.Config.FilePath)
+			return true
+		}() { goto leave }
+
+		if !func()bool{
+			gitUser, _ := user.Lookup(ctx.Config.GitUser)
+			var uid int
+			var gid int
+			if gitUser != nil {
+				uid64, _ := strconv.ParseInt(gitUser.Uid, 10, 64)
+				gid64, _ := strconv.ParseInt(gitUser.Gid, 10, 64)
+				uid = int(uid64)
+				gid = int(gid64)
+			}
+			if ctx.Config.Database.Type == "sqlite" {
+				if gitUser == nil {
+					fmt.Fprint(w, "<p class=\"warning\">Failed to fild Git user's uid & gid when chowning sqlite database. You need to perform this action on your own after this installation process...")
+				} else {
+					err := os.Chown(ctx.Config.ProperDatabasePath(), uid, gid)
+					if err != nil {
+						fmt.Fprintf(w, "<p class=\"warning\">Failed to chown sqlite database: %s. You need to perform this action on your own after this installation process...", err.Error())
+					}
+				}
+			}
+			if ctx.Config.Session.Type == "sqlite" {
+				if gitUser == nil {
+					fmt.Fprintf(w, "<p class=\"warning\">Failed to fild Git user's uid & gid when chowning sqlite database. You need to perform this action on your own after this installation process...")
+				} else {
+					err := os.Chown(ctx.Config.ProperSessionPath(), uid, gid)
+					if err != nil {
+						fmt.Fprintf(w, "<p class=\"warning\">Failed to chown sqlite database: %s. You need to perform this action on your own after this installation process...", err.Error())
+					}
+				}
+			}
+			if ctx.Config.ReceiptSystem.Type == "sqlite" {
+				if gitUser == nil {
+					fmt.Fprintf(w, "<p class=\"warning\">Failed to fild Git user's uid & gid when chowning sqlite database. You need to perform this action on your own after this installation process...")
+				} else {
+					err := os.Chown(ctx.Config.ProperReceiptSystemPath(), uid, gid)
+					if err != nil {
+						fmt.Fprintf(w, "<p class=\"warning\">Failed to chown sqlite database: %s. You need to perform this action on your own after this installation process...", err.Error())
+					}
+				}
+			}
+			return true
+		}() { goto leave }
+
+		
+		fmt.Fprint(w, "<p>Done! <a href=\"./finish\">Go to the next step.</a></p>")
+		goto footer
+
+	leave:
+		fmt.Fprintf(w, "<p>The installation process failed but the config file might've been saved successfully at <code>%s</code>. In this case, you need to run the following command:</p><pre>aegis -config %s</pre></p>", ctx.Config.FilePath, ctx.Config.FilePath)
+
+	footer:
+		fmt.Fprint(w, `
+    <hr />
+    <footer>
+      <div class="footer-message">
+        Powered by <a href="https://github.com/bctnry/aegis">Aegis</a>.
+      </div>
+    </footer>
+  </body>
+</html>`)
 	}))
 	
 	http.HandleFunc("GET /finish", withLog(func(w http.ResponseWriter, r *http.Request) {
+		
 		logTemplateError(ctx.loadTemplate("webinstaller/finish").Execute(w, &templates.WebInstallerTemplateModel{
 			Config: ctx.Config,
 		}))
