@@ -1,5 +1,17 @@
 Copyright 2025 Zetian Lin
 
+2025-07-27 Zetian Lin <bctnry@sdf.org>
+
+	* v0.0.2
+	+ feat: issue search (#28) by @bctnry in #34
+	+ feat: pull request search (#29) by @bctnry in #35
+	+ feat: better diff view (#31) by @bctnry in #46
+	+ feat: global visibility (#40) by @bctnry in #50
+	+ feat: automatic user namespace creation (#51) by @bctnry in #52
+	+ feat: web installer upgrade (#33) by @bctnry in #56
+	+ fix: add fork notice text (see issue #53) by @bctnry in #58
+	+ fix: handling invalid local git folder formation (#54) by @bctnry in #60
+
 2025-07-07 Zetian Lin <bctnry@sdf.org>
 
 	* v0.0.1: First usable version
