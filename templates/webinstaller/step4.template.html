@@ -25,6 +25,7 @@
 			<tr><td><label for="mailer-type" class="field-sub-label">mailer.type</label></td>
 			  <td>
 				<select name="mailer-type" id="mailer-type">
+				  <option value="smtp" {{if eq .Config.Mailer.Type "smtp"}}selected{{end}}>SMTP</option>
 				  <option value="gmail-plain" {{if eq .Config.Mailer.Type "gmail-plain"}}selected{{end}}>GMail (Plain)</option>
 				</select>
 			  </td>
@@ -39,6 +40,12 @@
 				(Not used when mailer type is "GMail (Plain)")
 			  </td>
 			  <td><input name="mailer-smtp-port" id="mailer-smtp-port" value="{{.Config.Mailer.SMTPPort}}" /></td>
+			</tr>
+			
+			<tr><td><label for="mailer-smtp-auth" class="field-sub-label">mailer.smtpAuth</label><br />
+				Authentication method. (Not used when mailer type is "GMail (Plain)")
+			  </td>
+			  <td><input name="mailer-smtp-auth" id="mailer-smtp-auth" value="{{.Config.Mailer.SMTPAuth}}" /></td>
 			</tr>
 			
 			<tr><td><label for="mailer-user" class="field-sub-label">mailer.user</label></td>

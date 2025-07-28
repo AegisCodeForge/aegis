@@ -195,6 +195,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			Type: strings.TrimSpace(r.Form.Get("mailer-type")),
 			SMTPServer: strings.TrimSpace(r.Form.Get("mailer-smtp-server")),
 			SMTPPort: int(i),
+			SMTPAuth: strings.TrimSpace(r.Form.Get("mailer-smtp-auth")),
 			User: strings.TrimSpace(r.Form.Get("mailer-user")),
 			Password: strings.TrimSpace(r.Form.Get("mailer-password")),
 		}

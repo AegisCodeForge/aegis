@@ -23,7 +23,6 @@ func bindReceiptController(ctx *routes.RouterContext) {
 		}
 		rid := r.URL.Query().Get("id")
 		re, err := ctx.ReceiptSystem.RetrieveReceipt(rid)
-		fmt.Println(re)
 		if err != nil { routes.FoundAt(w, "/"); return }
 		if (time.Now().Unix() - re.IssueTime) >= re.TimeoutMinute*60 {
 			ctx.ReceiptSystem.CancelReceipt(rid)
@@ -35,7 +34,6 @@ func bindReceiptController(ctx *routes.RouterContext) {
 			routes.FoundAt(w, "/")
 			return
 		}
-		fmt.Println(re)
 		switch re.Command[0] {
 		case receipt.CONFIRM_REGISTRATION:
 			routes.FoundAt(w, fmt.Sprintf("/confirm-registration?id=%s", rid))

@@ -79,7 +79,7 @@ func bindAdminSiteConfigController(ctx *routes.RouterContext) {
 			}
 			ctx.Config.EmailConfirmationRequired = false
 			if r.Form.Has("email-confirmation-required") && r.Form.Get("email-confirmation-required") == "on" {
-				ctx.Config.UseNamespace = true
+				ctx.Config.EmailConfirmationRequired = true
 			}
 			ctx.Config.ManualApproval = false
 			if r.Form.Has("manual-approval") && r.Form.Get("manual-approval") == "on" {

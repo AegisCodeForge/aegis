@@ -216,7 +216,8 @@ type AegisMailerConfig struct {
 	// smtp server & smtp port. technically not used if type is gmail-plain.
 	// these fields are here for future use.
 	SMTPServer string `json:"smtpServer"`
-	SMTPPort int `json:"smtpPort"`	
+	SMTPPort int `json:"smtpPort"`
+	SMTPAuth string `json:"smtpAuth"`
 	User string `json:"user"`
 	// email sender password. this would be stored in plain-text so one
 	// should be using 
