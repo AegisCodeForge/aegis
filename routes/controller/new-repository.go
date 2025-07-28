@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -92,7 +93,7 @@ func bindNewRepositoryController(ctx *RouterContext) {
 		}
 		newRepoName := r.Form.Get("name")
 		newRepoDescription := r.Form.Get("description")
-		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName, userName)
+		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName, model.REPO_TYPE_GIT, userName)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return

@@ -61,6 +61,10 @@ func bindCommitController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		if !ctx.Config.PlainMode {
 			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
@@ -85,7 +89,8 @@ func bindCommitController(ctx *RouterContext) {
 
 		repoHeaderInfo := GenerateRepoHeader("commit", commitId)
 
-		gobj, err := repo.Repository.ReadObject(commitId)
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
+		gobj, err := rr.ReadObject(commitId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(commitId, err.Error(), w, r)
 			return
@@ -100,9 +105,9 @@ func bindCommitController(ctx *RouterContext) {
 			RootPath: fmt.Sprintf("/repo/%s", rfn),
 			Commit: cobj,
 		}
-		gobj, err = repo.Repository.ReadObject(cobj.TreeObjId)
+		gobj, err = rr.ReadObject(cobj.TreeObjId)
 		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }
-		target, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
+		target, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
@@ -116,7 +121,7 @@ func bindCommitController(ctx *RouterContext) {
 				w.Write((target.(*gitlib.BlobObject)).Data)
 				return
 			} else {
-				handleCommitSnapshotRequest(repo.Repository, commitId, target, w)
+				handleCommitSnapshotRequest(rr, commitId, target, w)
 				return
 			}
 		}
@@ -166,7 +171,7 @@ func bindCommitController(ctx *RouterContext) {
 			}))
 		case gitlib.BLOB:
 			dirPath := path.Dir(treePath)
-			dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+			dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return

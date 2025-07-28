@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 
-	"github.com/bctnry/aegis/pkg/gitlib"
 )
 
 type AegisRepositoryStatus int
@@ -14,14 +13,21 @@ const (
 	REPO_ARCHIVED AegisRepositoryStatus = 4
 )
 
+const (
+	REPO_TYPE_GIT uint8 = 1
+)
+
+type LocalRepository any
+
 type Repository struct {
+	Type uint8 `json:"type"`
 	Namespace string `json:"namespace"`
 	Name string `json:"name"`
 	Description string `json:"description"`
 	AccessControlList *ACL `json:"acl"`
 	Owner string `json:"owner"`
 	Status AegisRepositoryStatus `json:"status"`
-	Repository *gitlib.LocalGitRepository `json:"localGitRepo"`
+	Repository LocalRepository
 	LocalPath string `json:"localPath"`
 	ForkOriginNamespace string `json:"forkOriginNamespace"`
 	ForkOriginName string `json:"forkOriginName"`
@@ -29,15 +35,15 @@ type Repository struct {
 	RepoLabelList []string `json:"labelList"`
 }
 
-func NewRepository(ns string, name string, localgr *gitlib.LocalGitRepository) (*Repository, error) {
+func NewRepository(ns string, name string, localgr LocalRepository) (*Repository, error) {
 	return &Repository{
 		Namespace: ns,
 		Name: name,
-		Description: localgr.Description,
+		Description: "",
 		AccessControlList: nil,
 		Status: REPO_NORMAL_PUBLIC,
 		Repository: localgr,
-		LocalPath: localgr.GitDirectoryPath,
+		LocalPath: GetLocalRepositoryLocalPath(localgr),
 	}, nil
 }
 

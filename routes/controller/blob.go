@@ -52,6 +52,10 @@ func bindBlobController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		if !ctx.Config.PlainMode {
 			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
@@ -74,7 +78,8 @@ func bindBlobController(ctx *RouterContext) {
 
 		repoHeaderInfo := GenerateRepoHeader("blob", blobId)
 
-		gobj, err := repo.Repository.ReadObject(blobId)
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
+		gobj, err := rr.ReadObject(blobId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(blobId, err.Error(), w, r)
 			return

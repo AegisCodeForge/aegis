@@ -73,6 +73,10 @@ func bindTagController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		if !ctx.Config.PlainMode {
 			loginInfo.IsOwner = repo.Owner == loginInfo.UserName || ns.Owner == loginInfo.UserName
 		}
@@ -91,7 +95,8 @@ func bindTagController(ctx *RouterContext) {
 				return
 			}
 		}
-		
+
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		tagName := r.PathValue("tagId")
 		treePath := r.PathValue("treePath")
 
@@ -105,7 +110,7 @@ func bindTagController(ctx *RouterContext) {
 		//   we thus display them accordingly.
 		repoHeaderInfo := GenerateRepoHeader("tag", tagName)
 		
-		err = repo.Repository.SyncAllTagList()
+		err = rr.SyncAllTagList()
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf("Failed to sync tag list: %s", err.Error()),
@@ -113,19 +118,19 @@ func bindTagController(ctx *RouterContext) {
 			)
 			return
 		}
-		t, ok := repo.Repository.TagIndex[tagName]
+		t, ok := rr.TagIndex[tagName]
 		if !ok {
 			ctx.ReportNotFound(tagName, "Tag", rfn, w, r)
 			return
 		}
-		tobj, err := repo.Repository.ReadObject(t.HeadId)
+		tobj, err := rr.ReadObject(t.HeadId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(t.HeadId, err.Error(), w, r)
 			return
 		}
 
 		if r.URL.Query().Has("snapshot") {
-			handleTagSnapshotRequest(repo.Repository, tagName, tobj, w)
+			handleTagSnapshotRequest(rr, tagName, tobj, w)
 			return
 		}
 
@@ -147,7 +152,7 @@ func bindTagController(ctx *RouterContext) {
 				RepoName: rfn,
 				Tag: to,
 			}
-			subject, err = repo.Repository.ReadObject(to.TaggedObjId)
+			subject, err = rr.ReadObject(to.TaggedObjId)
 			if err != nil {
 				ctx.ReportObjectReadFailure(to.TaggedObjId, err.Error(), w, r)
 				return
@@ -173,7 +178,7 @@ func bindTagController(ctx *RouterContext) {
 				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj,
 			}
-			subject, err = repo.Repository.ReadObject(cobj.TreeObjId)
+			subject, err = rr.ReadObject(cobj.TreeObjId)
 			if err != nil {
 				ctx.ReportObjectReadFailure(
 					cobj.TreeObjId,
@@ -186,7 +191,7 @@ func bindTagController(ctx *RouterContext) {
 		}
 
 		if subject.Type() == gitlib.TREE {
-			subject, err = repo.Repository.ResolveTreePath(subject.(*gitlib.TreeObject), treePath)
+			subject, err = rr.ResolveTreePath(subject.(*gitlib.TreeObject), treePath)
 			if subject.Type() == gitlib.TREE && len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
 				FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s/%s/", rfn, tagName, treePath))
 				return
@@ -264,7 +269,7 @@ func bindTagController(ctx *RouterContext) {
 					Name: item, RelPath: strings.Join(tp1, "/"),
 				})
 			}
-			target, err := repo.Repository.ResolveTreePath(subject.(*gitlib.TreeObject), treePath)
+			target, err := rr.ResolveTreePath(subject.(*gitlib.TreeObject), treePath)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 			}

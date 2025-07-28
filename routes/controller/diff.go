@@ -51,6 +51,10 @@ func bindDiffController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		if !ctx.Config.PlainMode {
 			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
@@ -69,9 +73,10 @@ func bindDiffController(ctx *RouterContext) {
 				return
 			}
 		}
-		
+
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		commitId := r.PathValue("commitId")
-		cobj, err := repo.Repository.ReadObject(commitId)
+		cobj, err := rr.ReadObject(commitId)
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf("Failed to read commit %s: %s", commitId, err.Error()),
@@ -79,7 +84,7 @@ func bindDiffController(ctx *RouterContext) {
 			)
 			return
 		}
-		diff, err := repo.Repository.GetDiff(commitId)
+		diff, err := rr.GetDiff(commitId)
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf("Failed to read diff of %s: %s", commitId, err.Error()),

@@ -81,8 +81,9 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 		}
-		
-		err = s.Repository.SyncAllBranchList()
+
+		rr := s.Repository.(*gitlib.LocalGitRepository)
+		err = rr.SyncAllBranchList()
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -90,7 +91,7 @@ func bindRepositoryController(ctx *RouterContext) {
 			}))
 			return
 		}
-		err = s.Repository.SyncAllTagList()
+		err = rr.SyncAllTagList()
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -108,16 +109,16 @@ func bindRepositoryController(ctx *RouterContext) {
 		// the branch order would be: master - main
 		// if any of the two cannot be found, it's considered without a readme.
 		var obj gitlib.GitObject
-		br, ok := s.Repository.BranchIndex["master"]
-		if !ok { br, ok = s.Repository.BranchIndex["main"] }
+		br, ok := rr.BranchIndex["master"]
+		if !ok { br, ok = rr.BranchIndex["main"] }
 		if !ok { goto findingReadmeDone; }
-		obj, err = s.Repository.ReadObject(br.HeadId)
+		obj, err = rr.ReadObject(br.HeadId)
 		if err != nil { goto findingReadmeDone; }
 		// i don't know if it would ever happen that a branch head would point to
 		// anything that's not a commit, but if we can't find it we treat it as
 		// no readme.
 		if !gitlib.IsCommitObject(obj) { goto findingReadmeDone; }
-		obj, err = s.Repository.ReadObject(obj.(*gitlib.CommitObject).TreeObjId)
+		obj, err = rr.ReadObject(obj.(*gitlib.CommitObject).TreeObjId)
 		if err != nil { goto findingReadmeDone; }
 		for _, item := range obj.(*gitlib.TreeObject).ObjectList {
 			if item.Name == "README" || strings.HasPrefix(item.Name, "README.") {
@@ -130,10 +131,10 @@ func bindRepositoryController(ctx *RouterContext) {
 				if item.Name == "README" || item.Name == "README.txt" || item.Name == "README.org" || item.Name == "README.md" { thisTier = 1 }
 				if readmeTier > 0 && thisTier > readmeTier { continue }
 				readmeTier = thisTier
-				obj, err = s.Repository.ReadObject(item.Hash)
+				obj, err = rr.ReadObject(item.Hash)
 				if err != nil { continue }
 				if !gitlib.IsBlobObject(obj) { continue }
-				obj, err = s.Repository.ReadObject(item.Hash)
+				obj, err = rr.ReadObject(item.Hash)
 				readmeType = path.Ext(item.Name)
 				readmeString = string(obj.(*gitlib.BlobObject).Data)
 				if thisTier == 1 { goto renderReadme }
@@ -180,8 +181,8 @@ func bindRepositoryController(ctx *RouterContext) {
 			Config: ctx.Config,
 			Repository: s,
 			RepoHeaderInfo: *repoHeaderInfo,
-			BranchList: s.Repository.BranchIndex,
-			TagList: s.Repository.TagIndex,
+			BranchList: rr.BranchIndex,
+			TagList: rr.TagIndex,
 			ReadmeString: readmeString,
 			LoginInfo: loginInfo,
 		}))
