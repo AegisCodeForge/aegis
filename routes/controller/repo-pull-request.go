@@ -8,6 +8,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
@@ -319,14 +320,14 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		err = s.Repository.SyncAllBranchList()
+		err = s.Repository.(*gitlib.LocalGitRepository).SyncAllBranchList()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
 		receiverBranch := strings.TrimSpace(r.URL.Query().Get("recv-br"))
 		if len(receiverBranch) > 0 {
-			_, ok := s.Repository.BranchIndex[receiverBranch]
+			_, ok := s.Repository.(*gitlib.LocalGitRepository).BranchIndex[receiverBranch]
 			if !ok {
 				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/pull-request/new", rfn), 5, "Not Found", fmt.Sprintf("Branch \"%s\" does not exist in repository %s. Please choose an existing branch.", receiverBranch, rfn), w, r)
 				return
@@ -357,12 +358,12 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 				return
 			}
 			branchNameList := make([]string, 0)
-			err = provider.Repository.SyncAllBranchList()
+			err = provider.Repository.(*gitlib.LocalGitRepository).SyncAllBranchList()
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			for k := range provider.Repository.BranchIndex {
+			for k := range provider.Repository.(*gitlib.LocalGitRepository).BranchIndex {
 				branchNameList = append(branchNameList, k)
 			}
 			routes.LogTemplateError(ctx.LoadTemplate("pull-request/new-pull-request").Execute(w, &templates.RepositoryNewPullRequestTemplateModel{

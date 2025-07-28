@@ -71,6 +71,9 @@
   CREATE UNIQUE INDEX IF NOT EXISTS idx_aegis_namespace_ns_name
   ON aegis_namespace (ns_name);
   CREATE TABLE IF NOT EXISTS aegis_repository (
+      -- repository type
+  	-- 1 - git
+  	repo_type INTEGER,
       -- this field is here for the constraint only, but you should
   	-- always kept it as `{namespace}:{name}`.
       repo_fullname TEXT UNIQUE,

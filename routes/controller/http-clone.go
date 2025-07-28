@@ -7,6 +7,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 )
@@ -34,6 +35,10 @@ func bindHttpCloneController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
 		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
 		isRepoArchived := repo.Status == model.REPO_ARCHIVED
@@ -42,7 +47,8 @@ func bindHttpCloneController(ctx *RouterContext) {
 			w.Write([]byte("404 Not Found"))
 			return
 		}
-		p := path.Join(repo.Repository.GitDirectoryPath, "info", r.PathValue("p"))
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
+		p := path.Join(rr.GitDirectoryPath, "info", r.PathValue("p"))
 		s, err := os.ReadFile(p)
 		if err != nil {
 			ctx.ReportInternalError("Fail to read info/refs", w, r)
@@ -65,6 +71,10 @@ func bindHttpCloneController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
 		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
 		isRepoArchived := repo.Status == model.REPO_ARCHIVED
@@ -73,7 +83,8 @@ func bindHttpCloneController(ctx *RouterContext) {
 			w.Write([]byte("404 Not Found"))
 			return
 		}
-		p := path.Join(repo.Repository.GitDirectoryPath, "HEAD")
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
+		p := path.Join(rr.GitDirectoryPath, "HEAD")
 		s, err := os.ReadFile(p)
 		if err != nil {
 			ctx.ReportInternalError("Fail to read info/refs", w, r)
@@ -96,6 +107,10 @@ func bindHttpCloneController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
 		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
 		isRepoArchived := repo.Status == model.REPO_ARCHIVED
@@ -105,7 +120,8 @@ func bindHttpCloneController(ctx *RouterContext) {
 			return
 		}
 		obj := r.PathValue("obj")
-		p := path.Join(repo.Repository.GitDirectoryPath, "objects", obj)
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
+		p := path.Join(rr.GitDirectoryPath, "objects", obj)
 		s, err := os.ReadFile(p)
 		if os.IsNotExist(err) {
 			ctx.ReportNotFound(rfn, "object", ctx.Config.DepotName, w, r)

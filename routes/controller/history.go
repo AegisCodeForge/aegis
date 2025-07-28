@@ -52,6 +52,10 @@ func bindHistoryController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		if !ctx.Config.PlainMode {
 			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
@@ -70,13 +74,14 @@ func bindHistoryController(ctx *RouterContext) {
 				return
 			}
 		}
-		
+
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		nodeName := r.PathValue("nodeName")
 		nodeNameElem := strings.Split(nodeName, ":")
 		typeStr := string(nodeNameElem[0])
 		cid := string(nodeNameElem[1])
 		if string(nodeNameElem[0]) == "branch" {
-			err := repo.Repository.SyncAllBranchList()
+			err := rr.SyncAllBranchList()
 			if err != nil {
 				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 					ErrorCode: 500,
@@ -84,7 +89,7 @@ func bindHistoryController(ctx *RouterContext) {
 				}))
 				return
 			}
-			br, ok := repo.Repository.BranchIndex[string(nodeNameElem[1])]
+			br, ok := rr.BranchIndex[string(nodeNameElem[1])]
 			if !ok {
 				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 					ErrorCode: 404,
@@ -94,7 +99,7 @@ func bindHistoryController(ctx *RouterContext) {
 			}
 			cid = br.HeadId
 		}
-		cobj, err := repo.Repository.ReadObject(cid)
+		cobj, err := rr.ReadObject(cid)
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -106,7 +111,7 @@ func bindHistoryController(ctx *RouterContext) {
 			}))
 			return
 		}
-		h, err := repo.Repository.GetCommitHistoryN(cid, 11)
+		h, err := rr.GetCommitHistoryN(cid, 11)
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,

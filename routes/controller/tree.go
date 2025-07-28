@@ -50,13 +50,17 @@ func bindTreeHandler(ctx *RouterContext) {
 				return
 			}
 		}
-		_, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
 			return
 		}
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
 			return
 		}
 		if !ctx.Config.PlainMode {
@@ -80,17 +84,13 @@ func bindTreeHandler(ctx *RouterContext) {
 		
 		treeId := r.PathValue("treeId")
 		treePath := r.PathValue("treePath")
-		repo, ok := ctx.GitRepositoryList[repoName]
-		if !ok {
-			ctx.ReportNotFound(repoName, "Repository", "depot", w, r)
-			return
-		}
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
 			TypeStr: "tree",
 			NodeName: treeId,
 		}
 
-		gobj, err := repo.Repository.ReadObject(treeId)
+		gobj, err := rr.ReadObject(treeId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(treeId, err.Error(), w, r)
 			return
@@ -105,7 +105,7 @@ func bindTreeHandler(ctx *RouterContext) {
 		permaLink := fmt.Sprintf("/repo/%s/tree/%s/%s", rfn, treeId, treePath)
 		tobj := gobj.(*gitlib.TreeObject)
 		var commitInfo *templates.CommitInfoTemplateModel = nil
-		target, err := repo.Repository.ResolveTreePath(tobj, treePath)
+		target, err := rr.ResolveTreePath(tobj, treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 		}
@@ -117,7 +117,7 @@ func bindTreeHandler(ctx *RouterContext) {
 
 		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
 		if isSnapshotRequest {
-			handleTreeSnapshotRequest(repo.Repository, treeId, target, w)
+			handleTreeSnapshotRequest(rr, treeId, target, w)
 			return
 		}
 		

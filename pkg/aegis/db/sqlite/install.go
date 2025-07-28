@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS %suser_signkey (
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %snamespace (
-      ns_name TEXT UNIQUE,
+    ns_name TEXT UNIQUE,
   	ns_title TEXT,
   	ns_description TEXT,
   	ns_email TEXT,
@@ -50,13 +50,14 @@ CREATE TABLE IF NOT EXISTS %snamespace (
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %srepository (
-      repo_fullname TEXT UNIQUE,
-      repo_namespace TEXT,
-      repo_name TEXT,
-      repo_description TEXT,
-      repo_owner TEXT,
-  	  repo_acl TEXT,
-  	  repo_status INTEGER,
+    repo_type INTEGER,
+    repo_fullname TEXT UNIQUE,
+    repo_namespace TEXT,
+    repo_name TEXT,
+    repo_description TEXT,
+    repo_owner TEXT,
+  	repo_acl TEXT,
+  	repo_status INTEGER,
   	repo_fork_origin_namespace TEXT,
   	repo_fork_origin_name TEXT,
       FOREIGN KEY (repo_namespace) REFERENCES %snamespace(ns_name)

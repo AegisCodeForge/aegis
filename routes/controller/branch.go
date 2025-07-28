@@ -61,7 +61,10 @@ func bindBranchController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-
+		if repo.Type != model.REPO_TYPE_GIT {
+			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+			return
+		}
 		if !ctx.Config.PlainMode {
 			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
 		}
@@ -85,7 +88,8 @@ func bindBranchController(ctx *RouterContext) {
 		
 		treePath := r.PathValue("treePath")
 
-		err = repo.Repository.SyncAllBranchList()
+		rr := repo.Repository.(*gitlib.LocalGitRepository)
+		err = rr.SyncAllBranchList()
 		if err != nil {
 			ctx.ReportInternalError(
 				fmt.Sprintf(
@@ -96,12 +100,12 @@ func bindBranchController(ctx *RouterContext) {
 			)
 			return
 		}
-		br, ok := repo.Repository.BranchIndex[branchName]
+		br, ok := rr.BranchIndex[branchName]
 		if !ok {
 			ctx.ReportNotFound(branchName, "Branch", repoName, w, r)
 			return
 		}
-		gobj, err := repo.Repository.ReadObject(br.HeadId)
+		gobj, err := rr.ReadObject(br.HeadId)
 		if err != nil {
 			ctx.ReportObjectReadFailure(br.HeadId, err.Error(), w, r)
 			return
@@ -116,9 +120,9 @@ func bindBranchController(ctx *RouterContext) {
 			RootPath: fmt.Sprintf("/repo/%s", rfn),
 			Commit: cobj,
 		}
-		gobj, err = repo.Repository.ReadObject(cobj.TreeObjId)
+		gobj, err = rr.ReadObject(cobj.TreeObjId)
 		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }
-		target, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
+		target, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
@@ -135,7 +139,7 @@ func bindBranchController(ctx *RouterContext) {
 				w.Write((target.(*gitlib.BlobObject)).Data)
 				return
 			} else {
-				handleBranchSnapshotRequest(repo.Repository, branchName, target, w)
+				handleBranchSnapshotRequest(rr, branchName, target, w)
 				return
 			}
 		}
@@ -174,7 +178,7 @@ func bindBranchController(ctx *RouterContext) {
 			var parentTreeFileList *templates.TreeFileListTemplateModel = nil
 			if treePath != "" {
 				dirPath := path.Dir(path.Dir(treePath)) + "/"
-				dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
@@ -205,7 +209,7 @@ func bindBranchController(ctx *RouterContext) {
 			}))
 		case gitlib.BLOB:
 			dirPath := path.Dir(treePath) + "/"
-			dirObj, err := repo.Repository.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+			dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
