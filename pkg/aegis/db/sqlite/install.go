@@ -2,6 +2,7 @@ package sqlite
 
 import "fmt"
 
+
 func (dbif *SqliteAegisDatabaseInterface) InstallTables() error {
 	pfx := dbif.config.Database.TablePrefix
 	tx, err := dbif.connection.Begin()
@@ -110,11 +111,11 @@ CREATE TABLE IF NOT EXISTS %sissue (
 	-- 1 - opened.  2 - close as solved.  3 - close as discarded.
 	issue_status INTEGER,
 	FOREIGN KEY (repo_namespace, repo_name)
-      REFERENCES gitus_repository(repo_namespace, repo_name),
+      REFERENCES %srepository(repo_namespace, repo_name),
 	FOREIGN KEY (issue_author)
-	  REFERENCES gitus_user(user_name)
+	  REFERENCES %suser(user_name)
 );
-`, pfx))
+`, pfx, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
@@ -126,9 +127,9 @@ CREATE TABLE IF NOT EXISTS %sissue_event (
 	issue_event_time INTEGER,
 	issue_event_author TEXT,
 	issue_event_content TEXT,
-    FOREIGN KEY (issue_abs_id) REFERENCES gitus_issue(rowid)
+    FOREIGN KEY (issue_abs_id) REFERENCES %sissue(rowid)
 );
-`, pfx))
+`, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`

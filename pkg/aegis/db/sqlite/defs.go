@@ -43,10 +43,6 @@ func (dbif *SqliteAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {
 	return true, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) Close() {
-	dbif.connection.Close()
-}
-
 func NewSqliteAegisDatabaseInterface(cfg *aegis.AegisConfig) (*SqliteAegisDatabaseInterface, error) {
 	p := cfg.ProperDatabasePath()
 	r, _ := url.Parse(p)
