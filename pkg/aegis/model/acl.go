@@ -6,20 +6,20 @@ import (
 )
 
 type ACLTuple struct {
-	AddMember bool
-	DeleteMember bool
-	EditMember bool
-	EditInfo bool
-	AddRepository bool
-	PushToRepository bool
-	ArchiveRepository bool
-	DeleteRepository bool
-	EditHooks bool
+	AddMember bool `json:"addMember"`
+	DeleteMember bool `json:"deleteMember"`
+	EditMember bool `json:"editMember"`
+	EditInfo bool `json:"editInfo"`
+	AddRepository bool `json:"addRepo"`
+	PushToRepository bool `json:"pushToRepo"`
+	ArchiveRepository bool `json:"archiveRepo"`
+	DeleteRepository bool `json:"deleteRepo"`
+	EditHooks bool `json:"editHooks"`
 }
 
 type ACL struct {
-	Version string
-	ACL map[string]*ACLTuple
+	Version string `json:"version"`
+	ACL map[string]*ACLTuple `json:"acl"`
 }
 
 func (aclt *ACLTuple) HasSettingPrivilege() bool {
@@ -29,63 +29,30 @@ func (aclt *ACLTuple) HasSettingPrivilege() bool {
 	return aclt.AddMember || aclt.DeleteMember || aclt.EditMember || aclt.AddRepository || aclt.EditInfo || aclt.ArchiveRepository || aclt.DeleteRepository || aclt.EditHooks
 }
 
+func NewACL() *ACL {
+	res := &ACL{
+		Version: "0",
+		ACL: make(map[string]*ACLTuple, 0),
+	}
+	return res
+}
+
 func ParseACL(s string) (*ACL, error) {
 	if len(strings.TrimSpace(s)) <= 0 { return nil, nil }
-	preres := struct{
-		Version string
-		ACL map[string][]bool
-	}{}
-	err := json.Unmarshal([]byte(s), &preres)
-	if err != nil { return nil, err }
 	res := new(ACL)
-	res.ACL = make(map[string]*ACLTuple, 0)
-	for k, v := range preres.ACL {
-		addMember := len(v) > 0 && v[0]
-		deleteMember := len(v) > 1 && v[1]
-		editMember := len(v) > 2 && v[2]
-		editInfo := len(v) > 3 && v[3]
-		addRepo := len(v) > 4 && v[4]
-		pushToRepo := len(v) > 5 && v[5]
-		archiveRepo := len(v) > 6 && v[6]
-		deleteRepo := len(v) > 7 && v[7]
-		editHooks := len(v) > 8 && v[8]
-		res.ACL[k] = &ACLTuple{
-			AddMember: addMember,
-			DeleteMember: deleteMember,
-			EditMember: editMember,
-			EditInfo: editInfo,
-			AddRepository: addRepo,
-			PushToRepository: pushToRepo,
-			ArchiveRepository: archiveRepo,
-			DeleteRepository: deleteRepo,
-			EditHooks: editHooks,
-		}
-	}
+	err := json.Unmarshal([]byte(s), res)
+	if err != nil { return nil, err }
 	return res, nil
 }
 
+func (at *ACLTuple) SerializeACLTuple() (string, error) {
+	resbyte, err := json.MarshalIndent(at, "", "    ")
+	if err != nil { return "", err }
+	return string(resbyte), nil
+}
+
 func (s *ACL) SerializeACL() (string, error) {
-	preres := struct{
-		Version string
-		ACL map[string][]bool
-	}{}
-	preres.Version = s.Version
-	preres.ACL = make(map[string][]bool, 0)
-	for k, v := range s.ACL {
-		if v == nil { continue }
-		vec := make([]bool, 9)
-		vec[0] = v.AddMember
-		vec[1] = v.DeleteMember
-		vec[2] = v.EditMember
-		vec[3] = v.EditInfo
-		vec[4] = v.AddRepository
-		vec[5] = v.PushToRepository
-		vec[6] = v.ArchiveRepository
-		vec[7] = v.DeleteRepository
-		vec[8] = v.EditHooks
-		preres.ACL[k] = vec
-	}
-	resbyte, err := json.MarshalIndent(preres, "", "    ")
+	resbyte, err := json.MarshalIndent(s, "", "    ")
 	if err != nil { return "", err }
 	return string(resbyte), nil
 }

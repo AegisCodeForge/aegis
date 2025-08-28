@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os/exec"
 
 	"github.com/bctnry/aegis/pkg/gitlib"
 )
@@ -22,6 +23,17 @@ func CreateLocalRepository(t uint8, namespace string, name string, p string) (Lo
 		return gitlib.NewLocalGitRepository(namespace, name, p), nil
 	default:
 		return nil, ErrNotSupported
+	}
+}
+
+func InitLocalRepository(lr LocalRepository) error {
+	switch GetAegisType(lr) {
+	case REPO_TYPE_GIT:
+		cmd := exec.Command("git", "init", "--bare")
+		cmd.Dir = GetLocalRepositoryLocalPath(lr)
+		return cmd.Run()
+	default:
+		return ErrNotSupported
 	}
 }
 

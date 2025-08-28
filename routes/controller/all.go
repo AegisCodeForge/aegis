@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"slices"
 	"strings"
@@ -75,6 +76,7 @@ func bindAllController(ctx *routes.RouterContext) {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
+				
 				pageInfo, err = routes.GeneratePageInfo(r, nslCount)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
@@ -86,6 +88,7 @@ func bindAllController(ctx *routes.RouterContext) {
 					nsl, err = ctx.DatabaseInterface.GetAllVisibleNamespacePaginated(loginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
 				}
 			}
+			fmt.Printf("%s\n", nsl)
 			routes.LogTemplateError(ctx.LoadTemplate("all/namespace-list").Execute(w, templates.AllNamespaceListModel{
 				DepotName: ctx.Config.DepotName,
 				NamespaceList: nsl,

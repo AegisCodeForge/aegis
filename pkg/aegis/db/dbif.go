@@ -57,7 +57,9 @@ type AegisDatabaseInterface interface {
 	UpdateRepositoryInfo(ns string, name string, robj *model.Repository) error
 	UpdateRepositoryStatus(ns string, name string, status model.AegisRepositoryStatus) error
 	HardDeleteRepository(ns string, name string) error
-	MoveRepository(oldNs string, oldName string, newNs string, newName string) error
+	// TODO: aegis currently doesn't support moving.
+	// we'll reconsider this when the appropriate time comes.
+	// MoveRepository(oldNs string, oldName string, newNs string, newName string) error
 
 	GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error)
 	GetAllNamespaces(pageNum int, pageSize int) (map[string]*model.Namespace, error)

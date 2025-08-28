@@ -26,6 +26,7 @@
 			  <td>
 				<select name="database-type" id="database-type">
 				  <option value="sqlite" {{if eq .Config.Database.Type "sqlite"}}selected{{end}}>SQLite</option>
+				  <option value="postgres" {{if eq .Config.Database.Type "postgres"}}selected{{end}}>PostgreSQL</option>
 				</select>
 			  </td>
 			</tr>

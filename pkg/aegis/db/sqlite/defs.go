@@ -3,7 +3,6 @@ package sqlite
 import (
 	"database/sql"
 	"net/url"
-	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	_ "github.com/mattn/go-sqlite3"
@@ -29,9 +28,9 @@ var requiredTableList = []string{
 
 func (dbif *SqliteAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {
 	stmt, err := dbif.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
+	if err != nil { return false, err }
 	for _, item := range requiredTableList {
 		tableName := dbif.config.Database.TablePrefix + item
-		if err != nil { return false, err }
 		r := stmt.QueryRow(tableName)
 		if r.Err() != nil { return false, r.Err() }
 		var a string
@@ -58,12 +57,3 @@ func NewSqliteAegisDatabaseInterface(cfg *aegis.AegisConfig) (*SqliteAegisDataba
 		connection: db,
 	}, nil
 }
-
-func ToSqlSearchPattern(s string) string {
-	res := strings.ReplaceAll(s, "\\", "\\\\")
-	res = strings.ReplaceAll(s, "%", "\\%")
-	res = strings.ReplaceAll(s, "_", "\\_")
-	res = "%" + res + "%"
-	return res
-}
-
