@@ -596,5 +596,63 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		FoundAt(w, fmt.Sprintf("/repo/%s/member", rfn))
 	}))
 
+	
+	http.HandleFunc("GET /repo/{repoName}/member/{username}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		rfn := r.PathValue("repoName")
+		repoPath := fmt.Sprintf("/repo/%s", rfn)
+		if ctx.Config.PlainMode { FoundAt(w, repoPath); return }
+		loginInfo, err := GenerateLoginInfoModel(ctx, r)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+			switch ctx.Config.GlobalVisibility {
+			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+				FoundAt(w, "/maintenance-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+				FoundAt(w, "/shutdown-notice")
+				return
+			case aegis.GLOBAL_VISIBILITY_PRIVATE:
+				FoundAt(w, "/login")
+				return
+			}
+		}
+		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
+		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		isRepoOwner := repo.Owner == loginInfo.UserName
+		isNsOwner := ns.Owner == loginInfo.UserName
+		loginInfo.IsOwner = isRepoOwner || isNsOwner
+		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
+		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
+		privSufficient := loginInfo.IsOwner || loginInfo.IsAdmin || (nsPriv != nil && nsPriv.DeleteMember) || (repoPriv != nil && repoPriv.DeleteMember)
+		if !privSufficient {
+			ctx.ReportRedirect(fmt.Sprintf("/s/%s/member", ns.Name), 0,
+				"Not enough privilege",
+				"You seem to not have not enough privilege for this action.",
+				w, r,
+			)
+			return
+		}
+		targetUsername := r.PathValue("username")
+		err = ctx.DatabaseInterface.SetRepositoryACL(nsName, repoName, targetUsername, nil)
+		if err != nil {
+			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
+				Config: ctx.Config,
+				LoginInfo: loginInfo,
+				Timeout: 3,
+				RedirectUrl: fmt.Sprintf("/s/%s/member", nsName),
+				MessageTitle: "Failed to delete member",
+				MessageText: fmt.Sprintf("Error: %s", err.Error()),
+			}))
+			return
+		}
+		FoundAt(w, fmt.Sprintf("/s/%s/member", nsName))
+	}))
 }
 
