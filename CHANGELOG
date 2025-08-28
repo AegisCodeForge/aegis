@@ -1,5 +1,13 @@
 Copyright 2025 Zetian Lin
 
+2025-08-28 Zetian Lin <bctnry@sdf.org>
+
+	* v0.1.0
+	+ refactor: preparing for multi vcs support by @bctnry in https://github.com/AegisCodeForge/aegis/pull/64
+	* feat: support for plain smtp config by @bctnry in https://github.com/AegisCodeForge/aegis/pull/65
+	* feat: postgres support by @bctnry in https://github.com/AegisCodeForge/aegis/pull/67
+	* check: hard limit on all names by @bctnry in https://github.com/AegisCodeForge/aegis/pull/68
+
 2025-07-27 Zetian Lin <bctnry@sdf.org>
 
 	* v0.0.2
