@@ -41,7 +41,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+		if !routes.CheckGlobalVisibleToUser(ctx, loginInfo) {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
 				routes.FoundAt(w, "/maintenance-notice")
@@ -133,7 +133,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+		if !routes.CheckGlobalVisibleToUser(ctx, loginInfo) {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
 				routes.FoundAt(w, "/maintenance-notice")
@@ -203,7 +203,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+		if !routes.CheckGlobalVisibleToUser(ctx, loginInfo) {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
 				routes.FoundAt(w, "/maintenance-notice")
@@ -311,7 +311,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+		if !routes.CheckGlobalVisibleToUser(ctx, loginInfo) {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
 				routes.FoundAt(w, "/maintenance-notice")
@@ -409,7 +409,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
+		if !routes.CheckGlobalVisibleToUser(ctx, loginInfo) {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
 				routes.FoundAt(w, "/maintenance-notice")

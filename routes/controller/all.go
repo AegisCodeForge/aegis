@@ -6,7 +6,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -16,191 +15,154 @@ import (
 // list of repo if namespace is not used,
 func bindAllController(ctx *routes.RouterContext) {
 	if ctx.Config.UseNamespace {
-		http.HandleFunc("GET /all/namespace", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-			var err error
-			var loginInfo *templates.LoginInfoModel
-			if !ctx.Config.PlainMode {
-				loginInfo, err = routes.GenerateLoginInfoModel(ctx, r)
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
-				}
-			}
-			if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
-				switch ctx.Config.GlobalVisibility {
-				case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-					routes.FoundAt(w, "/maintenance-notice")
-					return
-				case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-					routes.FoundAt(w, "/shutdown-notice")
-					return
-				case aegis.GLOBAL_VISIBILITY_PRIVATE:
-					if !ctx.Config.PlainMode {
-						routes.FoundAt(w, "/login")
+		http.HandleFunc("GET /all/namespace", routes.UseMiddleware(
+			[]routes.Middleware{
+				routes.Logged, routes.UseLoginInfo,
+				routes.GlobalVisibility,
+			}, ctx,
+			func(ctx *routes.RouterContext, w http.ResponseWriter, r *http.Request) {
+				var err error
+				q := strings.TrimSpace(r.URL.Query().Get("q"))
+				var nsl map[string]*model.Namespace
+				var nslCount int
+				var pageInfo *templates.PageInfoModel
+				if ctx.Config.PlainMode {
+					if len(q) > 0 {
+						nsl, err = ctx.Config.SearchAllNamespacePlain(q)
 					} else {
-						routes.FoundAt(w, "/private-notice")
+						nsl, err = ctx.Config.GetAllNamespacePlain()
 					}
-					return
+					if err != nil {
+						ctx.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					nslCount = len(nsl)
+					pageInfo, err = routes.GeneratePageInfo(r, nslCount)
+					if err != nil {
+						ctx.ReportInternalError(err.Error(), w, r)
+						return
+					}
+				} else {
+					var nslCountv int64
+					if len(q) > 0 {
+						nslCountv, err = ctx.DatabaseInterface.CountAllVisibleNamespaceSearchResult(ctx.LoginInfo.UserName, q)
+						nslCount = int(nslCountv)
+					} else {
+						nslCountv, err = ctx.DatabaseInterface.CountAllVisibleNamespace(ctx.LoginInfo.UserName)
+						nslCount = int(nslCountv)
+					}
+					if err != nil {
+						ctx.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					
+					pageInfo, err = routes.GeneratePageInfo(r, nslCount)
+					if err != nil {
+						ctx.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					if len(q) > 0 {
+						nsl, err = ctx.DatabaseInterface.SearchAllVisibleNamespacePaginated(ctx.LoginInfo.UserName, q, pageInfo.PageNum-1, pageInfo.PageSize)
+					} else {
+						nsl, err = ctx.DatabaseInterface.GetAllVisibleNamespacePaginated(ctx.LoginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
+					}
 				}
-			}
+				fmt.Printf("%s\n", nsl)
+				routes.LogTemplateError(ctx.LoadTemplate("all/namespace-list").Execute(w, templates.AllNamespaceListModel{
+					DepotName: ctx.Config.DepotName,
+					NamespaceList: nsl,
+					Config: ctx.Config,
+					LoginInfo: ctx.LoginInfo,
+					PageInfo: pageInfo,
+					Query: q,
+				}))
+			},
+		))
+	}
+	
+	http.HandleFunc("GET /all/repo", routes.UseMiddleware(
+		[]routes.Middleware{
+			routes.Logged,
+			routes.UseLoginInfo,
+			routes.GlobalVisibility,
+		}, ctx,
+		func(ctx *routes.RouterContext, w http.ResponseWriter, r *http.Request) {
+			var err error
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
-			var nsl map[string]*model.Namespace
-			var nslCount int
+			var repol []*model.Repository
+			var repolCount int
 			var pageInfo *templates.PageInfoModel
 			if ctx.Config.PlainMode {
 				if len(q) > 0 {
-					nsl, err = ctx.Config.SearchAllNamespacePlain(q)
+					repol, err = ctx.Config.SearchAllRepositoryPlain(q)
 				} else {
-					nsl, err = ctx.Config.GetAllNamespacePlain()
+					repol, err = ctx.Config.GetAllRepositoryPlain()
 				}
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
-				nslCount = len(nsl)
-				pageInfo, err = routes.GeneratePageInfo(r, nslCount)
+				repolCount = len(repol)
+				pageInfo, err = routes.GeneratePageInfo(r, repolCount)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
+				slices.SortFunc(repol, func(a, b *model.Repository) int {
+					if a.Namespace < b.Namespace { return -1 }
+					if a.Namespace > b.Namespace { return 1 }
+					if a.Name < b.Name { return -1 }
+					if a.Name > b.Name { return 1 }
+					return 0
+				})
 			} else {
-				var nslCountv int64
-				if len(q) > 0 {
-					nslCountv, err = ctx.DatabaseInterface.CountAllVisibleNamespaceSearchResult(loginInfo.UserName, q)
-					nslCount = int(nslCountv)
+				var repolCountv int64
+				if ctx.LoginInfo.IsAdmin {
+					if len(q) > 0 {
+						repolCountv, err = ctx.DatabaseInterface.CountAllRepositoriesSearchResult(q)
+					} else {
+						repolCountv, err = ctx.DatabaseInterface.CountAllRepositories()
+					}
 				} else {
-					nslCountv, err = ctx.DatabaseInterface.CountAllVisibleNamespace(loginInfo.UserName)
-					nslCount = int(nslCountv)
+					if len(q) > 0 {
+						repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositoriesSearchResult(ctx.LoginInfo.UserName, q)
+					} else {
+						repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositories(ctx.LoginInfo.UserName)
+					}
 				}
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
-				
-				pageInfo, err = routes.GeneratePageInfo(r, nslCount)
+				repolCount = int(repolCountv)
+				pageInfo, err = routes.GeneratePageInfo(r, repolCount)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
-				if len(q) > 0 {
-					nsl, err = ctx.DatabaseInterface.SearchAllVisibleNamespacePaginated(loginInfo.UserName, q, pageInfo.PageNum-1, pageInfo.PageSize)
+				if ctx.LoginInfo.IsAdmin {
+					if len(q) > 0 {
+						repol, err = ctx.DatabaseInterface.SearchForRepository(q, pageInfo.PageNum - 1, pageInfo.PageSize)
+					} else {
+						repol, err = ctx.DatabaseInterface.GetAllRepositories(pageInfo.PageNum - 1, pageInfo.PageSize)
+					}
 				} else {
-					nsl, err = ctx.DatabaseInterface.GetAllVisibleNamespacePaginated(loginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
+					if len(q) > 0 {
+						repol, err = ctx.DatabaseInterface.SearchAllVisibleRepositoryPaginated(ctx.LoginInfo.UserName, q, pageInfo.PageNum - 1, pageInfo.PageSize)
+					} else {
+						repol, err = ctx.DatabaseInterface.GetAllVisibleRepositoryPaginated(ctx.LoginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
+					}
 				}
 			}
-			fmt.Printf("%s\n", nsl)
-			routes.LogTemplateError(ctx.LoadTemplate("all/namespace-list").Execute(w, templates.AllNamespaceListModel{
+			routes.LogTemplateError(ctx.LoadTemplate("all/repository-list").Execute(w, templates.AllRepositoryListModel{
+				RepositoryList: repol,
 				DepotName: ctx.Config.DepotName,
-				NamespaceList: nsl,
 				Config: ctx.Config,
-				LoginInfo: loginInfo,
+				LoginInfo: ctx.LoginInfo,
 				PageInfo: pageInfo,
 				Query: q,
 			}))
-		}))
-	}
-	
-	http.HandleFunc("GET /all/repo", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var loginInfo *templates.LoginInfoModel
-		if !ctx.Config.PlainMode {
-			loginInfo, err = routes.GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-		}
-		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				routes.FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				routes.FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				if !ctx.Config.PlainMode {
-					routes.FoundAt(w, "/login")
-				} else {
-					routes.FoundAt(w, "/private-notice")
-				}
-				return
-			}
-		}
-		q := strings.TrimSpace(r.URL.Query().Get("q"))
-		var repol []*model.Repository
-		var repolCount int
-		var pageInfo *templates.PageInfoModel
-		if ctx.Config.PlainMode {
-			if len(q) > 0 {
-				repol, err = ctx.Config.SearchAllRepositoryPlain(q)
-			} else {
-				repol, err = ctx.Config.GetAllRepositoryPlain()
-			}
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			repolCount = len(repol)
-			pageInfo, err = routes.GeneratePageInfo(r, repolCount)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			slices.SortFunc(repol, func(a, b *model.Repository) int {
-				if a.Namespace < b.Namespace { return -1 }
-				if a.Namespace > b.Namespace { return 1 }
-				if a.Name < b.Name { return -1 }
-				if a.Name > b.Name { return 1 }
-				return 0
-			})
-		} else {
-			var repolCountv int64
-			if loginInfo.IsAdmin {
-				if len(q) > 0 {
-					repolCountv, err = ctx.DatabaseInterface.CountAllRepositoriesSearchResult(q)
-				} else {
-					repolCountv, err = ctx.DatabaseInterface.CountAllRepositories()
-				}
-			} else {
-				if len(q) > 0 {
-					repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositoriesSearchResult(loginInfo.UserName, q)
-				} else {
-					repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositories(loginInfo.UserName)
-				}
-			}
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			repolCount = int(repolCountv)
-			pageInfo, err = routes.GeneratePageInfo(r, repolCount)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			if loginInfo.IsAdmin {
-				if len(q) > 0 {
-					repol, err = ctx.DatabaseInterface.SearchForRepository(q, pageInfo.PageNum - 1, pageInfo.PageSize)
-				} else {
-					repol, err = ctx.DatabaseInterface.GetAllRepositories(pageInfo.PageNum - 1, pageInfo.PageSize)
-				}
-			} else {
-				if len(q) > 0 {
-					repol, err = ctx.DatabaseInterface.SearchAllVisibleRepositoryPaginated(loginInfo.UserName, q, pageInfo.PageNum - 1, pageInfo.PageSize)
-				} else {
-					repol, err = ctx.DatabaseInterface.GetAllVisibleRepositoryPaginated(loginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
-				}
-			}
-		}
-		routes.LogTemplateError(ctx.LoadTemplate("all/repository-list").Execute(w, templates.AllRepositoryListModel{
-			RepositoryList: repol,
-			DepotName: ctx.Config.DepotName,
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			PageInfo: pageInfo,
-			Query: q,
-		}))
-	}))
+		},
+	))
 }
 

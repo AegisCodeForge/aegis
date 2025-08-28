@@ -8,17 +8,14 @@ import (
 	"net/http"
 	"net/url"
 	"path"
-	"slices"
 	"strings"
 
 	"github.com/alecthomas/chroma/v2"
 	chromaHtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -238,16 +235,3 @@ func checkUserPassword(ctx *routes.RouterContext, username string, password stri
 	}
 	return true, nil
 }
-
-func CheckGlobalVisibleToUser(ctx *routes.RouterContext, loginInfo *templates.LoginInfoModel) bool {
-	if ctx.Config.PlainMode { return true }
-	switch ctx.Config.GlobalVisibility {
-	case aegis.GLOBAL_VISIBILITY_PUBLIC: return true
-	case aegis.GLOBAL_VISIBILITY_PRIVATE: return loginInfo.LoggedIn
-	case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-		return slices.Contains(ctx.Config.FullAccessUser, loginInfo.UserName)
-	case aegis.GLOBAL_VISIBILITY_MAINTENANCE: return false
-	default: return false
-	}
-}
-
