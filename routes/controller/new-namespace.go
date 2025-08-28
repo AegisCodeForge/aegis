@@ -7,6 +7,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -67,6 +68,10 @@ func bindNewNamespaceController(ctx *RouterContext) {
 		fmt.Println(loginInfo)
 		userName := loginInfo.UserName
 		newNamespaceName := r.Form.Get("name")
+		if !model.ValidNamespaceName(newNamespaceName) {
+			ctx.ReportRedirect("/new/namespace", 5, "Invalid Namespace Name", "Namespace name must consists of only upper & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.", w, r)
+			return
+		}
 		ns, err := ctx.DatabaseInterface.RegisterNamespace(newNamespaceName, userName)
 		if err != nil {
 			if err == db.ErrEntityAlreadyExists {

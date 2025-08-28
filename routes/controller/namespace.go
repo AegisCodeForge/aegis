@@ -13,6 +13,10 @@ func bindNamespaceController(ctx *RouterContext) {
 	if !ctx.Config.UseNamespace { return }
 	http.HandleFunc("GET /s/{namespace}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		var ns *model.Namespace
 		var ok bool
 		var err error

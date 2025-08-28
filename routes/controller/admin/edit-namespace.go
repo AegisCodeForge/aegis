@@ -18,6 +18,7 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		nsn := r.PathValue("name")
+		if !model.ValidNamespaceName(nsn) { routes.FoundAt(w, "/") }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(nsn)
 		if err != nil {
 			ctx.ReportRedirect("/admin/namespace-list", 0, "Error",
@@ -40,6 +41,7 @@ func bindAdminEditNamespaceController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		nsn := r.PathValue("name")
+		if !model.ValidNamespaceName(nsn) { routes.FoundAt(w, "/") }
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(nsn)
 		if err != nil {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{

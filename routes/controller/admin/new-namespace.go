@@ -38,6 +38,10 @@ func bindAdminNewNamespaceController(ctx *routes.RouterContext) {
 		}
 		owner := r.Form.Get("owner")
 		name := r.Form.Get("name")
+		if !model.ValidNamespaceName(name) {
+			ctx.ReportRedirect("/admin/new-namespace", 5, "Invalid Namespace Name", "Invalid namespace name; namespace name must only contains uppercase & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.\n", w, r)
+			return
+		}
 		title := r.Form.Get("title")
 		email := r.Form.Get("email")
 		description := r.Form.Get("description")

@@ -16,6 +16,10 @@ import (
 func bindNamespaceSettingController(ctx *RouterContext) {
 	http.HandleFunc("GET /s/{namespace}/setting", WithLog(func(w http.ResponseWriter, r *http.Request){
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		// NOTE: we don't support editing namespace from web ui when in plain mode.
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
@@ -65,6 +69,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 
 	http.HandleFunc("POST /s/{namespace}/setting", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
@@ -149,6 +157,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 
 	http.HandleFunc("GET /s/{namespace}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
@@ -196,6 +208,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 
 	http.HandleFunc("GET /s/{namespace}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
@@ -267,6 +283,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("POST /s/{namespace}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
@@ -344,6 +364,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 
 	http.HandleFunc("GET /s/{namespace}/member/{username}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
@@ -400,6 +424,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("GET /s/{namespace}/member/{username}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
@@ -451,6 +479,10 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 
 	http.HandleFunc("POST /s/{namespace}/member/{username}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		namespaceName := r.PathValue("namespace")
+		if !model.ValidNamespaceName(namespaceName) {
+			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
+			return
+		}
 		namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 		if ctx.Config.PlainMode { FoundAt(w, namespacePath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)

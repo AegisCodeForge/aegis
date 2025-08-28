@@ -46,6 +46,12 @@ func bindRepositoryController(ctx *RouterContext) {
 			}
 		}
 		rfn := r.PathValue("repoName")
+		if !ctx.Config.PlainMode {
+			if !model.ValidRepositoryName(rfn) {
+				ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+				return
+			}
+		}
 		branch := strings.TrimSpace(r.URL.Query().Get("branch"))
 		if len(branch) > 0 {
 			k := strings.SplitN(branch, ":", 2)

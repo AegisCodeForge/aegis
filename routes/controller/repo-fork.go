@@ -14,6 +14,10 @@ import (
 func bindRepositoryForkController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/fork", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
@@ -98,6 +102,10 @@ func bindRepositoryForkController(ctx *RouterContext) {
 	
 	http.HandleFunc("POST /repo/{repoName}/fork", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
@@ -147,6 +155,10 @@ func bindRepositoryForkController(ctx *RouterContext) {
 		}
 		namespace := r.Form.Get("namespace")
 		name := r.Form.Get("name")
+		if !model.ValidStrictRepositoryName(name){
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/fork", rfn), 0, "Invalid Repository Name", "Repository name must consists of only upper & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.", w, r)
+			return
+		}
 		rp, err := ctx.DatabaseInterface.SetUpCloneRepository(originNs, originName, namespace, name, loginInfo.UserName)
 		if err == db.ErrEntityAlreadyExists {
 			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/fork", rfn), 0, "Already Exists", fmt.Sprintf("The repository %s:%s already exists. Please choose a different name or namespace.", namespace, name), w, r)

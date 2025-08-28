@@ -21,6 +21,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -43,6 +44,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -142,6 +144,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -172,6 +175,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -202,6 +206,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -233,6 +238,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -267,6 +273,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/"); return }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -305,6 +312,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -334,6 +342,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -364,6 +373,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -395,6 +405,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		un := r.PathValue("username")
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		u, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			ctx.ReportRedirect("/admin/user-list", 0, "Internal Error", fmt.Sprintf("Failed to fetch user %s: %s", un, err.Error()), w, r)
@@ -423,6 +434,7 @@ func bindAdminEditUserController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/"); return }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) { routes.FoundAt(w, "/") }
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)

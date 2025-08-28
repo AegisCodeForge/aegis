@@ -24,6 +24,10 @@ func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, o
 func bindTreeHandler(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tree/{treeId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		var err error
 		var loginInfo *templates.LoginInfoModel = nil
 		if !ctx.Config.PlainMode {

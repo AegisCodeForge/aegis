@@ -79,6 +79,10 @@ func bindNewRepositoryController(ctx *RouterContext) {
 		}
 		userName := loginInfo.UserName
 		newRepoNS := r.Form.Get("namespace")
+		if !model.ValidNamespaceName(newRepoNS) {
+			ctx.ReportRedirect("/new/repo", 5, "Invalid Namespace Name", "Namespace name must consists of only upper & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.", w, r)
+			return
+		}
 		ns, err := ctx.DatabaseInterface.GetNamespaceByName(newRepoNS)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -92,6 +96,10 @@ func bindNewRepositoryController(ctx *RouterContext) {
 			return
 		}
 		newRepoName := r.Form.Get("name")
+		if !model.ValidStrictRepositoryName(newRepoName) {
+			ctx.ReportRedirect("/new/repo", 5, "Invalid Repository Name", "Repository name must consists of only upper & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.", w, r)
+			return
+		}
 		newRepoDescription := r.Form.Get("description")
 		repo, err := ctx.DatabaseInterface.CreateRepository(newRepoNS, newRepoName, model.REPO_TYPE_GIT, userName)
 		if err != nil {

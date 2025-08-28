@@ -17,6 +17,31 @@ const (
 	REPO_TYPE_GIT uint8 = 1
 )
 
+func ValidRepositoryName(s string) bool {
+	colonPassed := false
+	for _, k := range s {
+		if !(('0' <= k && k <= '9') || ('A' <= k && k <= 'Z') || ('a' <= k && k <= 'z') || k == '_' || k == '-') {
+			if k == ':' {
+				if colonPassed { return false }
+				colonPassed = true
+				continue
+			} else {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func ValidStrictRepositoryName(s string) bool {
+	for _, k := range s {
+		if !(('0' <= k && k <= '9') || ('A' <= k && k <= 'Z') || ('a' <= k && k <= 'z') || k == '_' || k == '-') {
+			return false
+		}
+	}
+	return true
+}
+
 type LocalRepository any
 
 type Repository struct {

@@ -67,6 +67,7 @@ func bindAdminNamespaceListController(ctx *routes.RouterContext) {
 		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
 		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
 		nsn := r.PathValue("name")
+		if !model.ValidUserName(nsn) { routes.FoundAt(w, "/") }
 		err = ctx.DatabaseInterface.HardDeleteNamespaceByName(nsn)
 		if err != nil {
 			routes.LogTemplateError(ctx.LoadTemplate("admin/_redirect-with-message").Execute(w, &templates.AdminRedirectWithMessageModel{

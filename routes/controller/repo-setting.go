@@ -16,7 +16,10 @@ import (
 func bindRepositorySettingController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request){
 		rfn := r.PathValue("repoName")
-		
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -79,6 +82,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("POST /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -97,7 +105,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				return
 			}
 		}
-		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -198,6 +205,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -216,7 +228,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				return
 			}
 		}
-		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -347,6 +358,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 	
 	http.HandleFunc("POST /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -365,7 +381,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				return
 			}
 		}
-		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -436,6 +451,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("GET /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -454,7 +474,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				return
 			}
 		}
-		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -511,6 +530,11 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	}))
 
 	http.HandleFunc("POST /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -529,7 +553,6 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				return
 			}
 		}
-		rfn := r.PathValue("repoName")
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -599,6 +622,10 @@ func bindRepositorySettingController(ctx *RouterContext) {
 	
 	http.HandleFunc("GET /repo/{repoName}/member/{username}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
 		if ctx.Config.PlainMode { FoundAt(w, repoPath); return }
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)

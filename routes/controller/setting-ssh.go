@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -35,6 +36,10 @@ func bindSettingSSHController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		s, err := ctx.DatabaseInterface.GetAllAuthKeyByUsername(un)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -68,6 +73,10 @@ func bindSettingSSHController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -153,6 +162,10 @@ func bindSettingSSHController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		keyName := r.PathValue("keyName")
 		err = ctx.DatabaseInterface.RemoveAuthKey(un, keyName)
 		if err != nil {
@@ -189,6 +202,10 @@ func bindSettingSSHController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		k, err := ctx.DatabaseInterface.GetAuthKeyByName(un, r.PathValue("keyName"))
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -222,6 +239,10 @@ func bindSettingSSHController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportNormalError("Invalid request", w, r)
