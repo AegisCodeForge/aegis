@@ -38,6 +38,10 @@ func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string
 func bindTagController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/tag/{tagId}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		var err error
 		var loginInfo *templates.LoginInfoModel = nil
 		if !ctx.Config.PlainMode {

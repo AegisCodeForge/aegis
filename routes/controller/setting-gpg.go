@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -66,6 +67,10 @@ func bindSettingGPGController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -125,6 +130,10 @@ func bindSettingGPGController(ctx *RouterContext) {
 			return
 		}
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		err = ctx.DatabaseInterface.RemoveSignKey(un, r.PathValue("keyName"))
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -157,6 +166,10 @@ func bindSettingGPGController(ctx *RouterContext) {
 			return
 		}
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		k, err := ctx.DatabaseInterface.GetSignKeyByName(un, r.PathValue("keyName"))
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -193,6 +206,10 @@ func bindSettingGPGController(ctx *RouterContext) {
 			return
 		}
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		err = r.ParseForm()
 		if err != nil {
 			ctx.ReportNormalError("Invalid request", w, r)

@@ -33,6 +33,10 @@ func bindIssueController(ctx *routes.RouterContext) {
 			}
 		}
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
@@ -95,6 +99,10 @@ func bindIssueController(ctx *routes.RouterContext) {
 			}
 		}
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		routes.LogTemplateError(ctx.LoadTemplate("issue/new-issue").Execute(w, &templates.RepositoryNewIssueTemplateModel{
@@ -126,6 +134,10 @@ func bindIssueController(ctx *routes.RouterContext) {
 			}
 		}
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if !loginInfo.LoggedIn {
 			ctx.ReportRedirect("/login", 3, "Not Logged In", "You must log in before creating an issue.", w, r)
@@ -170,6 +182,10 @@ func bindIssueController(ctx *routes.RouterContext) {
 			}
 		}
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
@@ -225,6 +241,10 @@ func bindIssueController(ctx *routes.RouterContext) {
 			}
 		}
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		iid, err := strconv.Atoi(r.PathValue("id"))
 		if err != nil {

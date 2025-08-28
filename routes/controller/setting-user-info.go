@@ -5,6 +5,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 	"golang.org/x/crypto/bcrypt"
@@ -33,6 +34,10 @@ func bindSettingController(ctx *RouterContext) {
 		}
 		if !loginInfo.LoggedIn { FoundAt(w, "/"); return }
 		un := loginInfo.UserName
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err != nil {
 			if err == db.ErrEntityNotFound {
@@ -77,6 +82,10 @@ func bindSettingController(ctx *RouterContext) {
 			return
 		}
 		targetUsername := r.Form.Get("username")
+		if !model.ValidUserName(targetUsername) {
+			ctx.ReportNotFound(targetUsername, "User", "Depot", w, r)
+			return
+		}
 		if vr.UserName != r.Form.Get("username") {
 			// at this point we can at least be more sure that the
 			// info we get from cookie is valid and it *should* be
@@ -84,6 +93,10 @@ func bindSettingController(ctx *RouterContext) {
 			// username from cookie, but since this branch is a sign
 			// of tampering i suppose it's better to just rollback.
 			un := vr.UserName
+			if !model.ValidUserName(un) {
+				ctx.ReportNotFound(un, "User", "Depot", w, r)
+				return
+			}
 			user, err := ctx.DatabaseInterface.GetUserByName(un)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)

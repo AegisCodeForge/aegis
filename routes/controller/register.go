@@ -51,6 +51,10 @@ func bindRegisterController(ctx *routes.RouterContext) {
 			return
 		}
 		userName := r.Form.Get("username")
+		if !model.ValidUserName(userName) {
+			ctx.ReportRedirect("/reg", 5, "Invalid User Name", "User name must consists of only upper & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.", w, r)
+			return
+		}
 		email := r.Form.Get("email")
 
 		// username & ns name check.

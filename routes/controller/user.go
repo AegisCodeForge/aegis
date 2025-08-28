@@ -5,6 +5,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
@@ -31,6 +32,10 @@ func bindUserController(ctx *RouterContext) {
 			}
 		}
 		un := r.PathValue("userName")
+		if !model.ValidUserName(un) {
+			ctx.ReportNotFound(un, "User", "Depot", w, r)
+			return
+		}
 		user, err := ctx.DatabaseInterface.GetUserByName(un)
 		if err == db.ErrEntityNotFound {
 			ctx.ReportNotFound(un, "User", "depot", w, r)

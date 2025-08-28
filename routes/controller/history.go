@@ -43,6 +43,10 @@ func bindHistoryController(ctx *RouterContext) {
 		}
 		
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+			return
+		}
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		if err == routes.ErrNotFound {
 			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)

@@ -11,6 +11,13 @@ const (
 	BANNED AegisUserStatus = 7
 )
 
+func ValidUserName(s string) bool {
+	for _, k := range s {
+		if !(('0' <= k && k <= '9') || ('A' <= k && k <= 'Z') || ('a' <= k && k <= 'z') || k == '_' || k == '-') { return false }
+	}
+	return true
+}
+
 type AegisUser struct {
 	// user name. 
 	Name string `json:"name"`

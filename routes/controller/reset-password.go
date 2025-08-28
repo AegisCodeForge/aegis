@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -52,6 +53,10 @@ func bindResetPasswordController(ctx *routes.RouterContext) {
 			return
 		}
 		targetUserName := strings.TrimSpace(r.Form.Get("username"))
+		if !model.ValidUserName(targetUserName) {
+			ctx.ReportNotFound(targetUserName, "User", "Depot", w, r)
+			return
+		}
 		targetEmail := strings.TrimSpace(r.Form.Get("email"))
 		user, err := ctx.DatabaseInterface.GetUserByName(targetUserName)
 		if err != nil {
@@ -169,6 +174,10 @@ If this isn't you, you can simply ignore this message.`,
 			return
 		}
 		targetUserName := re.Command[1]
+		if !model.ValidUserName(targetUserName) {
+			ctx.ReportNotFound(targetUserName, "User", "Depot", w, r)
+			return
+		}
 		newPassword := strings.TrimSpace(r.Form.Get("password"))
 		confirm := strings.TrimSpace(r.Form.Get("confirm"))
 		if newPassword != confirm {

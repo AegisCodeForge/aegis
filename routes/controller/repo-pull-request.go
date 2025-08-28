@@ -8,6 +8,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -16,6 +17,10 @@ import (
 func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/pull-request", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
@@ -104,6 +109,10 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 	
 	http.HandleFunc("GET /repo/{repoName}/pull-request/{prid}", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			switch ctx.Config.GlobalVisibility {
 			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
@@ -181,6 +190,10 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 
 	http.HandleFunc("POST /repo/{repoName}/pull-request/{prid}", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
@@ -285,6 +298,10 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 	
 	http.HandleFunc("GET /repo/{repoName}/pull-request/new", routes.WithLog(func(w http.ResponseWriter, r *http.Request){
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return
@@ -379,6 +396,10 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 	
 	http.HandleFunc("POST /repo/{repoName}/pull-request/new", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+			return
+		}
 		if ctx.Config.PlainMode {
 			routes.FoundAt(w, fmt.Sprintf("/repo/%s", rfn))
 			return

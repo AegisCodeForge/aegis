@@ -38,6 +38,10 @@ func bindAdminNewUserController(ctx *routes.RouterContext) {
 			return
 		}
 		userName := r.Form.Get("username")
+		if !model.ValidUserName(userName) {
+			ctx.ReportRedirect("/admin/new-user", 5, "Invalid User Name", "Invalid user name; user name must only contains uppercase & lowercase letters (a-z, A-Z), 0-9, underscore and hyphen.\n", w, r)
+			return
+		}
 		email := r.Form.Get("email")
 		password := r.Form.Get("password")
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
