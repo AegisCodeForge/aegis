@@ -104,6 +104,8 @@ func bindTagController(ctx *RouterContext) {
 		tagName := r.PathValue("tagId")
 		treePath := r.PathValue("treePath")
 
+		m := make(map[string]string, 0)
+		
 		// the logic goes as follows:
 		// + the subject for resolving would be a tag.
 		// + resolve suject into tagInfo w/ one of commit / tree / blob / tag
@@ -151,6 +153,7 @@ func bindTagController(ctx *RouterContext) {
 
 		if tobj.Type() == gitlib.TAG {
 			to := tobj.(*gitlib.TagObject)
+			m[to.TaggerInfo.AuthorEmail] = ""
 			tagInfo = &templates.TagInfoTemplateModel{
 				Annotated: true,
 				RepoName: rfn,
@@ -164,6 +167,7 @@ func bindTagController(ctx *RouterContext) {
 		} else {
 			subject = tobj
 		}
+		
 
 		var commitInfo *templates.CommitInfoTemplateModel = nil
 
@@ -178,9 +182,13 @@ func bindTagController(ctx *RouterContext) {
 				)
 				return
 			}
+			m[cobj.AuthorInfo.AuthorEmail] = ""
+			// NOTE: we don't resolve here since there could be
+			// other emails getting registered down below.
 			commitInfo = &templates.CommitInfoTemplateModel{
 				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj,
+				EmailUserMapping: m,
 			}
 			subject, err = rr.ReadObject(cobj.TreeObjId)
 			if err != nil {
@@ -217,6 +225,8 @@ func bindTagController(ctx *RouterContext) {
 				)
 				return
 			}
+			m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			tagInfo.EmailUserMapping = m
 			LogTemplateError(ctx.LoadTemplate("tag").Execute(w, templates.TagTemplateModel{
 				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
@@ -244,6 +254,8 @@ func bindTagController(ctx *RouterContext) {
 			str := string(bobj.Data)
 			coloredStr, err := colorSyntax("", str)
 			if err == nil { str = coloredStr }
+			m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			tagInfo.EmailUserMapping = m
 			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
@@ -283,6 +295,8 @@ func bindTagController(ctx *RouterContext) {
 				TreePath: treePath,
 				TreePathSegmentList: treePathSegmentList,
 			}
+			m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			commitInfo.EmailUserMapping = m
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,

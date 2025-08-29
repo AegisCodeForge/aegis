@@ -16,6 +16,7 @@ type SqliteAegisDatabaseInterface struct {
 var requiredTableList = []string{
 	"user_authkey",
 	"user_signkey",
+	"user_email",
 	"user",
 	"namespace",
 	"repository",

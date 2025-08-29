@@ -1,0 +1,6 @@
+* email
+
+email verification requires the mailer to be working (of course) and makes uses of the receipt system. the verification process must ensure only the owner of the email address can trigger the confirmation.
+
+
+

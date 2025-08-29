@@ -41,6 +41,9 @@ func bindReceiptController(ctx *routes.RouterContext) {
 		case receipt.RESET_PASSWORD:
 			routes.FoundAt(w, fmt.Sprintf("/reset-password/update-password?id=%s", rid))
 			return
+		case receipt.VERIFY_EMAIL:
+			routes.FoundAt(w, fmt.Sprintf("/verify-email?id=%s", rid))
+			return
 		}
 		ctx.ReportNormalError("Invalid receipt", w, r)
 	}))

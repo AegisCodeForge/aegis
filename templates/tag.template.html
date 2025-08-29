@@ -21,7 +21,7 @@
       <b>Tagged Object</b>: <a href="{{getRootPath  .Repository.Namespace .Repository.Name .Tag.TaggedObjType .Tag.TaggedObjId}}">{{.Tag.TaggedObjType}}:{{.Tag.TaggedObjId}}</a><br />
       <b>Tagger</b>: 
       <span class="tagger-name">{{.Tag.TaggerInfo.AuthorName}}</span>
-      (<span class="tagger-email"><a href="mailto:{{.Tag.TaggerInfo.AuthorEmail}}">{{.Tag.TaggerInfo.AuthorEmail}}</a></span>)
+      (<span class="tagger-email"><a href="{{resolveToUsername .EmailUserMapping .Tag.TaggerInfo.AuthorEmail}}">{{.Tag.TaggerInfo.AuthorEmail}}</a></span>)
       at <span class="tagger-time">{{.Tag.TaggerInfo.Time}}</span><br />
       <b>Message</b>:<br /><pre>{{.Tag.TagMessage}}</pre>
       {{if gt (len .Tag.Signature) 0}}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Emails :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		Settings
+	  </h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "setting/_sidebar"}}
+
+	  <div class="setting-main main-side">
+		<h2>Email</h2>
+
+		<table class="admin-table">
+		  <thead>
+			<tr><th>Email Address</th><th>Verified?</th><th>Primary?</th><th>Verify</th><th>Set As Primary</th><th>Delete</th></tr>
+		  </thead>
+		  <tbody>
+			{{range .EmailList}}
+			<tr><td>{{.Email}}</a></td><td>{{if .Verified}}YES{{else}}NO{{end}}</td><td>{{if .Primary}}YES{{end}}</td><td><a href="/setting/email/verify?email={{htmlEscape .Email}}">Verify</a></td><td><a href="/setting/email/primary?email={{htmlEscape .Email}}">Set As Primary</a></td><td><a href="/setting/email/delete?email={{htmlEscape .Email}}">Delete</a></td></tr>
+			{{end}}
+		  </tbody>
+		</table>
+
+		<h2>Add new email</h2>
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		<form action="" method="POST">
+		  <div class="field"><label class="field-label" for="email">Email:</label> <input name="email" /></div>
+		  <input type="submit" value="Add Email" />
+		</form>
+		
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

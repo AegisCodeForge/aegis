@@ -134,6 +134,14 @@ type AegisDatabaseInterface interface {
 	// when query = "" it looks for all pull request.
 	CountPullRequest(query string, namespace string, name string, filterType int) (int, error)
 	SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.PullRequest, error)
+
+	GetAllRegisteredEmailOfUser(username string) ([]struct{Email string;Verified bool}, error)
+	AddEmail(username string, email string) error
+	VerifyRegisteredEmail(username string, email string) error
+	DeleteRegisteredEmail(username string, email string) error
+	CheckIfEmailVerified(username string, email string) (bool, error)
+	ResolveEmailToUsername(email string) (string, error)
+	ResolveMultipleEmailToUsername(emailList map[string]string) (map[string]string, error)
 }
 
 // the fact that golang has no parameter default values is
