@@ -30,6 +30,8 @@ type RouterContext struct {
 	SSHKeyManagingContext *ssh.SSHKeyManagingContext
 	ReceiptSystem receipt.AegisReceiptSystemInterface
 	Mailer mail.AegisMailerInterface
+	LoginInfo *templates.LoginInfoModel
+	LastError error
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {

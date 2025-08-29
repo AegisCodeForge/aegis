@@ -114,10 +114,11 @@ If this isn't you, you can simply ignore this message.`,
 		if len(rid) <= 0 { routes.FoundAt(w, "/reset-password/request"); return }
 		re, err := ctx.ReceiptSystem.RetrieveReceipt(rid)
 		if err != nil {
-			ctx.ReportNormalError(
-				fmt.Sprintf("Internal error: %s", err.Error()),
+			ctx.ReportInternalError(
+				fmt.Sprintf("Failed while retrieving receipt: %s", err.Error()),
 				w, r,
 			)
+			return
 		}
 		if re.Expired() {
 			ctx.ReceiptSystem.CancelReceipt(rid)

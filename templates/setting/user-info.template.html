@@ -30,7 +30,7 @@
 		  <input type="hidden" name="type" value="info" />
 		  <input type="hidden" name="username" value="{{.User.Name}}" />
 		  <div class="field"><label class="field-label" for="title">Title:</label> <input name="title" value="{{.User.Title}}"/></div>
-		  <div class="field"><label class="field-label" for="email">Email:</label> <input name="email" value="{{.User.Email}}" /></div>
+		  <div class="field"><label class="field-label" for="email">Email:</label> {{.User.Email}}</div>
 		  <div class="field"><label class="field-label" for="website">Website:</label> <input name="website" value="{{.User.Website}}" /></div>
 		  <div class="field"><label class="field-label" for="bio">Bio:</label> <textarea name="bio">{{.User.Bio}}</textarea></div>
 		  <input type="submit" value="Change Info" />

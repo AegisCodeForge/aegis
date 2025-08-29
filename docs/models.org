@@ -125,5 +125,13 @@
   	issue_event_content TEXT,
       FOREIGN KEY (issue_abs_id) REFERENCES aegis_issue(rowid)
   );
+
+  CREATE TABLE IF NOT EXISTS aegis_user_email (
+      username TEXT,
+  	email TEXT,
+  	-- 0 - not verified. 1 - verified.
+  	verified INTEGER,
+  	FOREIGN KEY (username) REFERENCES aegis_user(user_name)g
+  );
 #+end_src
 

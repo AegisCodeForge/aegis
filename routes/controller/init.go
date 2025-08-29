@@ -33,6 +33,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindSettingController(context)
 		bindSettingSSHController(context)
 		bindSettingGPGController(context)
+		bindSettingEmailController(context)
 		bindRepositorySettingController(context)
 		bindNewNamespaceController(context)
 		bindNewRepositoryController(context)
@@ -40,6 +41,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindRegisterController(context)
 		bindReceiptController(context)
 		bindConfirmRegistrationController(context)
+		bindVerifyEmailController(context)
 
 		// bind admin controller
 		admin.BindAllAdminControllers(context)

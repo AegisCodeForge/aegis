@@ -128,6 +128,16 @@ func bindHistoryController(ctx *RouterContext) {
 			return
 		}
 		
+		m := make(map[string]string, 0)
+		for _, k := range h {
+			m[k.AuthorInfo.AuthorEmail] = ""
+			m[k.CommitterInfo.AuthorEmail] = ""
+		}
+		_, err = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+		fmt.Println(err)
+		// NOTE: we don't check, we just assume the emails are not verified
+		// to anyone if an error occur.
+		
 		LogTemplateError(ctx.LoadTemplate("commit-history").Execute(
 			w,
 			templates.CommitHistoryModel{
@@ -138,6 +148,7 @@ func bindHistoryController(ctx *RouterContext) {
 				LoginInfo: loginInfo,
 				Config: ctx.Config,
 				NextPageCommitId: h[len(h)-1].Id,
+				EmailUserMapping: m,
 			},
 		))
 	}))

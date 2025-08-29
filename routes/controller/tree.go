@@ -108,7 +108,6 @@ func bindTreeHandler(ctx *RouterContext) {
 		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "tree", treeId)
 		permaLink := fmt.Sprintf("/repo/%s/tree/%s/%s", rfn, treeId, treePath)
 		tobj := gobj.(*gitlib.TreeObject)
-		var commitInfo *templates.CommitInfoTemplateModel = nil
 		target, err := rr.ResolveTreePath(tobj, treePath)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -153,7 +152,7 @@ func bindTreeHandler(ctx *RouterContext) {
 			},
 			PermaLink: permaLink,
 			TreePath: treePathModelValue,
-			CommitInfo: commitInfo,
+			CommitInfo: nil,
 			TagInfo: nil,
 			LoginInfo: loginInfo,
 			Config: ctx.Config,

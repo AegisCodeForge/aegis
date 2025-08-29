@@ -179,6 +179,14 @@ CREATE INDEX IF NOT EXISTS idx_%spull_request_event_pull_request_abs_id
 ON %spull_request_event (pull_request_abs_id);
 `, pfx, pfx))
 	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %suser_email (
+    username TEXT,
+	email TEXT,
+    verified INTEGER,
+	FOREIGN KEY (username) REFERENCES %suser(user_name)
+)`, pfx, pfx))
 	
 	tx.Commit()
 	return nil

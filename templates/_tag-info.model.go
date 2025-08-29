@@ -12,5 +12,6 @@ type TagInfoTemplateModel struct {
 	Annotated bool
 	RepoName string
 	Tag *gitlib.TagObject
+	EmailUserMapping map[string]string
 }
 

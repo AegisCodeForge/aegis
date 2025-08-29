@@ -88,6 +88,11 @@ func bindDiffController(ctx *RouterContext) {
 			)
 			return
 		}
+		co := cobj.(*gitlib.CommitObject)
+		m := make(map[string]string, 0)
+		m[co.AuthorInfo.AuthorEmail] = ""
+		m[co.CommitterInfo.AuthorEmail] = ""
+		m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
 		diff, err := rr.GetDiff(commitId)
 		if err != nil {
 			ctx.ReportInternalError(
@@ -103,6 +108,7 @@ func bindDiffController(ctx *RouterContext) {
 			CommitInfo: templates.CommitInfoTemplateModel{
 				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj.(*gitlib.CommitObject),
+				EmailUserMapping: m,
 			},
 			Diff: diff,
 			LoginInfo: loginInfo,

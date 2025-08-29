@@ -133,6 +133,12 @@ CREATE TABLE IF NOT EXISTS %s_pull_request_event (
     FOREIGN KEY (pull_request_absid) REFERENCES %s_pull_request(pull_request_absid)
 )`, pfx, pfx))
 	if err != nil { return err }
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %s_user_email (
+    username TEXT REFERENCES %s_user(user_name),
+	email TEXT,
+    verified SMALLINT
+)`, pfx, pfx))
 	err = tx.Commit(ctx)
 	if err != nil { return err }
 	return nil

@@ -388,7 +388,6 @@ ORDER BY ns_absid ASC LIMIT $1 OFFSET $2
 			Status: model.AegisNamespaceStatus(status),
 		}
 	}
-	fmt.Printf("aaa %s\n", res)
 	return  res, nil
 }
 
@@ -841,7 +840,7 @@ func (dbif *PostgresAegisDatabaseInterface) UpdateNamespaceOwner(name string, ne
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 UPDATE %s_namespace
 SET ns_owner = $1
-WHERE ns_name = %2
+WHERE ns_name = $2
 `, pfx), newOwner, name)
 	if err != nil { return err }
 	err = tx.Commit(ctx)
@@ -858,7 +857,7 @@ func (dbif *PostgresAegisDatabaseInterface) UpdateNamespaceStatus(name string, n
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 UPDATE %s_namespace
 SET ns_status = $1
-WHERE ns_name = %2
+WHERE ns_name = $2
 `, pfx), newStatus, name)
 	if err != nil { return err }
 	err = tx.Commit(ctx)
@@ -2360,5 +2359,122 @@ ORDER BY pull_request_timestamp DESC LIMIT $1 OFFSET $2
 		})
 	}
 	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetAllRegisteredEmailOfUser(username string) ([]struct{Email string;Verified bool}, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT email, verified FROM %s_user_email WHERE username = $1
+`, pfx), username)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	res := make([]struct{Email string;Verified bool}, 0)
+	var email string
+	var verified int
+	for stmt.Next() {
+		err = stmt.Scan(&email, &verified)
+		if err != nil { return nil, err }
+		res = append(res, struct{Email string;Verified bool}{
+			Email: email,
+			Verified: verified == 1,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) AddEmail(username string, email string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+INSERT INTO %s_user_email(username, email, verified) VALUES ($1, $2, 0)
+`, pfx), username, email)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) VerifyRegisteredEmail(username string, email string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_user_email SET verified = 1 WHERE username = $1 AND email = $2
+`, pfx), username, email)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) DeleteRegisteredEmail(username string, email string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+DELETE FROM %s_user_email WHERE username = $1 AND email = $2
+`, pfx), username, email)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) CheckIfEmailVerified(username string, email string) (bool, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT verified FROM %s_user_email WHERE username = $1 AND email = $2
+`, pfx), username, email)
+	var r int
+	err := stmt.Scan(&r)
+	if err != nil { return false, err }
+	return r == 1, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) ResolveEmailToUsername(email string) (string, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT username FROM %s_user_email WHERE email = $2 AND verified = 1
+`, pfx), email)
+	var r string
+	err := stmt.Scan(&r)
+	if err != nil { return "", err }
+	return r, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) ResolveMultipleEmailToUsername(emailList map[string]string) (map[string]string, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	l := make([]any, 0)
+	q := make([]string, 0)
+	i := 1
+	for k := range emailList {
+		l = append(l, k)
+		q = append(q, fmt.Sprintf("$%d", i))
+		i += 1
+	}
+	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT email, username FROM %s_user_email WHERE verified = 1 AND email IN (%s)
+`, pfx, strings.Join(q, ",")), l...)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	var email, username string
+	for stmt.Next() {
+		err = stmt.Scan(&email, &username)
+		fmt.Println("x", email, username)
+		if err != nil { return nil, err }
+		emailList[email] = username
+	}
+	return emailList, nil
 }
 

@@ -95,10 +95,10 @@ func (r *Receipt) Expired() bool {
 const (
 	// confirm-registration,{username},{email},{passwordHash}
 	CONFIRM_REGISTRATION = "confirm-registration"
-	// confirm-email-change,{username},{email}
-	CONFIRM_EMAIL_CHANGE = "confirm-email-change"
 	// reset-password,{username}
 	RESET_PASSWORD = "reset-password"
+	// verify-email,{username},{email}
+	VERIFY_EMAIL = "verify-email"
 )
 
 var ErrUnsupportedSystemType = errors.New("Unsupported receipt system type")

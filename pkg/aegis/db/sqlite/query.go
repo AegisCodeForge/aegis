@@ -1349,7 +1349,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespacePaginated(userna
 	pfx := dbif.config.Database.TablePrefix
 	privateSelectClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
@@ -1418,8 +1418,8 @@ ON %srepository.repo_namespace = a.ns_name
 WHERE repo_status = 1 OR repo_status = 4 %s
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
-	defer stmt.Close()
 	if err != nil { return nil, err }
+	defer stmt.Close()
 	var rs *sql.Rows
 	if len(username) > 0 {
 		pattern := db.ToSqlSearchPattern(username)
@@ -1461,7 +1461,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespace(username stri
 	pfx := dbif.config.Database.TablePrefix
 	privateSelectClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*) FROM %snamespace WHERE ns_status = 1 %s
@@ -1521,7 +1521,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(use
 	queryPattern := db.ToSqlSearchPattern(query)
 	privateSelectClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
@@ -1638,7 +1638,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespaceSearchResult(u
 	searchPattern := db.ToSqlSearchPattern(pattern)
 	privateSelectClause := ""
 	if len(username) > 0 {
-		privateSelectClause = fmt.Sprintf("AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)", )
+		privateSelectClause = "AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
 	}
 	stmt, err := dbif.connection.Prepare(
 		fmt.Sprintf(`
@@ -1940,7 +1940,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingNamespace(viewingUser s
 		if viewingUser == userName {
 			nsStatusClause = "1"
 		} else {
-			nsStatusClause = fmt.Sprintf("ns_acl LIKE ? ESCAPE ?")
+			nsStatusClause = "ns_acl LIKE ? ESCAPE ?"
 		}
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
@@ -2702,5 +2702,132 @@ ORDER BY pull_request_timestamp DESC LIMIT ? OFFSET ?
 		})
 	}
 	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllRegisteredEmailOfUser(username string) ([]struct{Email string;Verified bool}, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT email, verified FROM %suser_email WHERE username = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r, err := stmt.Query(username)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]struct{Email string; Verified bool}, 0)
+	var email string
+	var verified int
+	for r.Next() {
+		err = r.Scan(&email, &verified)
+		if err != nil { return nil, err }
+		res = append(res, struct{Email string; Verified bool}{
+			Email: email,
+			Verified: verified == 1,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) AddEmail(username string, email string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %suser_email(username, email, verified) VALUES (?, ?, 0)
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username, email)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) VerifyRegisteredEmail(username string, email string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %suser_email SET verified = 1 WHERE username = ? AND email = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username, email)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) DeleteRegisteredEmail(username string, email string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %suser_email WHERE username = ? AND email = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username, email)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CheckIfEmailVerified(username string, email string) (bool, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT verified FROM %suser_email WHERE username = ? AND email = ?
+`, pfx))
+	if err != nil { return false, err }
+	s := stmt.QueryRow(username, email)
+	if s.Err() != nil { return false, s.Err() }
+	var r int
+	err = s.Scan(&r)
+	if err != nil { return false, err }
+	return r == 1, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) ResolveEmailToUsername(email string) (string, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT username FROM %suser_email WHERE email = ? AND verified = 1
+`, pfx))
+	if err != nil { return "", err }
+	defer stmt.Close()
+	s := stmt.QueryRow(email)
+	if s.Err() != nil { return "", s.Err() }
+	var r string
+	err = s.Scan(&r)
+	if err != nil { return "", err }
+	return r, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) ResolveMultipleEmailToUsername(emailList map[string]string) (map[string]string, error) {
+	pfx := dbif.config.Database.TablePrefix
+	l := make([]any, 0)
+	q := make([]string, 0)
+	i := 1
+	for k := range emailList {
+		l = append(l, k)
+		q = append(q, "?")
+		i += 1
+	}
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT email, username FROM %suser_email WHERE verified = 1 AND email IN (%s)
+`, pfx, strings.Join(q, ",")))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	s, err := stmt.Query(l...)
+	if err != nil { return nil, err }
+	defer s.Close()
+	var email, username string
+	for s.Next() {
+		err = s.Scan(&email, &username)
+		if err != nil { return nil, err }
+		emailList[email] = username
+	}
+	return emailList, nil
 }
 

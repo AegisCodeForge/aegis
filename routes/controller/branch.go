@@ -120,9 +120,16 @@ func bindBranchController(ctx *RouterContext) {
 		}
 
 		cobj := gobj.(*gitlib.CommitObject)
+		m := make(map[string]string, 0)
+		m[cobj.AuthorInfo.AuthorEmail] = ""
+		m[cobj.CommitterInfo.AuthorEmail] = ""
+		_, err = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+		// NOTE: we don't check, we just assume the emails are not verified
+		// to anyone if an error occur.
 		commitInfo := &templates.CommitInfoTemplateModel{
 			RootPath: fmt.Sprintf("/repo/%s", rfn),
 			Commit: cobj,
+			EmailUserMapping: m,
 		}
 		gobj, err = rr.ReadObject(cobj.TreeObjId)
 		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }

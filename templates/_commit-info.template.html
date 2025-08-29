@@ -3,11 +3,11 @@
   <b>Commit</b> <a href="{{.RootPath}}/commit/{{.Commit.Id}}">{{slice .Commit.Id 0 8}}...</a> (<a href="{{.RootPath}}/diff/{{.Commit.Id}}">Diff</a>) (<a href="{{.RootPath}}/commit/{{.Commit.Id}}">Tree</a>) (<a href="{{.RootPath}}/history/commit:{{.Commit.Id}}">Full History</a>)<br />
   <b>Author</b>:
   <span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
-  (<span class="author-email commit-author-email"><a href="mailto:{{.Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
+  (<span class="author-email commit-author-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
   @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} <span class="precise-time">{{.Commit.AuthorInfo.Time}}</span></span><br />
   <b>Committer</b>: 
   <span class="committer-name">{{.Commit.CommitterInfo.AuthorName}}</span>
-  (<span class="committer-email"><a href="mailto:{{.Commit.CommitterInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)
+  (<span class="committer-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)
   @ <span class="committer-time">{{toFuzzyTime .Commit.CommitterInfo.Time}} <span class="precise-time">{{.Commit.CommitterInfo.Time}}</span></span><br />
   <b>Message</b>:<p class="commit-message">{{.Commit.CommitMessage}}</p>
   {{if gt (len .Commit.Signature) 0}}
