@@ -2471,7 +2471,6 @@ SELECT email, username FROM %s_user_email WHERE verified = 1 AND email IN (%s)
 	var email, username string
 	for stmt.Next() {
 		err = stmt.Scan(&email, &username)
-		fmt.Println("x", email, username)
 		if err != nil { return nil, err }
 		emailList[email] = username
 	}
