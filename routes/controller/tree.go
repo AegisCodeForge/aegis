@@ -88,6 +88,7 @@ func bindTreeHandler(ctx *RouterContext) {
 		
 		treeId := r.PathValue("treeId")
 		treePath := r.PathValue("treePath")
+
 		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		repoHeaderInfo := templates.RepoHeaderTemplateModel{
 			TypeStr: "tree",

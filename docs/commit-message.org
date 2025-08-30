@@ -1,0 +1,4 @@
+* commit message
+
++ =Co-Authored-By: ...= (=^\s*[cC]o-[aA]uthored-[bB]y:\s*(.*)$=): coauthor.
+  

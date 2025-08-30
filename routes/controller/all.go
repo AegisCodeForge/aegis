@@ -67,7 +67,6 @@ func bindAllController(ctx *routes.RouterContext) {
 						nsl, err = ctx.DatabaseInterface.GetAllVisibleNamespacePaginated(ctx.LoginInfo.UserName, pageInfo.PageNum-1, pageInfo.PageSize)
 					}
 				}
-				fmt.Printf("%s\n", nsl)
 				routes.LogTemplateError(ctx.LoadTemplate("all/namespace-list").Execute(w, templates.AllNamespaceListModel{
 					DepotName: ctx.Config.DepotName,
 					NamespaceList: nsl,

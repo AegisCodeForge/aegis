@@ -372,7 +372,6 @@ ORDER BY ns_absid ASC LIMIT $1 OFFSET $2
 	var datetime time.Time
 	var status int
 	for stmt.Next() {
-		fmt.Println("xyz")
 		err = stmt.Scan(&name, &title, &description, &email, &owner, &datetime, &acl, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
@@ -2471,7 +2470,6 @@ SELECT email, username FROM %s_user_email WHERE verified = 1 AND email IN (%s)
 	var email, username string
 	for stmt.Next() {
 		err = stmt.Scan(&email, &username)
-		fmt.Println("x", email, username)
 		if err != nil { return nil, err }
 		emailList[email] = username
 	}
