@@ -104,6 +104,7 @@ type AegisDatabaseInterface interface {
 	// returns the issue_id of the new issue.
 	NewRepositoryIssue(ns string, name string, author string, title string, content string) (int64, error)
 	HardDeleteRepositoryIssue(ns string, name string, issueId int) error
+	SetIssuePriority(ns string, name string, id int, priority int) error
 	GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error)
 	NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error
 	HardDeleteRepositoryIssueEvent(eventAbsId int64) error

@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS %s_issue (
     issue_title VARCHAR(4096),
     issue_content TEXT,
     issue_status SMALLINT,
+    issue_priority SMALLINT,
     FOREIGN KEY (repo_namespace, repo_name) REFERENCES %s_repository(repo_namespace, repo_name)
 )`, pfx, pfx, pfx))
 	if err != nil { return err }

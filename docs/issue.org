@@ -1,0 +1,8 @@
+* issue
+
+
+the ability to pin/unpin and delete an issue is solely reserved for the repository's owner and for the repository's owner only. if namespace is enabled, the residing namespace's owner does **not** have the privilege to pin/unpin/delete issues.
+
+pinning is implemented as a "priority" value, which in normal operation can only be of 0 or 100. unpinned means having a priority value of 0 and pinned means having a priority value of any number bigger than 0. issues are created unpinned.
+
+

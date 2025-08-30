@@ -1830,6 +1830,22 @@ DELETE FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 	return nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) SetIssuePriority(namespace string, name string, id int, priority int) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %sissue SET issue_priority = ? WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(priority, namespace, name, id)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
 func (dbif *SqliteAegisDatabaseInterface) GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
@@ -2193,10 +2209,10 @@ func (dbif *SqliteAegisDatabaseInterface) SearchIssuePaginated(query string, nam
 		queryClause = "AND issue_title LIKE ? ESCAPE ?"
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, issue_id, issue_author, issue_status, issue_title, issue_content, issue_timestamp
+SELECT rowid, issue_id, issue_author, issue_status, issue_title, issue_content, issue_timestamp, issue_priority
 FROM %sissue
 WHERE repo_namespace = ? AND repo_name = ? %s %s
-ORDER BY issue_timestamp DESC LIMIT ? OFFSET ?
+ORDER BY issue_priority DESC, issue_timestamp DESC LIMIT ? OFFSET ?
 `, pfx, statusClause, queryClause))
 	if err != nil { return nil, err }
 	var r *sql.Rows
@@ -2210,9 +2226,9 @@ ORDER BY issue_timestamp DESC LIMIT ? OFFSET ?
 	res := make([]*model.Issue, 0)
 	for r.Next() {
 		var issueAbsId, issueTimestamp int64
-		var issueId, issueStatus int
+		var issueId, issueStatus, issuePriority int
 		var issueAuthor, issueTitle, issueContent string
-		err = r.Scan(&issueAbsId, &issueId, &issueAuthor, &issueStatus, &issueTitle, &issueContent, &issueTimestamp)
+		err = r.Scan(&issueAbsId, &issueId, &issueAuthor, &issueStatus, &issueTitle, &issueContent, &issueTimestamp, &issuePriority)
 		if err != nil { return nil, err }
 		res = append(res, &model.Issue{
 			IssueAbsId: issueAbsId,
@@ -2224,6 +2240,7 @@ ORDER BY issue_timestamp DESC LIMIT ? OFFSET ?
 			IssueTitle: issueTitle,
 			IssueAuthor: issueAuthor,
 			IssueContent: issueContent,
+			IssuePriority: issuePriority,
 		})
 	}
 	return res, nil

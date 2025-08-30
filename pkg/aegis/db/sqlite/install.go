@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS %sissue (
 	issue_content TEXT,
 	-- 1 - opened.  2 - close as solved.  3 - close as discarded.
 	issue_status INTEGER,
+    issue_priority SMALLINT,
 	FOREIGN KEY (repo_namespace, repo_name)
       REFERENCES %srepository(repo_namespace, repo_name),
 	FOREIGN KEY (issue_author)

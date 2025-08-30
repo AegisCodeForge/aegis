@@ -39,6 +39,7 @@ func bindIssueController(ctx *routes.RouterContext) {
 		}
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
+		loginInfo.IsStrictOwner = repo.Owner == loginInfo.UserName
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		pStr := strings.TrimSpace(r.URL.Query().Get("p"))
 		sStr := strings.TrimSpace(r.URL.Query().Get("s"))
@@ -65,7 +66,10 @@ func bindIssueController(ctx *routes.RouterContext) {
 			TotalPage: pageCount,
 		}
 		issueList, err := ctx.DatabaseInterface.SearchIssuePaginated(q, nsName, repoName, int(f), int(p-1), int(s))
-		for _, k := range issueList { fmt.Println("k", k, k.IssueStatus) }
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
 		routes.LogTemplateError(ctx.LoadTemplate("issue/issue-list").Execute(w, &templates.RepositoryIssueListTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
@@ -105,6 +109,7 @@ func bindIssueController(ctx *routes.RouterContext) {
 		}
 		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
+		loginInfo.IsStrictOwner = repo.Owner == loginInfo.UserName
 		routes.LogTemplateError(ctx.LoadTemplate("issue/new-issue").Execute(w, &templates.RepositoryNewIssueTemplateModel{
 			Config: ctx.Config,
 			Repository: repo,
@@ -188,6 +193,7 @@ func bindIssueController(ctx *routes.RouterContext) {
 		}
 		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
+		loginInfo.IsStrictOwner = repo.Owner == loginInfo.UserName
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		isMember := nsPriv != nil || repoPriv != nil
@@ -255,6 +261,7 @@ func bindIssueController(ctx *routes.RouterContext) {
 			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/issue/%d", rfn, iid), 3, "Not Logged In", "You must login before commenting on an issue.", w, r)
 			return
 		}
+		loginInfo.IsStrictOwner = repo.Owner == loginInfo.UserName
 		loginInfo.IsOwner = ns.Owner == loginInfo.UserName || repo.Owner == loginInfo.UserName
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
@@ -269,20 +276,29 @@ func bindIssueController(ctx *routes.RouterContext) {
 			return
 		}
 		formType := strings.TrimSpace(r.Form.Get("type"))
-		eType := model.EVENT_COMMENT
-		author := loginInfo.UserName
-		content := ""
-		switch formType {
-		case "comment":
-			content = r.Form.Get("content")
-		case "discarded":
-			eType = model.EVENT_CLOSED_AS_DISCARDED
-		case "solved":
-			eType = model.EVENT_CLOSED_AS_SOLVED
-		case "reopen":
-			eType = model.EVENT_REOPENED
+		if formType == "unpin" || formType == "pin" {
+			switch formType {
+			case "unpin":
+				err = ctx.DatabaseInterface.SetIssuePriority(nsName, repoName, iid, 0)
+			case "pin":
+				err = ctx.DatabaseInterface.SetIssuePriority(nsName, repoName, iid, 100)
+			}
+		} else {
+			eType := model.EVENT_COMMENT
+			author := loginInfo.UserName
+			content := ""
+			switch formType {
+			case "comment":
+				content = r.Form.Get("content")
+			case "discarded":
+				eType = model.EVENT_CLOSED_AS_DISCARDED
+			case "solved":
+				eType = model.EVENT_CLOSED_AS_SOLVED
+			case "reopen":
+				eType = model.EVENT_REOPENED
+			}
+			err = ctx.DatabaseInterface.NewRepositoryIssueEvent(nsName, repoName, iid, eType, author, content)
 		}
-		err = ctx.DatabaseInterface.NewRepositoryIssueEvent(nsName, repoName, iid, eType, author, content)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
