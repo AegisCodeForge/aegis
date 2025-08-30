@@ -1,6 +1,12 @@
 .issue-header {
 	border-bottom: 2px var(--foreground-color) solid;
 }
+.issue-header-tag {
+	font-size: 1rem;
+	padding: 0.2rem;
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+}
 .issue-body {
 	border-bottom: 1px var(--foreground-color) solid;
 }

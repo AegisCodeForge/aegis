@@ -10,6 +10,7 @@ type Issue struct {
 	IssueContent string
 	IssueTime int64
 	IssueStatus int
+	IssuePriority int
 }
 
 const (

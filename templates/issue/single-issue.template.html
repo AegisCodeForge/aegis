@@ -20,7 +20,7 @@
 	  {{template "issue/_sidebar" .}}
 	  <div class="main-side">
 		<div class="issue-body">
-		  <h2 class="issue-header">#{{.Issue.IssueId}}: <span class="issue-header-title">{{.Issue.IssueTitle}}</span></h2>
+		  <h2 class="issue-header">#{{.Issue.IssueId}}: <span class="issue-header-title">{{.Issue.IssueTitle}}</span> <span class="issue-header-tag">{{if eq .Issue.IssueStatus 1}}OPEN{{else if eq .Issue.IssueStatus 2}}SOLVED{{else if eq .Issue.IssueStatus 3}}DISCARDED{{end}}</span> {{if gt .Issue.IssuePriority 0}}<span class="issue-header-tag">PINNED</span>{{end}}</h2>
 		  <div class="issue-header-author"><a href="/u/{{.Issue.IssueAuthor}}">{{.Issue.IssueAuthor}}</a> @ {{toFuzzyTime .Issue.IssueTime}} ({{toPreciseTime .Issue.IssueTime}})</div>
 		  <div class="issue-header-content">{{renderMarkdown .Issue.IssueContent}}</div>
 		</div>
@@ -69,6 +69,19 @@
 		  <input type="hidden" name="type" id="type" value="reopen" />
 		  <input type="submit" value="Reopen" />
 		</form>
+		{{end}}
+		{{if .LoginInfo.IsStrictOwner}}
+		{{if gt .Issue.IssuePriority 0}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="unpin" />
+		  <input type="submit" value="Unpin" />
+		</form>
+		{{else}}
+		<form action="" method="POST">
+		  <input type="hidden" name="type" id="type" value="pin" />
+		  <input type="submit" value="Pin" />
+		</form>
+		{{end}}
 		{{end}}
 		
 	  </div>

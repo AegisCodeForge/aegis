@@ -110,6 +110,8 @@
   	issue_content TEXT,
   	-- 1 - opened.  2 - close as solved.  3 - close as discarded.
   	issue_status INTEGER,
+  	-- 0 to 100 inclusive.
+  	issue_priority INTEGER,
   	FOREIGN KEY (repo_namespace, repo_name)
         REFERENCES aegis_repository(repo_namespace, repo_name),
   	FOREIGN KEY (issue_author)

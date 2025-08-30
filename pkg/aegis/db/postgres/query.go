@@ -1495,14 +1495,15 @@ func (dbif *PostgresAegisDatabaseInterface) GetRepositoryIssue(ns string, name s
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT issue_absid, issue_timestamp, issue_author, issue_title, issue_content, issue_status
+SELECT issue_absid, issue_timestamp, issue_author, issue_title, issue_content, issue_status, issue_priority
 FROM %s_issue
 WHERE repo_namespace = $1 AND repo_name = $2 AND issue_id = $3
 `, pfx), ns, name, iid)
 	var absid, id, status int64
 	var t time.Time
+	var priority int
 	var author, title, content string
-	err := stmt.Scan(&absid, &ns, &name, &id, &t, &author, &title, &content, &status)
+	err := stmt.Scan(&absid, &t, &author, &title, &content, &status, &priority)
 	if err == pgx.ErrNoRows { return nil, db.ErrEntityNotFound }
 	if err != nil { return nil, err }
 	return &model.Issue{
@@ -1515,6 +1516,7 @@ WHERE repo_namespace = $1 AND repo_name = $2 AND issue_id = $3
 		IssueContent: content,
 		IssueTime: t.Unix(),
 		IssueStatus: int(status),
+		IssuePriority: priority,
 	}, nil
 }
 
@@ -1540,6 +1542,7 @@ func (dbif *PostgresAegisDatabaseInterface) CountIssue(query string, namespace s
 	ctx := context.Background()
 	statusClause := ""
 	switch filterType {
+	case 0: statusClause = "TRUE"
     case 1: statusClause = "issue_status = 1"
 	case 2: statusClause = "NOT (issue_status = 1)"
 	case 3: statusClause = "issue_status = 2"
@@ -1564,7 +1567,7 @@ AND %s
 	err := stmt.Scan(&res)
 	if err == pgx.ErrNoRows { return 0, db.ErrEntityNotFound }
 	if err != nil { return 0, err }
-	return 0, nil
+	return res, nil
 }
 
 func (dbif *PostgresAegisDatabaseInterface) SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.Issue, error) {
@@ -1572,6 +1575,7 @@ func (dbif *PostgresAegisDatabaseInterface) SearchIssuePaginated(query string, n
 	ctx := context.Background()
 	statusClause := ""
 	switch filterType {
+	case 0: statusClause = "TRUE"
     case 1: statusClause = "issue_status = 1"
 	case 2: statusClause = "NOT (issue_status = 1)"
 	case 3: statusClause = "issue_status = 2"
@@ -1582,27 +1586,28 @@ func (dbif *PostgresAegisDatabaseInterface) SearchIssuePaginated(query string, n
 	if len(query) > 0 {
 		pat := db.ToSqlSearchPattern(query)
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT issue_absid, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status
+SELECT issue_absid, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status, issue_priority
 FROM %s_issue
 WHERE repo_namespace = $1 AND repo_name = $2 AND %s AND (issue_title LIKE $3 ESCAPE $4)
-ORDER BY issue_absid ASC LIMIT $5 OFFSET $6
-`, pfx, statusClause), namespace, name, pat, "%", pageSize, pageNum*pageSize)
+ORDER BY issue_priority DESC, issue_timestamp DESC LIMIT $5 OFFSET $6
+`, pfx, statusClause), namespace, name, pat, "\\", pageSize, pageNum*pageSize)
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT issue_absid, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status
+SELECT issue_absid, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status, issue_priority
 FROM %s_issue
 WHERE repo_namespace = $1 AND repo_name = $2 AND %s
-ORDER BY issue_absid ASC LIMIT $3 OFFSET $4
+ORDER BY issue_priority DESC, issue_timestamp DESC LIMIT $3 OFFSET $4
 `, pfx, statusClause), namespace, name, pageSize, pageNum*pageSize)
 	}
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	res := make([]*model.Issue, 0)
 	var absid, id, status int64
+	var priority int
 	var t time.Time
 	var author, title, content string
 	for stmt.Next() {
-		err = stmt.Scan(&absid, &id, &t, &author, &title, &content, &status)
+		err = stmt.Scan(&absid, &id, &t, &author, &title, &content, &status, &priority)
 		if err != nil { return nil, err }
 		res = append(res, &model.Issue{
 			IssueAbsId: absid,
@@ -1614,6 +1619,7 @@ ORDER BY issue_absid ASC LIMIT $3 OFFSET $4
 			IssueContent: content,
 			IssueTime: t.Unix(),
 			IssueStatus: int(status),
+			IssuePriority: priority,
 		})
 	}
 	return res, nil
@@ -1634,9 +1640,9 @@ SELECT COUNT(*) FROM %s_issue WHERE repo_namespace = $1 AND repo_name = $2
 	defer tx.Rollback(ctx2)
 	t := time.Now()
 	_, err = dbif.pool.Exec(ctx2, fmt.Sprintf(`
-INSERT INTO %s_issue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-`, pfx), ns, name, newid, t, author, title, content, model.ISSUE_OPENED)
+INSERT INTO %s_issue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status, issue_priority)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+`, pfx), ns, name, newid, t, author, title, content, model.ISSUE_OPENED, 0)
 	if err != nil { return 0, err }
 	err = tx.Commit(ctx2)
 	if err != nil { return 0, err }
@@ -1651,6 +1657,20 @@ func (dbif *PostgresAegisDatabaseInterface) HardDeleteRepositoryIssue(ns string,
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 DELETE FROM %s_issue WHERE repo_namespace = $1 AND repo_name = $2 AND issue_id = $3
 `, pfx), ns, name, issueId)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) SetIssuePriority(namespace string, name string, id int, priority int) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_issue SET issue_priority = $1 WHERE issue_id = $2 AND repo_namespace = $3 AND repo_name = $4
+`, pfx), priority, id, namespace, name)
 	if err != nil { return err }
 	err = tx.Commit(ctx)
 	if err != nil { return err }
@@ -1695,19 +1715,35 @@ func (dbif *PostgresAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, n
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt1 := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT issue_absid FROM %s_issue WHERE repo_namespace = $1 AND repo_name = $2 AND issue_id = $3
+SELECT issue_absid, issue_status FROM %s_issue WHERE repo_namespace = $1 AND repo_name = $2 AND issue_id = $3
 `, pfx), ns, name, issueId)
 	var absId int64
-	err := stmt1.Scan(&absId);
+	var issueStatus int
+	err := stmt1.Scan(&absId, &issueStatus);
 	if err != nil { return err }
 	tx, err := dbif.pool.Begin(ctx)
 	if err != nil { return err }
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_issue(issue_absid, issue_event_type, issue_event_time, issue_event_author, issue_event_content)
+INSERT INTO %s_issue_event(issue_absid, issue_event_type, issue_event_time, issue_event_author, issue_event_content)
 VALUES ($1, $2, $3, $4, $5)
 `, pfx), absId, eType, time.Now(), author, content)
 	if err != nil { return err }
+	newIssueStatus := issueStatus
+	switch eType {
+	case model.EVENT_CLOSED_AS_SOLVED:
+		newIssueStatus = model.ISSUE_CLOSED_AS_SOLVED
+	case model.EVENT_CLOSED_AS_DISCARDED:
+		newIssueStatus = model.ISSUE_CLOSED_AS_DISCARDED
+	case model.EVENT_REOPENED:
+		newIssueStatus = model.ISSUE_OPENED
+	}
+	if newIssueStatus != issueStatus {
+		_, err := tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_issue SET issue_status = $1 WHERE issue_absid = $2
+`, pfx), newIssueStatus, absId)
+		if err != nil { return err }
+	}
 	err = tx.Commit(ctx)
 	if err != nil { return err }
 	return nil
