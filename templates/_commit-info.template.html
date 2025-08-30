@@ -1,10 +1,23 @@
 {{define "_commit-info"}}
+{{$emailUserMapping := .EmailUserMapping}}
 <div class="commit-info">
   <b>Commit</b> <a href="{{.RootPath}}/commit/{{.Commit.Id}}">{{slice .Commit.Id 0 8}}...</a> (<a href="{{.RootPath}}/diff/{{.Commit.Id}}">Diff</a>) (<a href="{{.RootPath}}/commit/{{.Commit.Id}}">Tree</a>) (<a href="{{.RootPath}}/history/commit:{{.Commit.Id}}">Full History</a>)<br />
+  {{if gt (len .Commit.CoAuthorInfo) 0}}
+  <b>Authors</b> @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} <span class="precise-time">{{.Commit.AuthorInfo.Time}}</span></span><br />
+  <ul style="margin: 0">
+	<li><span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
+	  (<span class="author-email commit-author-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)</li>
+	{{range $k := .Commit.CoAuthorInfo}}
+	<li><span class="author-name commit-author-name">{{.AuthorName}}</span>
+	  (<span class="author-email commit-author-email"><a href="{{resolveToUsername $emailUserMapping .AuthorEmail}}">{{.AuthorEmail}}</a></span>)</li>
+	{{end}}
+  </ul>
+  {{else}}
   <b>Author</b>:
   <span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
   (<span class="author-email commit-author-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
   @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} <span class="precise-time">{{.Commit.AuthorInfo.Time}}</span></span><br />
+  {{end}}
   <b>Committer</b>: 
   <span class="committer-name">{{.Commit.CommitterInfo.AuthorName}}</span>
   (<span class="committer-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)

@@ -372,7 +372,6 @@ ORDER BY ns_absid ASC LIMIT $1 OFFSET $2
 	var datetime time.Time
 	var status int
 	for stmt.Next() {
-		fmt.Println("xyz")
 		err = stmt.Scan(&name, &title, &description, &email, &owner, &datetime, &acl, &status)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)

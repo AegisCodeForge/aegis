@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -15,6 +16,7 @@ type CommitObject struct {
 	TreeObjId string
 	ParentId string
 	AuthorInfo AuthorTime
+	CoAuthorInfo []AuthorTime
 	CommitterInfo AuthorTime
 	CommitTime time.Time
 	CommitMessage string
@@ -64,6 +66,8 @@ func (rgo RawGitObject) readAsCommitObjectNoDeflate() (*CommitObject, error) {
 	return resobj, nil
 }
 
+var reCoAuthoredBy = regexp.MustCompile(`^\s*[cC]o-[aA]uthored-[bB]y:\s*([^<>]+)\s*<([^>]*)>\s*$`)
+
 func parseCommitObject(objid string, f io.Reader) (*CommitObject, error) {
 	sourceBytes, err := io.ReadAll(f)
 	if err != nil { return nil, err }
@@ -100,6 +104,16 @@ func parseCommitObject(objid string, f io.Reader) (*CommitObject, error) {
 	}
 	res.Id = objid
 	res.CommitMessage = message
+	res.CoAuthorInfo = make([]AuthorTime, 0)
+	for line := range strings.SplitSeq(message, "\n") {
+		r := reCoAuthoredBy.FindStringSubmatch(strings.TrimSpace(line))
+		if len(r) <= 0 { continue }
+		res.CoAuthorInfo = append(res.CoAuthorInfo, AuthorTime{
+			AuthorName: r[1],
+			AuthorEmail: r[2],
+			Time: res.AuthorInfo.Time,
+		})
+	}
 	res.rawData = sourceBytes
 	res.Signature = strings.Join(sig, "\n")
 	return &res, nil
