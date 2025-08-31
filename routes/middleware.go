@@ -103,3 +103,14 @@ var GlobalVisibility Middleware = func(f HandlerFunc) HandlerFunc {
 	}
 }
 
+var RateLimit Middleware = func(f HandlerFunc) HandlerFunc {
+	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
+		if ctx.RateLimiter.IsIPAllowed(ResolveMostPossibleIP(w, r)) {
+			f(ctx, w, r)
+		} else {
+			w.WriteHeader(429)
+		}
+	}
+}
+
+

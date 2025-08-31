@@ -32,6 +32,7 @@ type RouterContext struct {
 	Mailer mail.AegisMailerInterface
 	LoginInfo *templates.LoginInfoModel
 	LastError error
+	RateLimiter *RateLimiter
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {
