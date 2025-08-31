@@ -142,6 +142,10 @@ type AegisConfig struct {
 	MaintenanceMessage string `json:"maintenanceMessage"`
 	// shown when the instance is in plain mode & private mode.
 	PrivateNoticeMessage string `json:"privateNoticeMessage"`
+
+	// rate limiter
+	// 0 turns off the rate limiter.
+	MaxRequestInSecond float64 `json:"maxRequestInSecond"`
 }
 
 const (
@@ -337,6 +341,8 @@ func CreateConfigFile(p string) error {
 			Password: "",
 			TablePrefix: "aegis_receipt_",
 		},
+		
+		MaxRequestInSecond: 0,
 	}, "", "    ")
 	if err != nil { return err }
 	f.Write(marshalRes)

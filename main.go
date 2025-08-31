@@ -233,6 +233,9 @@ func main() {
 	server := &http.Server{
 		Addr: fmt.Sprintf("%s:%d", config.BindAddress, config.BindPort),
 	}
+
+	context.RateLimiter = routes.NewRateLimiter(config)
+	
 	controller.InitializeRoute(&context)
 
 	go func() {

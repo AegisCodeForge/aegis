@@ -13,107 +13,110 @@ import (
 )
 
 func bindDiffController(ctx *RouterContext) {
-	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", WithLog(func(w http.ResponseWriter, r *http.Request){
-		var err error
-		var loginInfo *templates.LoginInfoModel = nil
-		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+	http.HandleFunc("GET /repo/{repoName}/diff/{commitId}/", UseMiddleware(
+		[]Middleware{RateLimit}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			var err error
+			var loginInfo *templates.LoginInfoModel = nil
+			if !ctx.Config.PlainMode {
+				loginInfo, err = GenerateLoginInfoModel(ctx, r)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
+					return
+				}
+			}
+			if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
+				switch ctx.Config.GlobalVisibility {
+				case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+					FoundAt(w, "/maintenance-notice")
+					return
+				case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+					FoundAt(w, "/shutdown-notice")
+					return
+				case aegis.GLOBAL_VISIBILITY_PRIVATE:
+					if !ctx.Config.PlainMode {
+						FoundAt(w, "/login")
+					} else {
+						FoundAt(w, "/private-notice")
+					}
+					return
+				}
+			}
+			
+			rfn := r.PathValue("repoName")
+			if !model.ValidRepositoryName(rfn) {
+				ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+				return
+			}
+			_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err == routes.ErrNotFound {
+				ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
+				return
+			}
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-		}
-		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
+			if repo.Type != model.REPO_TYPE_GIT {
+				ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				if !ctx.Config.PlainMode {
-					FoundAt(w, "/login")
-				} else {
-					FoundAt(w, "/private-notice")
+			}
+			if !ctx.Config.PlainMode {
+				loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
+			}
+			
+			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+				t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
+				if t == nil {
+					t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
 				}
-				return
+				if t == nil {
+					LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+						LoginInfo: loginInfo,
+						ErrorCode: 403,
+						ErrorMessage: "Not enough privilege.",
+					}))
+					return
+				}
 			}
-		}
-		
-		rfn := r.PathValue("repoName")
-		if !model.ValidRepositoryName(rfn) {
-			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
-			return
-		}
-		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err == routes.ErrNotFound {
-			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
-			return
-		}
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if repo.Type != model.REPO_TYPE_GIT {
-			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
-			return
-		}
-		if !ctx.Config.PlainMode {
-			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
-		}
-		
-		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
-			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-			if t == nil {
-				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
-			}
-			if t == nil {
-				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-					LoginInfo: loginInfo,
-					ErrorCode: 403,
-					ErrorMessage: "Not enough privilege.",
-				}))
-				return
-			}
-		}
 
-		rr := repo.Repository.(*gitlib.LocalGitRepository)
-		commitId := r.PathValue("commitId")
-		cobj, err := rr.ReadObject(commitId)
-		if err != nil {
-			ctx.ReportInternalError(
-				fmt.Sprintf("Failed to read commit %s: %s", commitId, err.Error()),
-				w, r,
-			)
-			return
-		}
-		co := cobj.(*gitlib.CommitObject)
-		m := make(map[string]string, 0)
-		m[co.AuthorInfo.AuthorEmail] = ""
-		m[co.CommitterInfo.AuthorEmail] = ""
-		m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
-		diff, err := rr.GetDiff(commitId)
-		if err != nil {
-			ctx.ReportInternalError(
-				fmt.Sprintf("Failed to read diff of %s: %s", commitId, err.Error()),
-				w, r,
-			)
-			return
-		}
-		
-		LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{
-			Repository: repo,
-			RepoHeaderInfo: *GenerateRepoHeader("commit", commitId),
-			CommitInfo: templates.CommitInfoTemplateModel{
-				RootPath: fmt.Sprintf("/repo/%s", rfn),
-				Commit: cobj.(*gitlib.CommitObject),
-				EmailUserMapping: m,
-			},
-			Diff: diff,
-			LoginInfo: loginInfo,
-			Config: ctx.Config,
-		}))
-	}))
+			rr := repo.Repository.(*gitlib.LocalGitRepository)
+			commitId := r.PathValue("commitId")
+			cobj, err := rr.ReadObject(commitId)
+			if err != nil {
+				ctx.ReportInternalError(
+					fmt.Sprintf("Failed to read commit %s: %s", commitId, err.Error()),
+					w, r,
+				)
+				return
+			}
+			co := cobj.(*gitlib.CommitObject)
+			m := make(map[string]string, 0)
+			m[co.AuthorInfo.AuthorEmail] = ""
+			m[co.CommitterInfo.AuthorEmail] = ""
+			m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			diff, err := rr.GetDiff(commitId)
+			if err != nil {
+				ctx.ReportInternalError(
+					fmt.Sprintf("Failed to read diff of %s: %s", commitId, err.Error()),
+					w, r,
+				)
+				return
+			}
+			
+			LogTemplateError(ctx.LoadTemplate("diff").Execute(w, templates.DiffTemplateModel{
+				Repository: repo,
+				RepoHeaderInfo: *GenerateRepoHeader("commit", commitId),
+				CommitInfo: templates.CommitInfoTemplateModel{
+					RootPath: fmt.Sprintf("/repo/%s", rfn),
+					Commit: cobj.(*gitlib.CommitObject),
+					EmailUserMapping: m,
+				},
+				Diff: diff,
+				LoginInfo: loginInfo,
+				Config: ctx.Config,
+			}))
+		},
+	))
 }
 
