@@ -9,7 +9,7 @@
   <body>
 	<header>
 	  {{template "_header-nav" .}}
-	  <h1 class="header-name">Login</h1>
+	  <h1 class="header-name">Registration</h1>
 	</header>
 	<hr />
 	{{if gt (len .ErrorMsg) 0}}
@@ -23,6 +23,9 @@
 	  <div class="field"><label class="field-label" for="username">Username:</label><input class="field-tf" name="username" id="username" /></div>
 	  <div class="field"><label class="field-label" for="email">Email:</label><input class="field-tf" name="email" id="email" /></div>
 	  <div class="field"><label class="field-label" for="password">Password:</label><input class="field-tf" type="password" name="password" id="password" /></div>
+	  {{if .Config.ManualApproval}}
+	  <div class="field"><label class="field-label" for="reason">Please describe your reason for registration, etc..</label><textarea name="reason"></textarea></div>
+	  {{end}}
 	  <input class="form-submit" type="submit" value="Register" />
 	</form>
 	</div>

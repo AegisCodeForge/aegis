@@ -2848,3 +2848,226 @@ SELECT email, username FROM %suser_email WHERE verified = 1 AND email IN (%s)
 	return emailList, nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) InsertRegistrationRequest(username string, email string, passwordHash string, reason string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %suser_reg_request(username, email, password_hash, reason, timestamp) VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username, email, passwordHash, reason, time.Now().Unix())
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) ApproveRegistrationRequest(absid int64) error {
+	pfx := dbif.config.Database.TablePrefix
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT username, email, password_hash FROM %suser_reg_request
+WHERE rowid = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt1.Exec(absid)
+	if err != nil { return err }
+	var username, email, passwordHash string
+	r := stmt1.QueryRow(absid)
+	if r.Err() != nil { return r.Err() }
+	err = r.Scan(&username, &email, &passwordHash)
+	if err != nil { return err }
+	if dbif.config.EmailConfirmationRequired {
+		_, err = dbif.RegisterUser(username, email, passwordHash, model.NORMAL_USER_CONFIRM_NEEDED)
+		if err != nil { return err }
+	} else {
+		_, err = dbif.RegisterUser(username, email, passwordHash, model.NORMAL_USER)
+		if err != nil { return err }
+	}
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %suser_reg_request WHERE username = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) DisapproveRegistrationRequest(absid int64) error {
+	pfx := dbif.config.Database.TablePrefix
+	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT username FROM %suser_reg_request
+WHERE rowid = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt1.Exec(absid)
+	if err != nil { return err }
+	var username string
+	r := stmt1.QueryRow(absid)
+	if r.Err() != nil { return r.Err() }
+	err = r.Scan(&username)
+	if err != nil { return err }
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %suser_reg_request WHERE username = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT username, email, password_hash, reason, timestamp
+FROM %suser_reg_request
+ORDER BY timestamp DESC LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(pageSize, pageNum*pageSize)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.RegistrationRequest, 0)
+	var username, email, passwordHash, reason string
+	var timestamp int64
+	for r.Next() {
+		err = r.Scan(&username, &email, &passwordHash, &reason, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.RegistrationRequest{
+			Username: username,
+			Email: email,
+			PasswordHash: passwordHash,
+			Reason: reason,
+			Timestamp: time.Unix(timestamp, 0),
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRequestOfUsernamePaginated(username string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, email, password_hash, reason, timestamp
+FROM %suser_reg_request
+WHERE username = ?
+ORDER BY timestamp DESC LIMIT ? OFFSET ?
+`, pfx))
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	r, err := stmt.Query(pageSize, pageNum*pageSize)
+	if err != nil { return nil, err }
+	defer r.Close()
+	res := make([]*model.RegistrationRequest, 0)
+	var email, passwordHash, reason string
+	var rowid, timestamp int64
+	for r.Next() {
+		err = r.Scan(&rowid, &username, &email, &passwordHash, &reason, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.RegistrationRequest{
+			AbsId: rowid,
+			Username: username,
+			Email: email,
+			PasswordHash: passwordHash,
+			Reason: reason,
+			Timestamp: time.Unix(timestamp, 0),
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountRegistrationRequest(query string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var r *sql.Row
+	query = strings.TrimSpace(query)
+	if len(query) <= 0 {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %suser_reg_request
+`, pfx))
+		if err != nil { return 0, err }
+		r = stmt.QueryRow()
+		if r.Err() != nil { return 0, r.Err() }
+	} else {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %suser_reg_request WHERE username LIKE ? ESCAPE ?
+`, pfx))
+		if err != nil { return 0, err }
+		r = stmt.QueryRow(db.ToSqlSearchPattern(query), "\\")
+		if r.Err() != nil { return 0, r.Err() }
+	}
+	var cnt int64
+	err := r.Scan(&cnt)
+	if err != nil { return 0, err }
+	return cnt, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var r *sql.Rows
+	query = strings.TrimSpace(query)
+	if len(query) <= 0 {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request ORDER BY timestamp DESC LIMIT ? OFFSET ?
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
+	} else {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request WHERE  username LIKE ? ESCAPE ? ORDER BY timestamp LIMIT ? OFFSET ?
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(db.ToSqlSearchPattern(query), "\\",  pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
+	}
+	defer r.Close()
+	var absid int64
+	var username, email, passwordHash string
+	var timestamp int64
+	res := make([]*model.RegistrationRequest, 0)
+	for r.Next() {
+		err := r.Scan(&absid, &username, &email, &passwordHash, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.RegistrationRequest{
+			AbsId: absid,
+			Username: username,
+			Email: email,
+			PasswordHash: passwordHash,
+			Timestamp: time.Unix(timestamp, 0),
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRegistrationRequestByAbsId(absid int64) (*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request WHERE rowid = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r, err := stmt.Query(absid)
+	if err != nil { return nil, err }
+	var rowid, timestamp int64
+	var username, email, passwordHash string
+	err = r.Scan(&rowid, &username, &email, &passwordHash, &timestamp)
+	if err != nil { return nil, err }
+	return &model.RegistrationRequest{
+		AbsId: rowid,
+		Username: username,
+		Email: email,
+		PasswordHash: passwordHash,
+		Timestamp: time.Unix(timestamp, 0),
+	}, nil
+}
+

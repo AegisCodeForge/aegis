@@ -83,7 +83,7 @@ func bindAdminSiteConfigController(ctx *routes.RouterContext) {
 			}
 			ctx.Config.ManualApproval = false
 			if r.Form.Has("manual-approval") && r.Form.Get("manual-approval") == "on" {
-				ctx.Config.UseNamespace = true
+				ctx.Config.ManualApproval = true
 			}
 			ctx.Config.RecalculateProperPath()
 			err = ctx.Config.Sync()

@@ -25,6 +25,11 @@
 	  | <span class="header-nav-item"><a href="/reg">SIGN UP</a></span>
 	  {{end}}
 	  {{end}}
+	  {{else}}
+	  <span class="header-nav-item"><a href="/login">LOGIN</a></span>
+	  {{if .Config.AllowRegistration}}
+	  | <span class="header-nav-item"><a href="/reg">SIGN UP</a></span>
+	  {{end}}
 	  {{end}}
 	  {{end}}
     </div>

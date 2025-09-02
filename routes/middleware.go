@@ -61,6 +61,29 @@ var LoginRequired Middleware = func(f HandlerFunc) HandlerFunc {
 		f(ctx, w, r)
 	}
 }
+
+var AdminRequired Middleware = func(f HandlerFunc) HandlerFunc {
+	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
+		if !ctx.Config.PlainMode {
+			if ctx.LoginInfo == nil {
+				ctx.LoginInfo, ctx.LastError = GenerateLoginInfoModel(ctx, r)
+				if ctx.LastError != nil {
+					ctx.ReportRedirect("/login", 0, "Login Check Failed", fmt.Sprintf("Failed while checking login status: %s.", ctx.LastError), w, r)
+					return
+				}
+			}
+			if !ctx.LoginInfo.IsAdmin {
+				ctx.ReportRedirect("/", 0, "Permission Denied", "You need administrator prividege to perform this action.", w, r)
+				return
+			} else {
+				f(ctx, w, r)
+			}
+		} else {
+			ctx.ReportNotFound(r.URL.Path, "Route", "here", w, r)
+		}
+	}
+}
+
 var ErrorGuard Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
 		if ctx.LastError != nil {

@@ -188,6 +188,17 @@ CREATE TABLE IF NOT EXISTS %suser_email (
     verified INTEGER,
 	FOREIGN KEY (username) REFERENCES %suser(user_name)
 )`, pfx, pfx))
+	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %suser_reg_request (
+    username TEXT,
+	email TEXT,
+    password_hash TEXT,
+	reason TEXT
+    timestamp INTEGER
+)`, pfx))
+	if err != nil { return err }
 	
 	tx.Commit()
 	return nil
