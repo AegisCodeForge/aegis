@@ -1,5 +1,14 @@
 Copyright 2025 Zetian Lin
 
+2025-09-02 Zetian Lin <bctnry@sdf.org>
+
+	* v0.1.1
+	+ feat: email-to-user mapping by @bctnry in https://github.com/AegisCodeForge/aegis/pull/74
+	+ feat: co-authored-by by @bctnry in https://github.com/AegisCodeForge/aegis/pull/75
+	+ feat: pin issue by @bctnry in https://github.com/AegisCodeForge/aegis/pull/76
+	+ feat: rate limiter by @bctnry in https://github.com/AegisCodeForge/aegis/pull/77
+	+ feat: user registration reason by @bctnry in https://github.com/AegisCodeForge/aegis/pull/78
+
 2025-08-28 Zetian Lin <bctnry@sdf.org>
 
 	* v0.1.0
