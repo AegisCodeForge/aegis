@@ -3,7 +3,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>User List :: Admin :: {{.Config.DepotName}}</title>
+    <title>Registration Request List :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
@@ -20,10 +20,10 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>User List</h2>
+		<h2>Registration Request List</h2>
 		<div>{{.ErrorMsg}}</div>
 		<div class="admin-action">
-		  <a class="admin-action-item" href="/admin/new-user">New User</a>
+
 		</div>
 		<div class="list-nav admin-list-nav">
 		  <div class="list-page-nav admin-list-page-nav">
@@ -50,39 +50,18 @@
 		  </div>
 		  <div class="list-search admin-list-search">
 			<form class="list-search-form admin-list-search-form" action="" method="GET">
-			  <label for="q">Search User:</label> <input class="list-search-tf admin-list-search-tf" name="q" id="q" />
+			  <label for="q">Search User:</label> <input class="list-search-tf admin-list-search-tf" name="q" id="q" value="{{.Query}}"/>
 			  <input type="submit" value="Search" />
 			</form>
 		  </div>
 		</div>
 		<table class="admin-table">
 		  <thead>
-			<tr><th>User Name</th><th>Title</th><th>Email</th><th>Status</th><th>Edit</th><th>Delete</th></tr>
+			<tr><th>User Name</th><th>Email</th><th>Reason</th><th>Approve</th><th>Disapprove</th></tr>
 		  </thead>
 		  <tbody>
-			{{range .UserList}}
-			<tr><td><a target="_blank" href="/u/{{.Name}}">{{.Name}}</a></td><td>{{.Title}}</td><td>{{.Email}}</td>
-			  <td><span class="user-status-tag">
-				  {{if eq .Status 2}}
-				  Approval Needed
-				  {{else if eq .Status 3}}
-				  Confirmation Needed
-				  {{else if eq .Status 4}}
-				  Admin
-				  {{else if eq .Status 5}}
-				  Super Admin
-				  {{else if eq .Status 6}}
-				  Soft Deleted
-				  {{else if eq .Status 7}}
-				  Banned
-				  {{end}}
-				</span>
-			  </td>
-			  <td>
-				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/edit">Edit</a>{{end}}</td>
-			  <td>
-				{{if or $loginInfo.IsSuperAdmin (and $loginInfo.IsAdmin (not (eq .Status 5)))}}<a href="/admin/user/{{.Name}}/delete">Delete</a>{{end}}
-			  </td>
+			{{range .RequestList}}
+			<tr><td>{{.Username}}</td><td>{{.Email}}</td><td>{{.Reason}}</td><td><a href="/admin/reg-request/{{.AbsId}}/approve">Approve</a></td><td><a href="/admin/reg-request/{{.AbsId}}/disapprove">Disapprove</a></td>
 			</tr>
 			{{end}}
 		  </tbody>

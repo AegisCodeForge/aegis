@@ -21,4 +21,5 @@ func BindAllAdminControllers(context *routes.RouterContext) {
 	bindAdminRepositoryListController(context)
 	bindAdminReceiptListController(context)
 	bindAdminSiteLockdownController(context)
+	bindAdminRegistrationRequestController(context)
 }

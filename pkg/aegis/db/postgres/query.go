@@ -2346,16 +2346,16 @@ func (dbif *PostgresAegisDatabaseInterface) SearchPullRequestPaginated(query str
 	if len(query) >= 0 {
 		pat := db.ToSqlSearchPattern(query)
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT rowid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
-FROM %spull_request
+SELECT pull_request_absid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+FROM %s_pull_request
 WHERE receiver_namespace = ? AND receiver_name = ? %s AND title LIKE $3 ESCAPE $4
 ORDER BY pull_request_timestamp DESC LIMIT $1 OFFSET $2
 `, pfx, statusClause), pageSize, pageNum*pageSize, pat, "\\")
 		if err != nil { return nil, err }
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT rowid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
-FROM %spull_request
+SELECT pull_request_absid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+FROM %s_pull_request
 WHERE receiver_namespace = ? AND receiver_name = ? %s
 ORDER BY pull_request_timestamp DESC LIMIT $1 OFFSET $2
 `, pfx, statusClause), pageSize, pageNum*pageSize)
@@ -2510,5 +2510,206 @@ SELECT email, username FROM %s_user_email WHERE verified = 1 AND email IN (%s)
 		emailList[email] = username
 	}
 	return emailList, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) InsertRegistrationRequest(username string, email string, passwordHash string, reason string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+INSERT INTO %s_user_reg_request(username, email, password_hash, reason, timestamp) VALUES ($1,$2,$3,$4,$5)
+`, pfx), username, email, passwordHash, reason, time.Now())
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) ApproveRegistrationRequest(absid int64) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt1 := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT username, email, password_hash FROM %s_user_reg_request
+WHERE request_absid = $1
+`, pfx), absid)
+	var username, email, passwordHash string
+	err := stmt1.Scan(&username, &email, &passwordHash)
+	if err != nil { return err }
+	if dbif.config.EmailConfirmationRequired {
+		_, err = dbif.RegisterUser(username, email, passwordHash, model.NORMAL_USER_CONFIRM_NEEDED)
+		if err != nil { return err }
+	} else {
+		_, err = dbif.RegisterUser(username, email, passwordHash, model.NORMAL_USER)
+		if err != nil { return err }
+	}
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+DELETE FROM %s_user_reg_request WHERE username = $1
+`, pfx), username)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) DisapproveRegistrationRequest(absid int64) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT username FROM %s_user_reg_request
+WHERE request_absid = $1
+`, pfx), absid)
+	var username string
+	err := stmt.Scan(&username)
+	if err != nil { return err }
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+DELETE FROM %s_user_reg_request WHERE username = $1
+`, pfx), username)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT request_absid, username, email, password_hash, reason, timestamp
+FROM %s_user_reg_request
+ORDER BY timestamp DESC LIMIT $1 OFFSET $2
+`, pfx), pageSize, pageNum*pageSize)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	res := make([]*model.RegistrationRequest, 0)
+	var username, email, passwordHash, reason string
+	var timestamp time.Time
+	var absid int64
+	for stmt.Next() {
+		err = stmt.Scan(&absid, &username, &email, &passwordHash, &reason, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.RegistrationRequest{
+			AbsId: absid,
+			Username: username,
+			Email: email,
+			PasswordHash: passwordHash,
+			Reason: reason,
+			Timestamp: timestamp,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetRequestOfUsernamePaginated(username string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT request_absid, email, password_hash, reason, timestamp
+FROM %s_user_reg_request
+WHERE username = $1
+ORDER BY timestamp DESC LIMIT $2 OFFSET $3
+`, pfx), username, pageSize, pageNum*pageSize)
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	res := make([]*model.RegistrationRequest, 0)
+	var absid int64
+	var email, passwordHash, reason string
+	var timestamp time.Time
+	for stmt.Next() {
+		err = stmt.Scan(&absid, &username, &email, &passwordHash, &reason, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.RegistrationRequest{
+			AbsId: absid,
+			Username: username,
+			Email: email,
+			PasswordHash: passwordHash,
+			Reason: reason,
+			Timestamp: timestamp,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) CountRegistrationRequest(query string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var r pgx.Row
+	var err error
+	query = strings.TrimSpace(query)
+	if len(query) <= 0 {
+		r = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_user_reg_request
+`, pfx))
+	} else {
+		r = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_user_reg_request WHERE username LIKE $1 ESCAPE $2
+`, pfx), db.ToSqlSearchPattern(query), "\\")
+	}
+	var cnt int64
+	err = r.Scan(&cnt)
+	if err != nil { return 0, err }
+	return cnt, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var stmt pgx.Rows
+	var err error
+	query = strings.TrimSpace(query)
+	if len(query) <= 0 {
+		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT request_absid, username, email, password_hash, timestamp FROM %s_user_reg_request ORDER BY timestamp DESC LIMIT $1 OFFSET $2 
+`, pfx), pageSize, pageNum*pageSize)
+	} else {
+		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT request_absid, username, email, password_hash, timestamp FROM %s_user_reg_request WHERE username  LIKE $1 ESCAPE $2 ORDER BY timestamp DESC LIMIT $3 OFFSET $4
+`, pfx), db.ToSqlSearchPattern(query), "\\", pageSize, pageNum*pageSize)
+	}
+	if err != nil { return nil, err }
+	defer stmt.Close()
+	var absid int64
+	var username, email, passwordHash string
+	var timestamp time.Time
+	res := make([]*model.RegistrationRequest, 0)
+	for stmt.Next() {
+		err := stmt.Scan(&absid, &username, &email, &passwordHash, &timestamp)
+		if err != nil { return nil, err }
+		res = append(res, &model.RegistrationRequest{
+			AbsId: absid,
+			Username: username,
+			Email: email,
+			PasswordHash: passwordHash,
+			Timestamp: timestamp,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetRegistrationRequestByAbsId(absid int64) (*model.RegistrationRequest, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT request_absid, username, email, password_hash, timestamp FROM %s_user_reg_request WHERE request_absid = $1
+`, pfx), absid)
+	var rowid int64
+	var timestamp time.Time
+	var username, email, passwordHash string
+	err := stmt.Scan(&rowid, &username, &email, &passwordHash, &timestamp)
+	if err != nil { return nil, err }
+	return &model.RegistrationRequest{
+		AbsId: rowid,
+		Username: username,
+		Email: email,
+		PasswordHash: passwordHash,
+		Timestamp: timestamp,
+	}, nil
 }
 

@@ -143,6 +143,17 @@ type AegisDatabaseInterface interface {
 	CheckIfEmailVerified(username string, email string) (bool, error)
 	ResolveEmailToUsername(email string) (string, error)
 	ResolveMultipleEmailToUsername(emailList map[string]string) (map[string]string, error)
+
+	InsertRegistrationRequest(username string, email string, passwordHash string, reason string) error
+	GetRegistrationRequestPaginated(pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
+	GetRequestOfUsernamePaginated(username string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
+	
+	// NOTE: implementer should perform the RegisterUser action in this method as well. (but not the RegisterNamespace!...)
+	ApproveRegistrationRequest(absid int64) error
+	DisapproveRegistrationRequest(absid int64) error
+	CountRegistrationRequest(query string) (int64, error)
+	SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
+	GetRegistrationRequestByAbsId(absid int64) (*model.RegistrationRequest, error)
 }
 
 // the fact that golang has no parameter default values is

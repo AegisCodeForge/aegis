@@ -136,10 +136,20 @@ CREATE TABLE IF NOT EXISTS %s_pull_request_event (
 	if err != nil { return err }
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %s_user_email (
-    username TEXT REFERENCES %s_user(user_name),
-	email TEXT,
+    username VARCHAR(64) REFERENCES %s_user(user_name),
+	email VARCHAR(256)
     verified SMALLINT
 )`, pfx, pfx))
+	if err != nil { return err }
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %s_user_reg_request (
+    request_absid BIGINT GENERATED ALWAYS AS IDENTITY,
+    username VARCHAR(64),
+	email VARCHAR(256),
+    password_hash VARCHAR(256),
+	reason VARCHAR(4096),
+    timestamp TIMESTAMP
+)`, pfx))
 	err = tx.Commit(ctx)
 	if err != nil { return err }
 	return nil
