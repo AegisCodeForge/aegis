@@ -1,6 +1,7 @@
 //go:build ignore
 package templates
 
+import "fmt"
 import "time"
 import "github.com/bctnry/aegis/pkg/fuzzytime"
 

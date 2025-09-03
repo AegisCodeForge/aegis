@@ -247,6 +247,7 @@ hr {
 .file-list-item-last-commit {
 	margin-left: 1rem;
 	color: var(--white-shade-degree-2);
+	text-decoration: none;
 }
 /* ======================================================== */
 
