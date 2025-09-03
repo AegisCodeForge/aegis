@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS %s_repository (
     repo_status SMALLINT,
     repo_fork_origin_namespace VARCHAR(64),
     repo_fork_origin_name VARCHAR(64),
+    repo_label_list VARCHAR(512),
     UNIQUE (repo_namespace, repo_name)
 )`, pfx, pfx))
 	if err != nil { return err }

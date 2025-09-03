@@ -37,4 +37,11 @@
 	<path transform="scale(.26458)" d="m22.5 3v42h3v-42h-3z" style="paint-order:stroke fill markers"/>
 	<path transform="scale(.26458)" d="m3 22.5v3h42v-3h-42z" style="paint-order:stroke fill markers"/>
   </symbol>
+  <symbol id="search" viewBox="0 0 48 48">
+    <path d="m28.354 9a10.645 10.37 0 0 0-10.645 10.369 10.645 10.37 0 0 0 2.3281 6.4727l-11.037 11.037 2.1211 2.1211 11.133-11.133h0.001953a10.645 10.37 0 0 0 6.0977 1.8711 10.645 10.37 0 0 0 10.646-10.369 10.645 10.37 0 0 0-10.646-10.369zm0 2.9219a7.645 7.4473 0 0 1 7.6465 7.4473 7.645 7.4473 0 0 1-7.6465 7.4473 7.645 7.4473 0 0 1-7.6445-7.4473 7.645 7.4473 0 0 1 7.6445-7.4473z" stroke-linecap="square" stroke-width="1.3295" style="paint-order:markers stroke fill"/>
+  </symbol>
+  <symbol id="x" viewBox="0 0 12.7 12.7">
+    <rect transform="rotate(45)" x="3.2917" y="-.39687" width="11.377" height=".79375" stroke-linecap="square" stroke-width="2" style="paint-order:stroke fill markers"/>
+    <rect transform="rotate(135)" x="-5.6885" y="-9.3771" width="11.377" height=".79375" stroke-linecap="square" stroke-width="2" style="paint-order:stroke fill markers"/>
+  </symbol>
 </svg>

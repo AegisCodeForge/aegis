@@ -49,6 +49,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindResetPasswordController(context)
 
 		bindIssueController(context)
+		bindLabelController(context)
 	}
 }
 

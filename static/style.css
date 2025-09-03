@@ -168,7 +168,30 @@ hr {
 @media (max-width: 920px) {
 	display: block;
 }
-
+.header-repo-label a {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+	padding: 0.2rem;
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+	text-decoration: none;
+	word-spacing: normal;
+    transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -moz-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -webkit-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+    -o-transition: background-color 0.3s ease-in-out, color 0.5s ease-in-out;
+}
+.header-repo-label a:hover {
+	color: var(--foreground-color);
+	background-color: var(--background-color);
+}
+.repo-header-nav {
+	margin-top: 0.5rem;
+}
+.header-repo-label-list {
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+}
 /* ======================================================== */
 
 /* ======================================================== */

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-all.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+      <h1 class="header-name">All Repositories labelled <br />#{{.Label}}</h1>
+	</header>
+	
+	<div class="list-nav">
+	  <div class="list-page-nav">
+		{{if gt .PageInfo.PageNum 1}}
+		<a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}{{if .Query}}&q={{.Query}}{{end}}">&lt;&lt;</a>
+		{{end}}
+		<span class="list-page-nav-page-indicator">{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}</span>
+		{{if lt .PageInfo.PageNum .PageInfo.TotalPage}}
+		<a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}{{if .Query}}&q={{.Query}}{{end}}">&gt;&gt;</a>
+		{{end}}
+	  </div>
+	  <div class="list-page-goto">
+		<form class="list-page-goto-form" action="" method="GET">
+		  <input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
+		<label for="p">Page:</label> <input class="list-page-goto-form-tf" name="p" id="p" />
+		<input type="submit" value="Go" />
+		</form>
+		
+		<div class="list-page-nav-page-sizer">
+		  (<a class="list-page-nav-l" href="?s=10">10</a>
+		  <a class="list-page-nav-l" href="?s=25">25</a>
+		  <a class="list-page-nav-l" href="?s=50">50</a>)
+		</div>
+	  </div>
+	  <div class="list-search">
+		<form class="list-search-form" action="" method="GET">
+		  <label for="q">Search Label:</label> <input class="list-search-tf" name="q" id="q" />
+		<input type="submit" value="Search" />
+		</form>
+	  </div>
+	</div>
+	<table class="all-list-table">
+	  <thead class="all-list-table-head">
+		<tr>
+		  <th>Repository</th>
+		  <th>Description</th>
+		</tr>
+	  </thead>
+	  <tbody class="all-list-table-body">
+		{{range $value := .RepositoryList}}
+		<tr>
+		  <td><a href="{{getRepoPath $value.Namespace $value.Name}}">{{getRepoName $value.Namespace $value.Name}}</a></td>
+		  <td>{{$value.Description}}</td>
+		</tr>
+		{{end}}
+	  </tbody>
+    </table>
+
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>

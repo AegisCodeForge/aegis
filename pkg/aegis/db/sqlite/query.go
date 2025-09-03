@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -411,22 +412,26 @@ WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetRepositoryByName(nsName string, repoName string) (*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %srepository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(nsName, repoName)
 	if r.Err() != nil { return nil, r.Err() }
-	var desc, owner, acl, forkOriginNs, forkOriginName string
+	var desc, owner, acl, forkOriginNs, forkOriginName, labelList string
 	var status int
 	var repoType uint8
-	err = r.Scan(&repoType, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName)
+	err = r.Scan(&repoType, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, db.ErrEntityNotFound
 		}
 		return nil, err
+	}
+	var tags []string = nil
+	if len(labelList) > 0 {
+		tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 	}
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
 	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
@@ -435,6 +440,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	res.Status = model.AegisRepositoryStatus(status)
 	res.ForkOriginNamespace = forkOriginNs
 	res.ForkOriginName = forkOriginName
+	res.RepoLabelList = tags
 	aclobj, err := model.ParseACL(acl)
 	if err != nil { return nil, err }
 	res.AccessControlList = aclobj
@@ -487,25 +493,27 @@ VALUES (?,?,?,?,?,?,?,?)
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespace(username string) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
-	privateSelectClause := ""
+	var rs *sql.Rows
+	var err error
 	if len(username) > 0 {
-		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-	}
-	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+		stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
-WHERE ns_status = 1 %s
-`, pfx, privateSelectClause))
-	if err != nil { return nil, err }
-	defer stmt1.Close()
-	var rs *sql.Rows
-	if len(username) > 0 {
-		pattern := db.ToSqlSearchPattern(username)
-		rs, err = stmt1.Query(username, pattern, "\\")
+WHERE (ns_status = 1 OR ns_status = 3) OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
+`, pfx))
+		if err != nil { return nil, err }
+		rs, err = stmt1.Query(username, db.ToSqlSearchPattern(username), "\\")
+		if err != nil { return nil, err }
 	} else {
-		rs, err = stmt1.Query()
+		stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
+FROM %snamespace
+WHERE ns_status = 1
+`, pfx,))
+		if err != nil { return nil, err }
+		rs, err = stmt1.Query(username, db.ToSqlSearchPattern(username), "\\")
+		if err != nil { return nil, err }
 	}
-	if err != nil { return nil, err }
 	defer rs.Close()
 	res := make(map[string]*model.Namespace, 0)
 	for rs.Next() {
@@ -599,37 +607,43 @@ WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(username string, ns string) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
-	privateSelectClause := ""
-	if len(username) > 0 {
-		privateSelectClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository
-WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
-`, pfx, privateSelectClause))
-	if err != nil { return nil, err }
 	var rs *sql.Rows
+	var err error
 	if len(username) > 0 {
-		pattern := strings.ReplaceAll(username, "\\", "\\\\")
-		pattern = strings.ReplaceAll(pattern, "%", "\\%")
-		pattern = strings.ReplaceAll(pattern, "_", "\\_")
-		pattern = "%" + pattern + "%"
-		rs, err = stmt.Query(ns, username, pattern, "\\")
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE repo_namespace = ?
+AND (repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		if err != nil { return nil, err }
+		rs, err = stmt.Query(ns, username, db.ToSqlSearchPattern(username), "\\")
+		if err != nil { return nil, err }
 	} else {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE repo_namespace = ?
+AND (repo_status = 1 OR repo_status = 4)
+`, pfx))
+		if err != nil { return nil, err }
 		rs, err = stmt.Query(ns)
+		if err != nil { return nil, err }
 	}
-	if err != nil { return nil, err }
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, owner, acl, forkOriginName, forkOriginNs string
+		var name, desc, owner, acl, forkOriginName, forkOriginNs, labelList string
 		var status int64
-		err = rs.Scan(&name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName)
+		err = rs.Scan(&name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: name,
@@ -640,6 +654,7 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -648,7 +663,7 @@ WHERE repo_namespace = ? AND (repo_status = 1 OR repo_status = 4 %s)
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryFromNamespace(ns string) (map[string]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %srepository
 WHERE repo_namespace = ?
 `, pfx))
@@ -658,14 +673,20 @@ WHERE repo_namespace = ?
 	defer rs.Close()
 	res := make(map[string]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, acl, owner, forkOriginNs, forkOriginName string
+		var name, desc, acl, owner, forkOriginNs, forkOriginName, labelList string
 		var status int64
-		err = rs.Scan(&name, &desc, &owner, &acl, &status)
+		var rtype uint8
+		err = rs.Scan(&rtype, &name, &desc, &owner, &acl, &status, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res[name] = &model.Repository{
+			Type: rtype,
 			Namespace: ns,
 			Name: name,
 			Owner: owner,
@@ -675,6 +696,7 @@ WHERE repo_namespace = ?
 			Repository: gitlib.NewLocalGitRepository(ns, name, p),
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		}
 	}
 	return res, nil
@@ -756,11 +778,11 @@ func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name strin
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name)
-VALUES (?,?,?,?,?,?,?,?,?)
+INSERT INTO %srepository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
+VALUES (?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(repoType, fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string))
+	_, err = stmt1.Exec(repoType, fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string), new(string))
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	err = os.RemoveAll(p)
@@ -776,6 +798,7 @@ VALUES (?,?,?,?,?,?,?,?,?)
 	r, err := model.NewRepository(ns, name, lr)
 	r.Type = repoType
 	r.Owner = owner
+	r.RepoLabelList = nil
 	if err != nil { return nil, err }
 	return r, nil
 }
@@ -788,11 +811,11 @@ func (dbif *SqliteAegisDatabaseInterface) SetUpCloneRepository(originNs string, 
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name)
-VALUES (?,?,?,?,?,?,?,?,?)
+INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
+VALUES (?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName)
+	_, err = stmt1.Exec(targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName, new(string))
 	if err != nil {
 		// TODO: find a better way to do this...
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
@@ -813,6 +836,7 @@ VALUES (?,?,?,?,?,?,?,?,?)
 	r, err := model.NewRepository(targetNs, targetName, targetRepo)
 	r.Type = model.GetAegisType(targetRepo)
 	r.Owner = owner
+	r.RepoLabelList = nil
 	if err != nil { return nil, err }
 	return r, nil
 }
@@ -1012,7 +1036,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %srepository
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1022,17 +1046,21 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs string
+	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs, labelList string
 	var status int
 	var repoType uint8
 	for r.Next() {
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginNs, &forkOriginName)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Type: repoType,
 			Namespace: ns,
@@ -1044,6 +1072,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -1195,7 +1224,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum 
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_name, repo_fork_origin_namespace
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_name, repo_fork_origin_namespace, repo_label_list
 FROM %srepository
 WHERE (repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -1206,17 +1235,21 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs string
+	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs, labelList string
 	var status int
 	var repoType uint8
 	for r.Next() {
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginName, &forkOriginNs)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginName, &forkOriginNs, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Type: repoType,
 			Namespace: ns,
@@ -1227,6 +1260,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -1395,52 +1429,56 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 }
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error) {
-	// private ns, not ns member, not repo member --> invisible.
-	// private ns, ns member --> all repo visible.
-	// private ns, not ns member, repo member --> only repo is visible.
-	// public ns --> all repo visible.
-	// ------>
-	// select repo from all public ns
-	// select repo from all ns member
-	// select repo from all repo member
 	pfx := dbif.config.Database.TablePrefix
-	nsPrivateClause := ""
-	repoPrivateClause := ""
-	if len(username) > 0 {
-		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository
-INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
-ON %srepository.repo_namespace = a.ns_name
-WHERE repo_status = 1 OR repo_status = 4 %s
-ORDER BY rowid ASC LIMIT ? OFFSET ?
-`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
-	if err != nil { return nil, err }
-	defer stmt.Close()
 	var rs *sql.Rows
+	var err error
 	if len(username) > 0 {
-		pattern := db.ToSqlSearchPattern(username)
-		rs, err = stmt.Query(username, pattern, "\\", username, pattern, "\\", pageSize, pageNum*pageSize)
+		upat := db.ToSqlSearchPattern(username)
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository repo
+FULL JOIN (SELECT ns_name, ns_status FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)) ns
+ON repo.repo_namespace = ns.ns_name
+WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
+OR (repo_status = 1 OR repo_status = 4 OR repo_status = 5)
+OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, pfx))
+		if err != nil { return nil, err }
+		rs, err = stmt.Query(username, upat, "\\", username, upat, "\\", pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
 	} else {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository repo
+FULL JOIN (SELECT ns_name, ns_status FROM %snamespace WHERE ns_status = 1 OR ns_status = 3) ns
+ON repo.repo_namespace = ns.ns_name
+WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
+OR (repo_status = 1 OR repo_status = 4)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, pfx))
+		if err != nil { return nil, err }
 		rs, err = stmt.Query(pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
 	}
 	if err != nil { return nil, err }
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
+	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
+	var status int64
+	var repoType uint8
 	for rs.Next() {
-		var ns, name, desc, owner, acl, forkOriginNs, forkOriginName string
-		var status int64
-		var repoType uint8
-		err = rs.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName)
+		err = rs.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Type: repoType,
 			Namespace: ns,
@@ -1452,102 +1490,80 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
 }
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespace(username string) (int64, error) {
-	pfx := dbif.config.Database.TablePrefix
-	privateSelectClause := ""
-	if len(username) > 0 {
-		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-	}
-	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %snamespace WHERE ns_status = 1 %s
-`, pfx, privateSelectClause))
-	if err != nil { return 0, err }
-	defer stmt1.Close()
-	var r *sql.Row
-	if len(username) > 0 {
-		pattern := strings.ReplaceAll(username, "\\", "\\\\")
-		pattern = strings.ReplaceAll(pattern, "%", "\\%")
-		pattern = strings.ReplaceAll(pattern, "_", "\\_")
-		pattern = "%" + pattern + "%"
-		r = stmt1.QueryRow(username, pattern, "\\")
-	} else {
-		r = stmt1.QueryRow()
-	}
-	var res int64
-	err = r.Scan(&res)
-	if err != nil { return 0, r.Err() }
-	return res, nil
+	return dbif.CountAllVisibleNamespaceSearchResult(username, "")
 }
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositories(username string) (int64, error) {
-	pfx := dbif.config.Database.TablePrefix
-	nsPrivateClause := ""
-	repoPrivateClause := ""
-	if len(username) > 0 {
-		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*)
-FROM %srepository
-INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
-ON %srepository.repo_namespace = a.ns_name
-WHERE repo_status = 1 OR repo_status = 4 %s
-`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
-	if err != nil { return 0, err }
-	var r *sql.Row
-	if len(username) > 0 {
-		pattern := db.ToSqlSearchPattern(username)
-		r = stmt.QueryRow(
-			username, pattern, "\\",
-			username, pattern, "\\",
-		)
-	} else {
-		r = stmt.QueryRow()
-	}
-	var res int64
-	err = r.Scan(&res)
-	if err != nil { return 0, r.Err() }
-	return res, nil
+	return dbif.CountAllVisibleRepositoriesSearchResult(username, "")
 }
 
 func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
-	queryPattern := db.ToSqlSearchPattern(query)
-	privateSelectClause := ""
-	if len(username) > 0 {
-		privateSelectClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+	var rs *sql.Rows
+	var err error
+	if len(query) > 0 {
+		qpattern := db.ToSqlSearchPattern(query)
+		if len(username) > 0 {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
 FROM %snamespace
-WHERE
-    (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
-    AND (ns_status = 1 %s)
+WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
+AND (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
-`, pfx, privateSelectClause))
-	if err != nil { return nil, err }
-	defer stmt.Close()
-	var r *sql.Rows
-	if len(username) > 0 {
-		usernamePattern := db.ToSqlSearchPattern(username)
-		r, err = stmt.Query(queryPattern, "\\", queryPattern, "\\", username, usernamePattern, "\\", pageSize, pageNum * pageSize)
+`, pfx))
+			if err != nil { return nil, err }
+			rs, err = stmt.Query(qpattern, "\\", qpattern, "\\", username, db.ToSqlSearchPattern(username), "\\", pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
+FROM %snamespace
+WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
+AND (ns_status = 1 OR ns_status = 3)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx))
+			if err != nil { return nil, err }
+			rs, err = stmt.Query(qpattern, "\\", qpattern, "\\", pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		}
 	} else {
-		r, err = stmt.Query(queryPattern, "\\", queryPattern, "\\", pageSize, pageNum * pageSize)
+		if len(username) > 0 {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
+FROM %snamespace
+WHERE (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx))
+			if err != nil { return nil, err }
+			rs, err = stmt.Query(username, db.ToSqlSearchPattern(username), "\\", pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
+FROM %snamespace
+WHERE (ns_status = 1 OR ns_status = 3)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx))
+			if err != nil { return nil, err }
+			rs, err = stmt.Query(pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		}
 	}
 	if err != nil { return nil, err }
-	defer r.Close()
+	defer rs.Close()
 	res := make(map[string]*model.Namespace, 0)
 	var name, title, desc, email, owner, acl string
 	var reg_date int64
 	var status int
-	for r.Next() {
-		err = r.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status, &acl)
+	for rs.Next() {
+		err = rs.Scan(&name, &title, &desc, &email, &owner, &reg_date, &status, &acl)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1567,43 +1583,80 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 
 func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
-	queryPattern := db.ToSqlSearchPattern(query)
-	nsPrivateClause := ""
-	repoPrivateClause := ""
-	if len(username) > 0 {
-		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository
-INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
-ON %srepository.repo_namespace = a.ns_name
-WHERE
-    (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
-    AND (repo_status = 1 OR repo_status = 4 %s)
-ORDER BY rowid ASC LIMIT ? OFFSET ?
-`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause))
-	if err != nil { return nil, err }
-	defer stmt.Close()
 	var r *sql.Rows
-	if len(username) > 0 {
-		usernamePattern := db.ToSqlSearchPattern(username)
-		r, err = stmt.Query(
-			username, usernamePattern, "\\",
-			queryPattern, "\\",
-			queryPattern, "\\",
-			username, usernamePattern, "\\",
-			pageSize, pageNum * pageSize,
-		)
+	var err error
+	if len(query) > 0 {
+		qpattern := db.ToSqlSearchPattern(query)
+		if len(username) > 0 {
+			upattern := db.ToSqlSearchPattern(username)
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name, ns_status FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4 OR repo_status = 5
+    OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(username, upattern, "\\", username, upattern, "\\", qpattern, "\\", qpattern, "\\", pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(qpattern, "\\", qpattern, "\\", pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		}
 	} else {
-		r, err = stmt.Query(
-			queryPattern, "\\",
-			queryPattern, "\\",
-			pageSize, pageNum * pageSize,
-		)
+		if len(username) > 0 {
+			upattern := db.ToSqlSearchPattern(username)
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4
+    OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(username, upattern, "\\", username, upattern, "\\", pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4)
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(pageSize, pageNum*pageSize)
+			if err != nil { return nil, err }
+		}
 	}
-	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
 	for r.Next() {
@@ -1635,26 +1688,43 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespaceSearchResult(username string, pattern string) (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
-	searchPattern := db.ToSqlSearchPattern(pattern)
-	privateSelectClause := ""
-	if len(username) > 0 {
-		privateSelectClause = "AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(
-		fmt.Sprintf(`
-SELECT COUNT(*) FROM %snamespace
-WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
-%s
-`, pfx, privateSelectClause),
-	)
-	if err != nil { return 0, err }
-	defer stmt.Close()
 	var r *sql.Row
-	if len(username) > 0 {
-		usernamePattern := db.ToSqlSearchPattern(username)
-		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\", username, usernamePattern, "\\")
+	var err error
+	if len(pattern) > 0 {
+		qpattern := db.ToSqlSearchPattern(pattern)
+		if len(username) > 0 {
+			upattern := db.ToSqlSearchPattern(username)
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %snamespace
+WHERE (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?) AND (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username, upattern, "\\", qpattern, "\\", qpattern, "\\")
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %snamespace
+WHERE (ns_status = 1 OR ns_status = 3)
+AND (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(qpattern, "\\", qpattern, "\\")
+		}
 	} else {
-		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
+		if len(username) > 0 {
+			upattern := db.ToSqlSearchPattern(username)
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %snamespace
+WHERE (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username, upattern, "\\")
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %snamespace WHERE (ns_status = 1 OR ns_status = 3)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow()
+		}
 	}
 	if r.Err() != nil { return 0, r.Err() }
 	var res int64
@@ -1664,39 +1734,69 @@ WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 }
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResult(username string, pattern string) (int64, error) {
+	// TODO: fix this.
 	pfx := dbif.config.Database.TablePrefix
-	searchPattern := db.ToSqlSearchPattern(pattern)
-	nsPrivateClause := ""
-	repoPrivateClause := ""
-	if len(username) > 0 {
-		nsPrivateClause = "OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)"
-		repoPrivateClause = "OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)"
-	}
-	stmt, err := dbif.connection.Prepare(
-		fmt.Sprintf(`
-SELECT COUNT(*)
-FROM %srepository
-INNER JOIN (SELECT ns_name FROM %snamespace WHERE ns_status = 1 %s) a
-ON %srepository.repo_namespace = a.ns_name
-WHERE
-    (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
-    AND (repo_status = 1 OR repo_status = 4 %s)
-`, pfx, pfx, nsPrivateClause, pfx, repoPrivateClause),
-	)
-	if err != nil { return 0, err }
-	defer stmt.Close()
 	var r *sql.Row
-	
-	if len(username) > 0 {
-		usernamePattern := db.ToSqlSearchPattern(username)
-		r = stmt.QueryRow(
-			username, usernamePattern, "\\",
-			searchPattern, "\\",
-			searchPattern, "\\",
-			username, usernamePattern, "\\",
-		)
+	var err error
+	if len(pattern) > 0 {
+		qpattern := db.ToSqlSearchPattern(pattern)
+		if len(username) > 0 {
+			upattern := db.ToSqlSearchPattern(username)
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4
+    OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username, upattern, "\\", username, upattern, "\\", qpattern, "\\", qpattern, "\\")
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(qpattern, "\\", qpattern, "\\")
+		}
 	} else {
-		r = stmt.QueryRow(searchPattern, "\\", searchPattern, "\\")
+		if len(username) > 0 {
+			upattern := db.ToSqlSearchPattern(username)
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4
+    OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username, upattern, "\\", username, upattern, "\\")
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository repo
+FULL JOIN (
+    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+) ns ON repo.repo_namespace = ns.ns_name
+WHERE (
+    ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
+    OR repo.repo_status = 1 OR repo_status = 4)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow()
+		}
 	}
 	if r.Err() != nil { return 0, r.Err() }
 	var res int64
@@ -2003,52 +2103,59 @@ WHERE (%s) AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 }
 
 func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error) {
-	// TODO: this logic might be wrong. we'll fix this later.
+	// the fact that go does not have if-expr is killing me.
+	// NOTE:
+	// + if viewingUser is empty, it means the viewing user is a guest,
+	//   which means we should only select public repositories of user.
+	// + if viewingUser is non-empty and the same as user, we select
+	//   all belonging repositories regardless of status.
+	// + if viewingUser is non-empty but not the same as user, we select
+	//   all belonging repositories of user but filter with viewingUser.
 	pfx := dbif.config.Database.TablePrefix
-	nsStatusClause := "ns_status = 1"
-	repoStatusClause := "repo_status = 1 OR repo_status = 4"
-	if len(viewingUser) > 0 {
-		if viewingUser == user {
-			nsStatusClause = "1"
-			repoStatusClause = "1"
-		} else {
-			nsStatusClause = "ns_acl LIKE ? ESCAPE ?"
-			repoStatusClause = "repo_status = 1 OR repo_status = 4 OR (repo_acl LIKE ? ESCAPE ?)"
-		}
-	}
-	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository
-    INNER JOIN (SELECT ns_name FROM %snamespace WHERE (%s)) a
-    ON %srepository.repo_namespace = a.ns_name
-WHERE (%s) AND (repo_owner = ?)
-`, pfx, pfx, nsStatusClause, pfx, repoStatusClause))
-	if err != nil { return nil, err }
-	defer stmt.Close()
 	var r *sql.Rows
-	if len(viewingUser) > 0 {
-		if viewingUser == user {
-			r, err = stmt.Query(user)
-		} else {
-			viewingPattern := db.ToSqlSearchPattern(viewingUser)
-			r, err = stmt.Query(viewingPattern, "\\", viewingPattern, "\\", user)
-		}
+	if len(viewingUser) <= 0 {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\")
+	} else if viewingUser == user {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\")
 	} else {
-		r, err = stmt.Query(user)
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\", user, db.ToSqlSearchPattern(user), "\\")
 	}
-	if err != nil { return nil, err }
+	defer r.Close()
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName string
+		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName, labelList string
 		var status int64
 		var repoType uint8
-		err := r.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName)
+		err := r.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Type: repoType,
 			Namespace: ns,
@@ -2060,6 +2167,7 @@ WHERE (%s) AND (repo_owner = ?)
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNamespace,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -2068,7 +2176,7 @@ WHERE (%s) AND (repo_owner = ?)
 func (dbif *SqliteAegisDatabaseInterface) GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list
 FROM %srepository
 WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_name = ?
 `, pfx))
@@ -2078,10 +2186,10 @@ WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_nam
 	defer r.Close()
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		var ns, name, desc, acl string
+		var ns, name, desc, acl, labelList string
 		var status int
 		var repoType uint8
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &status)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &status, &labelList)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
@@ -2091,12 +2199,17 @@ WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_nam
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		mr, err := model.NewRepository(ns, name, lr)
 		mr.Owner = username
 		mr.Type = repoType
 		mr.Status = model.AegisRepositoryStatus(status)
 		mr.ForkOriginNamespace = originNamespace
 		mr.ForkOriginName = originName
+		mr.RepoLabelList = tags
 		aclobj, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		mr.AccessControlList = aclobj
@@ -3070,4 +3183,167 @@ SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request 
 		Timestamp: time.Unix(timestamp, 0),
 	}, nil
 }
+
+func (dbif *SqliteAegisDatabaseInterface) AddRepositoryLabel(ns string, name string, lbl string) error {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name = ?
+`, pfx))
+	if err != nil { return err }
+	r := stmt.QueryRow(ns, name)
+	if r.Err() != nil { return r.Err() }
+	var rll string
+	err = r.Scan(&rll)
+	if err != nil { return err }
+	tags := strings.Split(rll[1:len(rll)-1], "}{")
+	if slices.Contains(tags, lbl) { return nil }
+	tags = append(tags, lbl)
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt2.Exec(fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) RemoveRepositoryLabel(ns string, name string, lbl string) error {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return err }
+	r := stmt.QueryRow(ns, name)
+	if r.Err() != nil { return r.Err() }
+	var rll string
+	err = r.Scan(&rll)
+	if err != nil { return err }
+	tags := strings.Split(rll[1:len(rll)-1], "}{")
+	idx := slices.Index(tags, lbl)
+	if idx == -1 { return nil }
+	tags = append(tags[0:idx], tags[idx+1:len(tags)-1]...)
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt2, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt2.Exec(fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRepositoryLabel(ns string, name string) ([]string, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(ns, name)
+	if r.Err() != nil { return nil, r.Err() }
+	var rll string
+	err = r.Scan(&rll)
+	if err != nil { return nil, err }
+	tags := strings.Split(rll[1:len(rll)-1], "}{")
+	return tags, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountRepositoryWithLabel(username string, label string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var r *sql.Row
+	var err error
+	if len(username) <= 0 {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE repo_label_list LIKE ? ESCAPE ?
+AND repo_status = 1 OR repo_status = 4
+`, pfx))
+		if err != nil { return 0, err }
+		r := stmt.QueryRow(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\")
+		if r.Err() != nil { return 0, r.Err() }
+	} else {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE repo_label_list LIKE ? ESCAPE ?
+AND (
+    repo_status = 1 OR repo_status = 4 OR repo-status = 5
+    OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?))
+`, pfx))
+		if err != nil { return 0, err }
+		r := stmt.QueryRow(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", username, db.ToSqlSearchPattern(username), "\\")
+		if r.Err() != nil { return 0, r.Err() }
+	}
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var r *sql.Rows
+	var err error
+	if len(username) <= 0 {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %srepository
+WHERE repo_label_list LIKE ? ESCAPE ?
+AND repo_status = 1 OR repo_status = 4
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
+	} else {
+		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %srepository
+WHERE repo_label_list LIKE ? ESCAPE ?
+AND (
+    repo_status = 1 OR repo_status = 4 OR repo-status = 5
+    OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?))
+ORDER BY rowid ASC LIMIT ? OFFSET ?
+`, pfx))
+		if err != nil { return nil, err }
+		r, err = stmt.Query(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", username, db.ToSqlSearchPattern(username), "\\", pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
+	}
+	var rtype uint8
+	var ns, name, desc, owner, acl string
+	var status int
+	var forkOriginNs, forkOriginName, labelList string
+	res := make([]*model.Repository, 0)
+	for r.Next() {
+		err = r.Scan(&rtype, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		p := path.Join(dbif.config.GitRoot, ns, name)
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
+		res = append(res, &model.Repository{
+			Type: rtype,
+			Namespace: ns,
+			Name: name,
+			Owner: owner,
+			Description: desc,
+			AccessControlList: a,
+			Status: model.AegisRepositoryStatus(status),
+			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
+		})
+	}
+	return res, nil
+}
+
 
