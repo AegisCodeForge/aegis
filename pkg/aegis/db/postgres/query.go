@@ -470,7 +470,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(use
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %s_repository
-WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'ACL' ? $3
+WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize, username)
 	} else {
@@ -521,7 +521,7 @@ func (dbif *PostgresAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %s_repository
-WHERE (repo_status = 1 OR repo_owner = $3 OR repo_acl->'ACL' ? $3) AND ((repo_namespace LIKE $4 ESCAPE $5) OR (repo_name LIKE $6 ESCAPE $7))
+WHERE (repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3) AND ((repo_namespace LIKE $4 ESCAPE $5) OR (repo_name LIKE $6 ESCAPE $7))
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize, username, queryPattern, "%", queryPattern, "%")
 		} else {
@@ -537,7 +537,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
 FROM %s_repository
-WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'ACL' ? $3
+WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize, username)
 		} else {
@@ -668,7 +668,7 @@ WHERE repo_namespace = $1 AND repo_status = 1
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
-WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'ACL' ? $2)
+WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'acl' ? $2)
 `, pfx), ns, username)
 	}
 	if err != nil { return nil, err }
@@ -1163,7 +1163,7 @@ func (dbif *PostgresAegisDatabaseInterface) CountAllVisibleNamespace(username st
 	var stmt pgx.Row
 	if len(username) > 0 {
 		stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT COUNT(*) FROM %s_namespace WHERE ns_status = 1 OR ns_owner = $1 OR ns_acl->'ACL' ? $1
+SELECT COUNT(*) FROM %s_namespace WHERE ns_status = 1 OR ns_owner = $1 OR ns_acl->'acl' ? $1
 `, pfx), username)
 	} else {
 		stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
@@ -1183,9 +1183,9 @@ func (dbif *PostgresAegisDatabaseInterface) CountAllVisibleRepositories(username
 	if len(username) > 0 {
 		stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_repository
-INNER JOIN (SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_owner = $1 OR ns_acl->'ACL' ? $1) a
+INNER JOIN (SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_owner = $1 OR ns_acl->'acl' ? $1) a
 ON %s_repository.repo_namespace = a.ns_name
-WHERE repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'ACL' ? $1
+WHERE repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1
 `, pfx, pfx, pfx), username)
 	} else {
 		stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
@@ -1366,7 +1366,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllComprisingNamespace(username s
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_acl, ns_status
 FROM %s_namespace
-WHERE ns_owner = $1 OR ns_acl->'ACL' ? $1
+WHERE ns_owner = $1 OR ns_acl->'acl' ? $1
 `, pfx), username)
 	if err != nil { return nil, err }
 	defer stmt.Close()
@@ -1403,7 +1403,7 @@ func (dbif *PostgresAegisDatabaseInterface) CountAllVisibleNamespaceSearchResult
 		if len(username) > 0 {
 			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_namespace
-WHERE (ns_owner = $1 OR ns_acl->'ACL' ? $1 OR ns_status = 1)
+WHERE (ns_owner = $1 OR ns_acl->'acl' ? $1 OR ns_status = 1)
 AND (ns_name LIKE $2 ESCAPE $3 OR ns_title LIKE $2 ESCAPE $3)
 `, pfx), username, pat, "%")
 		} else {
@@ -1416,7 +1416,7 @@ WHERE (ns_status = 1) AND (ns_name LIKE $1 ESCAPE $2 OR ns_title LIKE $1 ESCAPE 
 		if len(username) > 0 {
 			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_namespace
-WHERE (ns_owner = $1 OR ns_acl->'ACL' ? $1) OR ns_status = 1
+WHERE (ns_owner = $1 OR ns_acl->'acl' ? $1) OR ns_status = 1
 `, pfx), username)
 		} else {
 			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
@@ -1444,9 +1444,9 @@ SELECT COUNT(*)
 FROM %s_namespace
 INNER JOIN (
     SELECT ns_name FROM %s_namespace
-    WHERE (ns_status = 1) OR (ns_owner = $1 OR ns_acl->'ACL' ? $1 OR ns_status = 1)
+    WHERE (ns_status = 1) OR (ns_owner = $1 OR ns_acl->'acl' ? $1 OR ns_status = 1)
 ) a ON %s_repository.repo_namespace = a.ns_name
-WHERE (repo_owner = $1 OR repo_acl->'ACL' ? $1 OR repo_status = 1 OR repo_status = 4)
+WHERE (repo_owner = $1 OR repo_acl->'acl' ? $1 OR repo_status = 1 OR repo_status = 4)
 AND (repo_name LIKE $2 ESCAPE $3)
 `, pfx, pfx, pfx), username, pat, "%")
 		} else {
@@ -1455,7 +1455,7 @@ SELECT COUNT(*)
 FROM %s_namespace
 INNER JOIN (
     SELECT ns_name FROM %s_namespace
-    WHERE (ns_status = 1) OR (ns_owner = $1 OR ns_acl->'ACL' ? $1 OR ns_status = 1)
+    WHERE (ns_status = 1) OR (ns_owner = $1 OR ns_acl->'acl' ? $1 OR ns_status = 1)
 ) a ON %s_repository.repo_namespace = a.ns_name
 WHERE (repo_status = 1 OR repo_status = 4)
 AND (repo_name LIKE $1 ESCAPE $2)
@@ -1468,9 +1468,9 @@ SELECT COUNT(*)
 FROM %s_namespace
 INNER JOIN (
     SELECT ns_name FROM %s_namespace
-    WHERE (ns_status = 1) OR (ns_owner = $1 OR ns_acl->'ACL' ? $1 OR ns_status = 1)
+    WHERE (ns_status = 1) OR (ns_owner = $1 OR ns_acl->'acl' ? $1 OR ns_status = 1)
 ) a ON %s_repository.repo_namespace = a.ns_name
-WHERE (repo_owner = $1 OR repo_acl->'ACL' ? $1 OR repo_status = 1 OR repo_status = 4)
+WHERE (repo_owner = $1 OR repo_acl->'acl' ? $1 OR repo_status = 1 OR repo_status = 4)
 `, pfx, pfx, pfx), username)
 		} else {
 			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
@@ -1803,20 +1803,20 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingNamespace(viewingUser
 		if viewingUser == user {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_acl, ns_status
-FROM %s_namespace WHERE ns_owner = $1 OR ns_acl->'ACL' ? $1
+FROM %s_namespace WHERE ns_owner = $1 OR ns_acl->'acl' ? $1
 `, pfx), viewingUser)
 			if err != nil { return nil, err }
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_acl, ns_status
-FROM %s_namespace WHERE (ns_owner = $1 OR ns_acl->'ACL' = $1) AND (ns_owner = $2 OR ns_acl->'ACL' ? $2)
+FROM %s_namespace WHERE (ns_owner = $1 OR ns_acl->'acl' = $1) AND (ns_owner = $2 OR ns_acl->'acl' ? $2)
 `, pfx), viewingUser, user)
 			if err != nil { return nil, err }
 		}
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_acl, ns_status
-FROM %s_namespace WHERE (ns_status = 1) AND (ns_owner = $1 OR ns_acl->'ACL' ? $1)
+FROM %s_namespace WHERE (ns_status = 1) AND (ns_owner = $1 OR ns_acl->'acl' ? $1)
 `, pfx), user)
 		if err != nil { return nil, err }
 	}
@@ -1843,39 +1843,66 @@ FROM %s_namespace WHERE (ns_status = 1) AND (ns_owner = $1 OR ns_acl->'ACL' ? $1
 	return  res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error) {
-	// TODO: this logic might be wrong. we'll fix this later.
+func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
 	var err error
 	if len(viewingUser) > 0 {
 		if viewingUser == user {
+			if len(query) <= 0 {
+				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %s_repository
+WHERE repo_owner = $1 OR repo_acl->'acl' ? $1
+ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
+`, pfx), viewingUser, pageSize, pageNum*pageSize)
+			} else {
+				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %s_repository
+WHERE (repo_owner = $1 OR repo_acl->'acl' ? $1)
+AND (repo_name LIKE $4 ESCAPE $5 OR repo_namespace LIKE $4 ESCAPE $5)
+ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
+`, pfx), viewingUser, pageSize, pageNum*pageSize, db.ToSqlSearchPattern(query), "\\")
+			}
+		} else {
+			if len(query) <= 0 {
+				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %s_repository
+WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1) AND (repo_owner = $2 OR repo_acl -> 'acl' ? $2)
+ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
+`, pfx), viewingUser, user, pageSize, pageNum*pageSize)
+			} else {
+				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %s_repository
+WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1) AND (repo_owner = $2 OR repo_acl -> 'acl' ? $2)
+AND (repo_name LIKE $5 ESCAPE $6 OR repo_namespace LIKE $5 ESCAPE $6)
+ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
+`, pfx), viewingUser, user, pageSize, pageNum*pageSize, db.ToSqlSearchPattern(query), "\\")
+			}
+		}
+	} else {
+		if len(query) <= 0 {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
-WHERE repo_owner = $1 OR repo_acl->'ACL' ? $1
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'acl' ? $1)
 ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
-`, pfx), viewingUser, pageSize, pageNum*pageSize)
-			if err != nil { return nil, err }
+`, pfx), user, pageSize, pageNum*pageSize)
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
-WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'ACL' ? $1) AND (repo_owner = $2 OR repo_acl -> 'ACL' ? $2)
-ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
-`, pfx), viewingUser, user, pageSize, pageNum*pageSize)
-			if err != nil { return nil, err }
-		}
-	} else {
-		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %s_repository
-WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'ACL' ? $1)
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'acl' ? $1)
+AND (repo_name LIKE $4 ESCAPE $5 OR repo_namespace LIKE $4 ESCAPE $5)
 ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
-`, pfx), user, pageSize, pageNum*pageSize)
-		if err != nil { return nil, err }
+`, pfx), user, pageSize, pageNum*pageSize, db.ToSqlSearchPattern(query), "\\")
+		}
 	}
+	if err != nil { return nil, err }
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
 		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName, labelList string
@@ -1907,6 +1934,59 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 		})
 	}
 	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) CountAllBelongingRepository(viewingUser string, user string, query string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var stmt pgx.Row
+	var err error
+	if len(viewingUser) > 0 {
+		if viewingUser == user {
+			if len(query) <= 0 {
+				stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE repo_owner = $1 OR repo_acl->'acl' ? $1
+`, pfx), viewingUser)
+			} else {
+				stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE (repo_owner = $1 OR repo_acl->'acl' ? $1)
+AND (repo_name LIKE $2 ESCAPE $3 OR repo_namespace LIKE $2 ESCAPE $3)
+`, pfx), viewingUser, db.ToSqlSearchPattern(query), "\\")
+			}
+		} else {
+			if len(query) <= 0 {
+				stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1) AND (repo_owner = $2 OR repo_acl -> 'acl' ? $2)
+`, pfx), viewingUser, user)
+			} else {
+				stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1) AND (repo_owner = $2 OR repo_acl -> 'acl' ? $2)
+AND (repo_name LIKE $3 ESCAPE $4 OR repo_namespace LIKE $3 ESCAPE $4)
+`, pfx), viewingUser, user, db.ToSqlSearchPattern(query), "\\")
+			}
+		}
+	} else {
+		if len(query) <= 0 {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'acl' ? $1)
+`, pfx), user)
+		} else {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'acl' ? $1)
+AND (repo_name LIKE $2 ESCAPE $3 OR repo_namespace LIKE $2 ESCAPE $3)
+`, pfx), user, db.ToSqlSearchPattern(query), "\\")
+		}
+	}
+	var r int64
+	err = stmt.Scan(&r)
+	if err != nil { return 0, err }
+	return r, nil
 }
 
 func (dbif *PostgresAegisDatabaseInterface) GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error) {

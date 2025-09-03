@@ -244,6 +244,11 @@ hr {
 	height: var(--file-list-height);
 	fill: var(--foreground-color);
 }
+.file-list-item-last-commit {
+	margin-left: 1rem;
+	color: var(--white-shade-degree-2);
+	text-decoration: none;
+}
 /* ======================================================== */
 
 
@@ -507,5 +512,7 @@ form input[type="submit"]:hover, .form-submit:hover {
 .precise-time {
 	color: #ffffff7f;
 }
+
+
 
 

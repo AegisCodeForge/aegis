@@ -1,6 +1,7 @@
 {{define "_tree-file-list"}}
 {{$rootPath := .RootPath}}
 {{$treePath := .TreePath}}
+{{$repoPath := .RepoPath}}
 <div class="file-list">
   {{if .ShouldHaveParentLink}}
   <div class="file-list-item"><a href="..">..</a></div>
@@ -19,6 +20,7 @@
 	{{.Name}}
 	{{else}}
 	<a href="{{$rootPath}}/{{$treePath}}{{.Name}}{{if eq .Mode 40000}}/{{end}}">{{.Name}}</a>
+	{{if .LastCommit}}<a class="file-list-item-last-commit" href="{{$repoPath}}/commit/{{.LastCommit.Id}}"}>{{.LastCommit.CommitMessage}} @ {{toFuzzyTime .LastCommit.CommitterInfo.Time}}</a>{{end}}
 	{{end}}
   </div>
   {{end}}

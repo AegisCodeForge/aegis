@@ -50,6 +50,9 @@ type TreeObjectItem struct {
 	Mode int
 	Name string
 	Hash string
+	// NOTE: this is not an actual field in the tree object, but a place
+	// to store the calculation result of CommitObject.RetrieveTree.
+	LastCommit *CommitObject
 }
 
 func (c TreeObjectItem) String() string {

@@ -19,22 +19,6 @@
    discussions. If, after reading this, you still choose to foreground
    such information, you accept sole responsibility for any resulting
    consequences or interpretations.
-	
-3. **Engage Constructively and Charitably.** Avoid making premature
-   and/or harsh judgments. If someone proposes an idea they find
-   intuitive but appears underdeveloped or difficult to justify, aim
-   to understand the underlying intent, refine their proposal and
-   strengthen their reasonings with the same level of care you would
-   wish for your own ideas. Conversely, if your own proposal is
-   rejected, engage with the feedback thoughtfully, and continue the
-   dialogue in a professional and constructive manner.
-   
-4. **Practice Empathy and Respect.** Treat all contributors with basic
-   decency and respect. Every individual brings with them personal
-   experiences and challenges that may not be immediately
-   visible. Regardless of your current circumstances, please engage
-   with others in a way that you would consider fair and considerate
-   under reversed roles.
 
 BY CHOOSING TO CONTRIBUTE TO THIS PROJECT, YOU ACKNOWLEDGE THAT
 PARTICIPATION DOES NOT ENTITLE YOU TO CREATE OR ASSUME POSITIONS OF

@@ -4,3 +4,7 @@
 
 note that currently =gitlib.NewLocalGitRepository= would initialize a bare git repo if the provided directory does not exist / is not a git folder.
 
+** on getting the last commit that modifies a file
+
+=git rev-list -1 HEAD -- [filepath]= returns the commit id. for other commits, replace HEAD with commit id.
+
