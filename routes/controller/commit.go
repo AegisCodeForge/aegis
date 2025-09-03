@@ -149,6 +149,7 @@ func bindCommitController(ctx *RouterContext) {
 			})
 		}
 		rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "commit", commitId)
+		repoPath := fmt.Sprintf("/repo/%s", rfn)
 		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "commit", commitId)
 		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, commitId, treePath)
 		treePathModelValue := &templates.TreePathTemplateModel{
@@ -164,11 +165,20 @@ func bindCommitController(ctx *RouterContext) {
 				FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
 				return
 			}
+			// TODO: find a better way to do this...
+			for i, k := range target.(*gitlib.TreeObject).ObjectList {
+				cid, err := rr.ResolvePathLastCommitId(cobj, treePath + k.Name)
+				if err != nil { continue }
+				o, err := rr.ReadObject(strings.TrimSpace(cid))
+				if err != nil { continue }
+				target.(*gitlib.TreeObject).ObjectList[i].LastCommit = o.(*gitlib.CommitObject)
+			}
 			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 				Repository: repo,
 				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: &templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
+					RepoPath: repoPath,
 					RootPath: rootPath,
 					TreePath: treePath,
 					FileList: target.(*gitlib.TreeObject).ObjectList,
@@ -213,6 +223,7 @@ func bindCommitController(ctx *RouterContext) {
 				PermaLink: permaLink,
 				TreeFileList: &templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
+					RepoPath: repoPath,
 					RootPath: rootPath,
 					TreePath: dirPath,
 					FileList: dirObj.(*gitlib.TreeObject).ObjectList,

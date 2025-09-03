@@ -302,6 +302,7 @@ func bindTagController(ctx *RouterContext) {
 				RepoHeaderInfo: *repoHeaderInfo,
 				TreeFileList: &templates.TreeFileListTemplateModel{
 					ShouldHaveParentLink: len(treePath) > 0,
+					RepoPath: fmt.Sprintf("/repo/%s", rfn),
 					RootPath: rootPath,
 					TreePath: treePath,
 					FileList: target.(*gitlib.TreeObject).ObjectList,
