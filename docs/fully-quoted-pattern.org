@@ -1,0 +1,12 @@
+* fully-quoted pattern
+
+A way to store multiple tags as a single string.
+
+If you store tags separated w/ comma and search by simple patterns like LIKE ='%some-tag%'=, you'll match tags w/ the same string as prefix or suffix.
+
+A way solve this is to quote every tag with braces and perform the following change:
+
++ Instead of storing as =a1,a2,...,an=, store as ={a1}{a2}{...}{an}=.
++ Instead of searching w/ =LIKE '%some-tag%'=, search w/ =LIKE '%{some-tag}%'=.
++ When unmarshalling, instead of splitting by comma, remove the first and the last character and split by =}{=.
+  

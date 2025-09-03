@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS %srepository (
   	repo_status INTEGER,
   	repo_fork_origin_namespace TEXT,
   	repo_fork_origin_name TEXT,
+    repo_label_list TEXT,
       FOREIGN KEY (repo_namespace) REFERENCES %snamespace(ns_name)
 )`, pfx, pfx))
 	if err != nil { return err }

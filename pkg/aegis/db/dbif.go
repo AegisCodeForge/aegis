@@ -154,11 +154,16 @@ type AegisDatabaseInterface interface {
 	CountRegistrationRequest(query string) (int64, error)
 	SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
 	GetRegistrationRequestByAbsId(absid int64) (*model.RegistrationRequest, error)
+
+	AddRepositoryLabel(ns string, name string, lbl string) error
+	RemoveRepositoryLabel(ns string, name string, lbl string) error
+	GetRepositoryLabel(ns string, name string) ([]string, error)
+
+	// NOTE: the reason username is here is that searching by label is
+	// logically similar w/ searching by keywords, which means that all
+	// the logic like acl controlled visibility applies.
+	CountRepositoryWithLabel(username string, label string) (int64, error)
+	GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error)
 }
 
-// the fact that golang has no parameter default values is
-// horrible. it's a simple concept, it's not hard to implement, and
-// due to no default values one has to either make the interface
-// bloated with functions for each cases or force the caller to endure
-// a bloated function.
 

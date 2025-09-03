@@ -64,7 +64,7 @@
   	-- the documentation (acl.org). 
   	ns_acl TEXT,
   	-- should be tinyint.
-  	-- 1 - normal (public). 2 - normal (private).
+  	-- 1 - public. 2 - private. 3 - internal.
   	ns_status INT
   	FOREIGN KEY (ns_owner) REFERENCES aegis_user(user_name)
   );
@@ -84,13 +84,16 @@
   	-- access control list
   	repo_acl TEXT,
   	-- status.
-  	-- 1 - normal (public). 2 - normal (private).
-      -- 4 - archived.
-  	repo_status INTEGER
+  	-- 1 - public. 2 - private.
+      -- 4 - archived (public).
+  	-- 5 - internal. 6 - limited.
+  	repo_status INTEGER,
   	-- if this repository is a fork, this would be filled with
   	-- that repository's fields.
-  	repo_fork_origin_namespace TEXT
-  	repo_fork_origin_name TEXT
+  	repo_fork_origin_namespace TEXT,
+  	repo_fork_origin_name TEXT,
+  	-- fully quoted. (see docs/fuuly-quoted-pattern.org)
+  	repo_label_list TEXT
   );
   CREATE TABLE IF NOT EXISTS aegis_repo_redirect (
       old_ns TEXT,

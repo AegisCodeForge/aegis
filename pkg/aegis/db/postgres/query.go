@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -255,13 +256,14 @@ func (dbif *PostgresAegisDatabaseInterface) GetRepositoryByName(nsName string, r
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE repo_namespace = $1 AND repo_name = $2
 `, pfx), nsName, repoName)
 	var description, owner, acl, forkOriginNamespace, forkOriginName string
 	var repoType, repoStatus int
-	err := stmt.Scan(&repoType, &description, &owner, &acl, &repoStatus, &forkOriginNamespace, &forkOriginName)
+	var labelList string
+	err := stmt.Scan(&repoType, &description, &owner, &acl, &repoStatus, &forkOriginNamespace, &forkOriginName, &labelList)
 	if errors.Is(err, pgx.ErrNoRows) { return nil, db.ErrEntityNotFound }
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
@@ -274,6 +276,11 @@ WHERE repo_namespace = $1 AND repo_name = $2
 	res.Status = model.AegisRepositoryStatus(repoStatus)
 	res.ForkOriginNamespace = forkOriginNamespace
 	res.ForkOriginName = forkOriginName
+	var tags []string = nil
+	if len(labelList) > 0 {
+		tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+	}
+	res.RepoLabelList = tags
 	aclobj, err := model.ParseACL(acl)
 	if err != nil { return nil, err }
 	res.AccessControlList = aclobj
@@ -608,7 +615,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllRepositoryFromNamespace(name s
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE repo_namespace = $1
 `, pfx), name)
@@ -617,14 +624,18 @@ WHERE repo_namespace = $1
 	res := make(map[string]*model.Repository, 0)
 	for stmt.Next() {
 		var rType, rStatus int
-		var repoName, desc, owner, acl, forkOriginNs, forkOriginName string
-		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName)
+		var repoName, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
+		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, name, repoName)
 		m, err := model.CreateLocalRepository(uint8(rType), name, repoName, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res[name] = &model.Repository{
 			Namespace: name,
 			Name: repoName,
@@ -636,6 +647,7 @@ WHERE repo_namespace = $1
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			Repository: m,
+			RepoLabelList: tags,
 		}
 	}
 	return res, nil
@@ -648,13 +660,13 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace
 	var err error
 	if len(username) > 0 {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE repo_namespace = $1 AND repo_status = 1
 `, pfx), ns)
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'ACL' ? $2)
 `, pfx), ns, username)
@@ -662,16 +674,21 @@ WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	res := make([]*model.Repository, 0)
+	var rType, rStatus int
+	var repoName, desc, owner, acl, forkOriginNs, forkOriginName string
+	var labelList string
 	for stmt.Next() {
-		var rType, rStatus int
-		var repoName, desc, owner, acl, forkOriginNs, forkOriginName string
-		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName)
+		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, repoName)
 		m, err := model.CreateLocalRepository(uint8(rType), ns, repoName, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Namespace: ns,
 			Name: repoName,
@@ -683,6 +700,7 @@ WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			Repository: m,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -886,9 +904,9 @@ func (dbif *PostgresAegisDatabaseInterface) CreateRepository(ns string, name str
 	if err != nil { return nil, err }
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-`, pfx), repoType, ns, name, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, new(string), new(string))
+INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+`, pfx), repoType, ns, name, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, new(string), new(string), new(string))
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	if err = os.RemoveAll(p); err != nil { return nil, err }
@@ -901,6 +919,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	if err != nil { return nil, err }
 	r.Type = repoType
 	r.Owner = owner
+	r.RepoLabelList = nil
 	return r, nil
 }
 
@@ -912,9 +931,9 @@ func (dbif *PostgresAegisDatabaseInterface) SetUpCloneRepository(originNs string
 	if err != nil { return nil, err }
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-`, pfx), model.REPO_TYPE_GIT, targetNs, targetName, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, originNs, originName)
+INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+`, pfx), model.REPO_TYPE_GIT, targetNs, targetName, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, originNs, originName, new(string))
 	if err != nil { return nil, err }
 	originP := path.Join(dbif.config.GitRoot, originNs, originName)
 	targetP := path.Join(dbif.config.GitRoot, targetNs, targetName)
@@ -928,6 +947,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	if err != nil { return nil, err }
 	r.Type = model.REPO_TYPE_GIT
 	r.Owner = owner
+	r.RepoLabelList = nil
 	return r, nil
 }
 
@@ -1049,7 +1069,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllRepositories(pageNum int, page
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize)
@@ -1057,16 +1077,20 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 	defer stmt.Close()
 	res := make([]*model.Repository, 0)
 	var rType int
-	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName string
+	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
 	var rStatus int
 	for stmt.Next() {
-		err = stmt.Scan(&rType, &ns, &name, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName)
+		err = stmt.Scan(&rType, &ns, &name, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(uint8(rType), ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Type: uint8(rType),
 			Namespace: ns,
@@ -1078,6 +1102,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -1249,7 +1274,7 @@ func (dbif *PostgresAegisDatabaseInterface) SearchForRepository(k string, pageNu
 	ctx := context.Background()
 	pattern := db.ToSqlSearchPattern(k)
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE repo_namespace LIKE $1 ESCAPE $2 OR repo_name LIKE $1 ESCAPE $2
 ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
@@ -1259,14 +1284,18 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
 		var rType, rStatus int
-		var repoNs, repoName, desc, owner, acl, forkOriginNs, forkOriginName string
-		err := stmt.Scan(&rType, &repoNs, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName)
+		var repoNs, repoName, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
+		err := stmt.Scan(&rType, &repoNs, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, repoNs, repoName)
 		m, err := model.CreateLocalRepository(uint8(rType), repoNs, repoName, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Namespace: repoNs,
 			Name: repoName,
@@ -1278,6 +1307,7 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			Repository: m,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -1822,7 +1852,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingRepository(viewingUse
 	if len(viewingUser) > 0 {
 		if viewingUser == user {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE repo_owner = $1 OR repo_acl->'ACL' ? $1
 ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
@@ -1830,7 +1860,7 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 			if err != nil { return nil, err }
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'ACL' ? $1) AND (repo_owner = $2 OR repo_acl -> 'ACL' ? $2)
 ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
@@ -1839,7 +1869,7 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 		}
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'ACL' ? $1)
 ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
@@ -1848,16 +1878,20 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 	}
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
-		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName string
+		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName, labelList string
 		var status int64
 		var repoType uint8
-		err := stmt.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName)
+		err := stmt.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName, &labelList)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		res = append(res, &model.Repository{
 			Type: repoType,
 			Namespace: ns,
@@ -1869,6 +1903,7 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNamespace,
 			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
 		})
 	}
 	return res, nil
@@ -1878,18 +1913,18 @@ func (dbif *PostgresAegisDatabaseInterface) GetForkRepositoryOfUser(username str
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list
 FROM %s_repository
 WHERE repo_owner = $1 AND repo_fork_origin_namespace = $2 AND repo_fork_origin_name = $3
 `, pfx), username, originNamespace, originName)
 	if err != nil { return nil, err }
 	defer stmt.Close()
-	var ns, name, desc, acl string
+	var ns, name, desc, acl, labelList string
 	var status int
 	var repoType uint8
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
-		err = stmt.Scan(&repoType, &ns, &name, &desc, &acl, &status)
+		err = stmt.Scan(&repoType, &ns, &name, &desc, &acl, &status, &labelList)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
@@ -1899,12 +1934,17 @@ WHERE repo_owner = $1 AND repo_fork_origin_namespace = $2 AND repo_fork_origin_n
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
 		mr, err := model.NewRepository(ns, name, lr)
 		mr.Owner = username
 		mr.Type = repoType
 		mr.Status = model.AegisRepositoryStatus(status)
 		mr.ForkOriginNamespace = originNamespace
 		mr.ForkOriginName = originName
+		mr.RepoLabelList = tags
 		aclobj, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		mr.AccessControlList = aclobj
@@ -2712,4 +2752,151 @@ SELECT request_absid, username, email, password_hash, timestamp FROM %s_user_reg
 		Timestamp: timestamp,
 	}, nil
 }
+
+func (dbif *PostgresAegisDatabaseInterface) AddRepositoryLabel(ns string, name string, lbl string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = $1 AND repo_name = $2
+`, pfx), ns, name)
+	var rll string
+	err := stmt.Scan(&rll)
+	if err != nil { return err }
+	tags := strings.Split(rll[1:len(rll)-1], "}{")
+	if slices.Contains(tags, lbl) { return nil }
+	tags = append(tags, lbl)
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_repository SET repo_label_list = $1 WHERE repo_namespace = $2 AND repo_name = $3
+`, pfx), fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) RemoveRepositoryLabel(ns string, name string, lbl string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = $1 AND repo_name = $2
+`, pfx), ns, name)
+	var rll string
+	err := stmt.Scan(&rll)
+	if err != nil { return err }
+	tags := strings.Split(rll[1:len(rll)-1], "}{")
+	idx := slices.Index(tags, lbl)
+	if idx == -1 { return nil }
+	fmt.Println("tags", tags)
+	tags = slices.Delete(tags, idx, idx+1)
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_repository SET repo_label_list = $1 WHERE repo_namespace = $2 AND repo_name = $3
+`, pfx), fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetRepositoryLabel(ns string, name string) ([]string, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = $1 and repo_name = $2
+`, pfx), ns, name)
+	var rll string
+	err := stmt.Scan(&rll)
+	if err != nil { return nil, err }
+	tags := strings.Split(rll[1:len(rll)-1], "}{")
+	return tags, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) CountRepositoryWithLabel(username string, label string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var r pgx.Row
+	var err error
+	if len(username) <= 0 {
+		r = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE repo_label_list LIKE $1 ESCAPE $2
+AND (repo_status = 1 OR repo_status = 4)
+`, pfx), db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\")
+	} else {
+		r = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_repository
+WHERE repo_label_list LIKE $1 ESCAPE $2
+AND (
+    repo_status = 1 OR repo_status = 4 OR repo_status = 5
+    OR (repo_owner = $3 OR repo_acl->'acl' ? $4))
+`, pfx), db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", username, username)
+	}
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var r pgx.Rows
+	var err error
+	if len(username) <= 0 {
+		r, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %s_repository
+WHERE repo_label_list LIKE $1 ESCAPE $2
+AND (repo_status = 1 OR repo_status = 4)
+ORDER BY repo_name ASC, repo_namespace ASC LIMIT $3 OFFSET $4
+`, pfx), db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", pageSize, pageNum*pageSize)
+		if err != nil { return nil, err }
+	} else {
+		r, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %s_repository
+WHERE repo_label_list LIKE $1 ESCAPE $2
+AND (
+    repo_status = 1 OR repo_status = 4 OR repo_status = 5
+    OR (repo_owner = $3 OR repo_acl->'acl' ? $4))
+ORDER BY repo_name ASC, repo_namespace ASC LIMIT $5 OFFSET $6
+`, pfx), db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", username, username, pageSize, pageNum*pageSize)
+		fmt.Println("xx", pageNum)
+		if err != nil { return nil, err }
+	}
+	var rtype uint8
+	var ns, name, desc, owner, acl string
+	var status int
+	var forkOriginNs, forkOriginName, labelList string
+	res := make([]*model.Repository, 0)
+	for r.Next() {
+		err = r.Scan(&rtype, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+		if err != nil { return nil, err }
+		a, err := model.ParseACL(acl)
+		if err != nil { return nil, err }
+		p := path.Join(dbif.config.GitRoot, ns, name)
+		var tags []string = nil
+		if len(labelList) > 0 {
+			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
+		}
+		res = append(res, &model.Repository{
+			Type: rtype,
+			Namespace: ns,
+			Name: name,
+			Owner: owner,
+			Description: desc,
+			AccessControlList: a,
+			Status: model.AegisRepositoryStatus(status),
+			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			ForkOriginNamespace: forkOriginNs,
+			ForkOriginName: forkOriginName,
+			RepoLabelList: tags,
+		})
+	}
+	return res, nil
+}
+
 

@@ -273,7 +273,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		ctx.ReportRedirect(redirectTarget, 3, "Deleted.", "The specified repository is deleted.", w, r)
 	}))
 
-	http.HandleFunc("GET /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /repo/{repoName}/setting/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {
 			ctx.ReportInternalError(err.Error(), w, r)
@@ -357,7 +357,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		}))
 	}))
 	
-	http.HandleFunc("POST /repo/{repoName}/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("POST /repo/{repoName}/setting/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if !model.ValidRepositoryName(rfn) {
 			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
@@ -447,10 +447,10 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			ctx.ReportInternalError(err.Error(), w, r)
 			return
 		}
-		FoundAt(w, fmt.Sprintf("/repo/%s/member", rfn))
+		FoundAt(w, fmt.Sprintf("/repo/%s/setting/member", rfn))
 	}))
 
-	http.HandleFunc("GET /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /repo/{repoName}/setting/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if !model.ValidRepositoryName(rfn) {
 			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
@@ -498,7 +498,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditMemberPriv := (nsPriv != nil && nsPriv.EditMember) || (repoPriv != nil && repoPriv.EditMember)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditMemberPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting/member", rfn), 0,
 				"Not enough privilege",
 				"Your user account seems to not have enough privilege for this action.",
 				w, r,
@@ -508,7 +508,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 		err = r.ParseForm()
 		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting/member", rfn), 0,
 				"Invalid request",
 				"Failed to parse request.",
 				w, r,
@@ -529,7 +529,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		}))
 	}))
 
-	http.HandleFunc("POST /repo/{repoName}/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("POST /repo/{repoName}/setting/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if !model.ValidRepositoryName(rfn) {
 			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
@@ -577,7 +577,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
 		hasEditMemberPriv := (nsPriv != nil && nsPriv.EditMember) || (repoPriv != nil && repoPriv.EditMember)
 		if !loginInfo.IsAdmin && !isOwner && !hasEditMemberPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting/member", rfn), 0,
 				"Not enough privilege",
 				"Your user account seems to not have enough privilege for this action.",
 				w, r,
@@ -587,7 +587,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 
 		err = r.ParseForm()
 		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting/member", rfn), 0,
 				"Invalid request",
 				"Failed to parse request.",
 				w, r,
@@ -609,18 +609,18 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		}
 		err = ctx.DatabaseInterface.SetRepositoryACL(repo.Namespace, repo.Name, targetUsername, t)
 		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting/member", rfn), 0,
 				"Failed to update member privilege",
 				fmt.Sprintf("Failed to update member privilege: %s. Please contact site owner.", err.Error()),
 				w, r,
 			)
 			return
 		}
-		FoundAt(w, fmt.Sprintf("/repo/%s/member", rfn))
+		FoundAt(w, fmt.Sprintf("/repo/%s/setting/member", rfn))
 	}))
 
 	
-	http.HandleFunc("GET /repo/{repoName}/member/{username}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("GET /repo/{repoName}/setting/member/{username}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
 		if !model.ValidRepositoryName(rfn) {
 			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
@@ -659,7 +659,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
 		privSufficient := loginInfo.IsOwner || loginInfo.IsAdmin || (nsPriv != nil && nsPriv.DeleteMember) || (repoPriv != nil && repoPriv.DeleteMember)
 		if !privSufficient {
-			ctx.ReportRedirect(fmt.Sprintf("/s/%s/member", ns.Name), 0,
+			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting/member", rfn), 0,
 				"Not enough privilege",
 				"You seem to not have not enough privilege for this action.",
 				w, r,
@@ -669,17 +669,152 @@ func bindRepositorySettingController(ctx *RouterContext) {
 		targetUsername := r.PathValue("username")
 		err = ctx.DatabaseInterface.SetRepositoryACL(nsName, repoName, targetUsername, nil)
 		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/_redirect-with-message").Execute(w, templates.RedirectWithMessageModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Timeout: 3,
-				RedirectUrl: fmt.Sprintf("/s/%s/member", nsName),
-				MessageTitle: "Failed to delete member",
-				MessageText: fmt.Sprintf("Error: %s", err.Error()),
-			}))
+			ctx.ReportInternalError(fmt.Sprintf("Failed to delete member: %s.", err), w, r)
 			return
 		}
-		FoundAt(w, fmt.Sprintf("/s/%s/member", nsName))
+		FoundAt(w, fmt.Sprintf("/repo/%s/setting/member", rfn))
 	}))
+
+	http.HandleFunc("GET /repo/{repoName}/setting/label", UseMiddleware(
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			isOwner := isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			if !rc.LoginInfo.IsAdmin && !isOwner && !isSettingMember {
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = isSettingMember
+
+			LogTemplateError(rc.LoadTemplate("repo-setting/edit-label").Execute(w, templates.RepositorySettingMemberListTemplateModel{
+				Config: rc.Config,
+				Repository: repo,
+				RepoFullName: rfn,
+				LoginInfo: rc.LoginInfo,
+			}))
+		},
+	))
+	
+	http.HandleFunc("GET /repo/{repoName}/setting/label/{label}/delete", UseMiddleware(
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			isOwner := isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			canEditInfo := (repoPriv != nil && repoPriv.EditInfo) || (nsPriv != nil && nsPriv.EditInfo)
+			if !rc.LoginInfo.IsAdmin && !isOwner && !isSettingMember && !canEditInfo {
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = isSettingMember
+
+			label := r.PathValue("label")
+			err = rc.DatabaseInterface.RemoveRepositoryLabel(nsName, repoName, label)
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to delete label from repository: %s.", err), w, r)
+				return
+			}
+			rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting/label", rfn), 0, "Deleted", "The specified label has been deleted from the repository.", w, r)
+		},
+	))
+
+	http.HandleFunc("POST /repo/{repoName}/setting/label", UseMiddleware(
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			isOwner := isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			canEditInfo := (repoPriv != nil && repoPriv.EditInfo) || (nsPriv != nil && nsPriv.EditInfo)
+			if !rc.LoginInfo.IsAdmin && !isOwner && !isSettingMember && !canEditInfo {
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = isSettingMember
+			err = r.ParseForm()
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			label := strings.TrimSpace(r.Form.Get("label"))
+			if len(label) <= 0 {
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting/label", rfn), 5, "Invalid Request", "Label text must not be empty.", w, r)
+				return
+			}
+			err = rc.DatabaseInterface.AddRepositoryLabel(nsName, repoName, label)
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to add label to repository: %s.", err), w, r)
+				return
+			}
+
+			rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting/label", rfn), 0, "Added", "The specific tag has been added to the repository.", w, r)
+		},
+	))
 }
 

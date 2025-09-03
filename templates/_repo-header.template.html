@@ -29,7 +29,7 @@
 <div class="header-repo-label-list">
   {{if .Repository.RepoLabelList}}
   {{range .Repository.RepoLabelList}}
-  <span class="header-repo-label">{{.}}</span>
+  <span class="header-repo-label"><a href="/label/{{.}}">#{{.}}</a></span>
   {{end}}
   {{end}}
 </div>

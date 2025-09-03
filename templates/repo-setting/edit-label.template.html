@@ -1,0 +1,52 @@
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Settings of {{.Repository.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-repo-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	<hr />
+
+	<main>
+	  {{template "repo-setting/_sidebar" .}}
+
+	  <div class="main-side">
+		
+		<h2>Edit label</h2>
+
+		<div>
+		{{if .Repository.RepoLabelList}}
+		{{range $k := .Repository.RepoLabelList}}
+		<span class="setting-repo-label-item"><a target="_blank" href="/label/{{$k}}">#{{$k}}</a> <a href="{{$repoPath}}/setting/label/{{$k}}/delete">x</a></span>
+		{{end}}
+		{{else}}
+		<p>This repository has no labels.</p>
+		{{end}}
+		</div>
+		
+		<form id="repo-setting-form" action="" method="POST">
+		  <div class="field"><label class="field-label" for="label">Label text:</label>
+			<input name="label" id="label" />
+		  </div>
+		  <input class="form-submit" type="submit" value="Add New Label" />
+		</form>
+
+		
+	  </div>
+	</main>
+
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

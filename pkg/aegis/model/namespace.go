@@ -14,7 +14,7 @@ type AegisNamespaceStatus int
 const (
 	NAMESPACE_NORMAL_PUBLIC AegisNamespaceStatus = 1
 	NAMESPACE_NORMAL_PRIVATE AegisNamespaceStatus = 2
-	NAMESPACE_REDIRECTED AegisNamespaceStatus = 4
+	NAMESPACE_INTERNAL AegisNamespaceStatus = 3
 )
 
 type Namespace struct {
