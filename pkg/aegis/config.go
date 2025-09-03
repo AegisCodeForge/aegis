@@ -215,7 +215,7 @@ type AegisSessionConfig struct {
 }
 
 type AegisMailerConfig struct {
-	// email sender type. currently only "gmail-plain" is supported.
+	// email sender type. currently "gmail-plain" and "smtp" are supported.
 	Type string `json:"type"`
 	// smtp server & smtp port. technically not used if type is gmail-plain.
 	// these fields are here for future use.
