@@ -1,5 +1,13 @@
 Copyright 2025 Zetian Lin
 
+2025-09-03 Zetian Lin <bctnry@sdf.org>
+
+	* v0.1.2
+	+ feat: repository label by @bctnry in https://github.com/AegisCodeForge/aegis/pull/81
+	+ File lists now displays the last commit of change alongside with the file name. by @bctnry in https://github.com/AegisCodeForge/aegis/pull/84
+	+ Revamped user profile page  by @bctnry in https://github.com/AegisCodeForge/aegis/pull/84
+	+ feat: mailer tester in admin panel by @bctnry in https://github.com/AegisCodeForge/aegis/pull/85
+
 2025-09-02 Zetian Lin <bctnry@sdf.org>
 
 	* v0.1.1
