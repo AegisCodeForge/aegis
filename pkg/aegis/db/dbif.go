@@ -112,7 +112,8 @@ type AegisDatabaseInterface interface {
 	// return all namespace that `viewingUser` is a member of
 	GetAllBelongingNamespace(viewingUser string, user string) ([]*model.Namespace, error)
 	// return all repository that `viewingUser` is a member of
-	GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error)
+	GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int, pageSize int) ([]*model.Repository, error)
+	CountAllBelongingRepository(viewingUser string, user string, query string) (int64, error)
 
 	// implementers can choose to return nil or empty slice if there
 	// isn't any fork repo of the specified repo; the caller should

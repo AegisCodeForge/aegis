@@ -11,5 +11,7 @@ type UserTemplateModel struct {
 	RepositoryList []*model.Repository
 	LoginInfo *LoginInfoModel
 	BelongingNamespaceList []*model.Namespace
+	PageInfo *PageInfoModel
+	Query string
 }
 

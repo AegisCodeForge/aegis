@@ -2102,7 +2102,7 @@ WHERE (%s) AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
 	// the fact that go does not have if-expr is killing me.
 	// NOTE:
 	// + if viewingUser is empty, it means the viewing user is a guest,
@@ -2112,32 +2112,83 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser 
 	// + if viewingUser is non-empty but not the same as user, we select
 	//   all belonging repositories of user but filter with viewingUser.
 	pfx := dbif.config.Database.TablePrefix
+	var stmt *sql.Stmt
+	var err error
 	var r *sql.Rows
 	if len(viewingUser) <= 0 {
-		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+		if len(query) <= 0 {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %srepository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
+		} else {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+ORDER BY repo_name ASC, repo_namespace ASC
+`, pfx))
+		}
 		if err != nil { return nil, err }
-		r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\")
+		if len(query) <= 0 {
+			r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\")
+		} else {
+			qpat := db.ToSqlSearchPattern(query)
+			r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\", qpat, "\\", qpat, "\\")
+		}
 	} else if viewingUser == user {
-		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+		if len(query) <= 0 {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %srepository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
+		} else {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+ORDER BY repo_name ASC, repo_namespace ASC
+`, pfx))
+		}
 		if err != nil { return nil, err }
-		r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\")
+		if len(query) <= 0 {
+			r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\")
+		} else {
+			qpat := db.ToSqlSearchPattern(query)
+			r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\", qpat, "\\", qpat, "\\")
+		}
 	} else {
-		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+		if len(query) <= 0 {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
 FROM %srepository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
+		} else {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+ORDER BY repo_name ASC, repo_namespace ASC
+`, pfx))
+		}
 		if err != nil { return nil, err }
-		r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\", user, db.ToSqlSearchPattern(user), "\\")
+		if len(query) <= 0 {
+			r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\", user, db.ToSqlSearchPattern(user), "\\")
+		} else {
+			qpat := db.ToSqlSearchPattern(query)
+			r, err = stmt.Query(user, db.ToSqlSearchPattern(user), "\\", user, db.ToSqlSearchPattern(user), "\\", qpat, "\\", qpat, "\\")
+		}
 	}
 	defer r.Close()
 	res := make([]*model.Repository, 0)
@@ -2170,6 +2221,80 @@ AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESC
 			RepoLabelList: tags,
 		})
 	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllBelongingRepository(viewingUser string, user string, query string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var stmt *sql.Stmt
+	var r *sql.Row
+	var err error
+	if len(viewingUser) <= 0 {
+		if len(query) <= 0 {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		} else {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?) AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+`, pfx))
+		}
+		if err != nil { return 0, err }
+		if len(query) <= 0 {
+			r = stmt.QueryRow(user, db.ToSqlSearchPattern(user), "\\")
+		} else {
+			qpat := db.ToSqlSearchPattern(query)
+			r = stmt.QueryRow(user, db.ToSqlSearchPattern(user), "\\", qpat, "\\", qpat, "\\")
+		}
+	} else if viewingUser == user {
+		if len(query) <= 0 {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		} else {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+`, pfx))
+		}
+		if err != nil { return 0, err }
+		if len(query) <= 0 {
+			r = stmt.QueryRow(user, db.ToSqlSearchPattern(user), "\\")
+		} else {
+			qpat := db.ToSqlSearchPattern(query)
+			r = stmt.QueryRow(user, db.ToSqlSearchPattern(user), "\\", qpat, "\\", qpat, "\\")
+		}
+	} else {
+		if len(query) <= 0 {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+`, pfx))
+		} else {
+			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %srepository
+WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
+`, pfx))
+		}
+		if err != nil { return 0, err }
+		if len(query) <= 0 {
+			r = stmt.QueryRow(user, db.ToSqlSearchPattern(user), "\\", user, db.ToSqlSearchPattern(user), "\\")
+		} else {
+			qpat := db.ToSqlSearchPattern(query)
+			r = stmt.QueryRow(user, db.ToSqlSearchPattern(user), "\\", user, db.ToSqlSearchPattern(user), "\\", qpat, "\\", qpat, "\\")
+		}
+	}
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
 	return res, nil
 }
 

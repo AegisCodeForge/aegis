@@ -12,3 +12,57 @@
 .user-profile-repository-list-item  a:hover {
 	background-color: var(--foreground-color);
 }
+.list-table {
+	border-top: 4px var(--foreground-color) solid;
+	border-bottom: 4px var(--foreground-color) solid;
+	border-collapse: collapse;
+	width: 100%;
+}
+.list-table-head {
+	border-top: 2px var(--foreground-color) solid;
+	border-bottom: 2px var(--foreground-color) solid;
+}
+.list-nav {
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+	display: flex;
+	align-items: center;
+}
+.list-page-nav {
+	flex-grow: 2;
+	display: flex;
+	align-items: center;
+}
+.list-page-nav-form, .list-search-form {
+	display: inline-flex;
+	align-items: center;
+}
+.list-page-nav-form input[type="submit"],
+.list-search-form input[type="submit"] {
+	margin-top: 0;
+}
+.list-page-goto-form {
+	display: flex;
+	align-items: center;
+	margin-right: 0.5em;
+}
+.list-page-goto-form-tf {
+	width: 3em;
+	margin-left: 0.5em;
+}
+.list-page-nav-form-tf { width: 3rem; }
+.list-search {
+	display: inline-flex;
+	align-items: center;
+}
+.list-search-tf {
+	width: 10em;
+	margin-left: 0.5em;
+}
+.list-page-nav-l { margin-left: 2px; margin-right: 2px; }
+@media (max-width: 1024px) {
+	.list-nav {
+		display: block;
+	}
+}
+
