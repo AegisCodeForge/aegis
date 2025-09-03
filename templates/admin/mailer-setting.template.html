@@ -25,14 +25,17 @@
 		  <div class="field">
 			<label class="field-label" for="type">Mailer Type:</label>
 			<select name="type" id="type" value="{{.Config.Mailer.Type}}">
-			  <option value="gmail-plain">Gmail (w/ App Password)</option>
+			  <option value="smtp" {{if eq .Config.Mailer.Type "smtp"}}selected{{end}}>SMTP</option>
+			  <option value="gmail-plain" {{if eq .Config.Mailer.Type "gmail-plain"}}selected{{end}}>Gmail (w/ App Password)</option>
 			</select>
 		  </div>
 		  <div class="field"><label class="field-label" for="server">Mailer SMTP Server:</label><input name="server" id="server" class="field-tf" value="{{.Config.Mailer.SMTPServer}}"/></div>
 		  <div class="field"><label class="field-label" for="port">Mailer SMTP Port:</label><input name="port" id="port" class="field-tf" value="{{.Config.Mailer.SMTPPort}}"/></div>
 		  <div class="field"><label class="field-label" for="username">Mailer User Name:</label><input name="username" id="username" class="field-tf" value="{{.Config.Mailer.User}}"/></div>
 		  <div class="field"><label class="field-label" for="password">Mailer User Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Mailer.Password}}"/></div>
-		  <input class="field-submit" type="submit" value="Save Config" />
+		  <input class="field-submit" name="action" type="submit" value="Save Config" />
+		  <div class="field"><label class="field-label" for="test-email-target">Test Email Target:</label><input name="test-email-target" id="test-email-target" type="email" class="field-tf" /></div>
+		  <input class="field-submit" name="action" type="submit" value="Test Mailer" />
 		</form>
 	  </div>
 	</main>
