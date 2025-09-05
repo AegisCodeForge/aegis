@@ -154,7 +154,7 @@ func bindBranchController(ctx *RouterContext) {
 				return
 			}
 		}
-		
+
 		tp1 := make([]string, 0)
 		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
 		for item := range strings.SplitSeq(treePath, "/") {
@@ -166,6 +166,7 @@ func bindBranchController(ctx *RouterContext) {
 				Name: item, RelPath: strings.Join(tp1, "/"),
 			})
 		}
+		
 		rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "branch", branchName)
 		repoPath := fmt.Sprintf("/repo/%s", rfn)
 		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName)
@@ -176,6 +177,47 @@ func bindBranchController(ctx *RouterContext) {
 			TreePathSegmentList: treePathSegmentList,
 		}
 		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
+		
+		isBlameRequest := r.URL.Query().Has("blame")
+		if isBlameRequest {
+			if target.Type() == gitlib.BLOB {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				if !strings.HasPrefix(mime, "image/") {
+					dirPath := path.Dir(treePath) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						ctx.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					blame, err := rr.Blame(cobj, treePath)
+					if err != nil {
+						ctx.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
+						return
+					}
+					LogTemplateError(ctx.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						TreeFileList: &templates.TreeFileListTemplateModel{
+							ShouldHaveParentLink: len(treePath) > 0,
+							RepoPath: fmt.Sprintf("/repo/%s", rfn),
+							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
+							TreePath: dirPath,
+							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+						},
+						TreePath: treePathModelValue,
+						PermaLink: permaLink,
+						Blame: blame,
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: loginInfo,
+						Config: ctx.Config,
+					}))
+					return
+				}
+			}
+		}
+		
 		
 		switch target.Type() {
 		case gitlib.TREE:
@@ -267,6 +309,7 @@ func bindBranchController(ctx *RouterContext) {
 					TreePath: dirPath,
 					FileList: dirObj.(*gitlib.TreeObject).ObjectList,
 				},
+				AllowBlame: !strings.HasPrefix(mime, "image/"),
 				TreePath: treePathModelValue,
 				CommitInfo: commitInfo,
 				TagInfo: nil,

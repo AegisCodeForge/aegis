@@ -1,0 +1,44 @@
+.blame {
+	width: 100%;
+
+}
+.blame-table {
+	overflow: auto;
+}
+.blame-group {
+	display: flex;
+	flex-direction: row;
+	width: 100%;
+	border-top: 1px var(--white-shade-degree-1) solid;
+}
+.blame-group:nth-last-child {
+	border-botom: 1px var(--white-shade-degree-1) solid;
+}
+.blame-group-commit {
+	display: flex;
+	flex-direction: row;
+}
+.blame-group-commit-info-commit-id {
+	width: 5rem;
+	max-width: 5rem;
+	min-width: 5rem;
+}
+.blame-group-commit-info {
+	width: 10rem;
+	max-width: 10rem;
+	min-width: 10rem;
+}
+.blame-group-content {
+	margin-left: 2rem;
+}
+.blame-line {
+	font-family: monospace;
+	font-size: 1rem;
+	white-space: pre;
+	display: flex;
+}
+.blame-line-number {
+	min-width: 4rem;
+	width: 4rem;
+}
+
