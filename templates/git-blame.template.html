@@ -1,0 +1,70 @@
+{{$repoPath := getRepoPath .Repository.Namespace .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-git-blame.css">
+	<title>{{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.Repository.Name}} :: {{.Config.DepotName}}</title>
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+	<div class="node-description">
+	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
+	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	</div>
+	
+	<hr />
+	
+	<main>
+	  <div class="file-tree left-side">
+		{{template "_tree-file-list" .TreeFileList}}
+	  </div>
+	  <div class="blame main-side">
+		<div class="main-side-top">
+		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
+		  <div class="file-nav"><a href="?">Source</a> <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+		</div>
+		{{if .Blame}}
+		<div class="blame-table">
+		  {{$blame := .Blame}}
+		  {{range $ll := .Blame.LineList}}
+		  <div class="blame-group">
+			<div class="blame-group-commit">
+			  <div class="blame-group-commit-info-commit-id">
+				{{$commitId := (index $ll 0).CommitId}}
+				{{$commit := index $blame.CommitInfo $commitId}}
+				<a href="{{$repoPath}}/commit/{{$commitId}}">{{slice $commitId 0 8}}</a><br />
+				<div style="font-size: 0.8rem;">{{toPreciseTime $commit.AuthorInfo.Time}}</div>
+			  </div>
+			  <div class="blame-group-commit-info">
+				<div>{{$commit.Summary}}</div>
+				<div style="font-size: 0.8rem">-- {{$commit.AuthorInfo.AuthorName}} ({{$commit.AuthorInfo.AuthorEmail}})</div>
+			  </div>
+			</div>
+			<div class="blame-group-content">
+			  {{range $l := $ll}}
+			  <div class="blame-line"><span class="blame-line-number">{{$l.FinalLineNumber}}</span><span>{{$l.Value}}</span></div>
+			  {{end}}
+			</div>
+		  </div>
+		  {{end}}
+		</div>
+		{{end}}
+	  </div>
+	</main>
+	
+	<hr />
+	
+	<footer>
+	  <a href="{{getRepoPath .Repository.Namespace .Repository.Name}}">Back (Repository)</a>
+	  <a href="/">Back (Depot)</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

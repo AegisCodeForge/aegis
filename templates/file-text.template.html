@@ -25,7 +25,7 @@
 	  <div class="file main-side">
 		<div class="main-side-top">
 		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
-		  <div class="file-nav"><a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+		  <div class="file-nav">{{if .AllowBlame}}<a href="?blame">Blame</a>{{end}} <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
 		</div>
 		{{template "_blob-text" .File}}
 	  </div>

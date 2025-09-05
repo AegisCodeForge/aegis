@@ -136,6 +136,46 @@ func bindCommitController(ctx *RouterContext) {
 				return
 			}
 		}
+
+		
+		isBlameRequest := r.URL.Query().Has("blame")
+		if isBlameRequest {
+			if target.Type() == gitlib.BLOB {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				if !strings.HasPrefix(mime, "image/") {
+					dirPath := path.Dir(treePath) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						ctx.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					blame, err := rr.Blame(cobj, treePath)
+					if err != nil {
+						ctx.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
+						return
+					}
+					LogTemplateError(ctx.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						TreeFileList: &templates.TreeFileListTemplateModel{
+							ShouldHaveParentLink: len(treePath) > 0,
+							RepoPath: fmt.Sprintf("/repo/%s", rfn),
+							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "commit", cobj.Id),
+							TreePath: dirPath,
+							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+						},
+						Blame: blame,
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: loginInfo,
+						Config: ctx.Config,
+					}))
+					return
+				}
+			}
+		}
+		
 		
 		tp1 := make([]string, 0)
 		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)

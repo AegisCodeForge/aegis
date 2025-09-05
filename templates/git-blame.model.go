@@ -4,18 +4,17 @@ package templates
 
 import "github.com/bctnry/aegis/pkg/aegis"
 
-type FileTemplateModel struct {
+type GitBlameTemplateModel struct {
 	Config *aegis.AegisConfig
 	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
-	File BlobTextTemplateModel
-	PermaLink string
+	Blame *gitlib.PorcelainBlame
 
-	AllowBlame bool
 	TreeFileList *TreeFileListTemplateModel
 	TreePath *TreePathTemplateModel
 	CommitInfo *CommitInfoTemplateModel
 	TagInfo *TagInfoTemplateModel
+	PermaLink string
 	
 	LoginInfo *LoginInfoModel
 }
