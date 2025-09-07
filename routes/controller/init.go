@@ -34,6 +34,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindSettingSSHController(context)
 		bindSettingGPGController(context)
 		bindSettingEmailController(context)
+		bindSettingPrivacyController(context)
 		bindRepositorySettingController(context)
 		bindNewNamespaceController(context)
 		bindNewRepositoryController(context)

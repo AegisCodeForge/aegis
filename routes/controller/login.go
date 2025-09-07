@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
@@ -70,49 +72,181 @@ func bindLoginController(ctx *RouterContext) {
 					ErrorMsg: "Confirmation needed.",
 				}))
 				return
-			default:
-				err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(ph))
-				if err == bcrypt.ErrMismatchedHashAndPassword {
-					LogTemplateError(rc.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
-						Config: rc.Config,
-						ErrorMsg: "Invalid username or password.",
-					}))
-					return
-				} else if err != nil {
-					LogTemplateError(rc.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
-						Config: rc.Config,
-						ErrorMsg: "Internal error: " + err.Error(),
-					}))
-					return
-				} else {
-					ss := session.NewSessionString()
-					err = rc.SessionInterface.RegisterSession(un, ss)
-					if err != nil {
-						rc.ReportInternalError(err.Error(), w, r)
-						return
-					}
-					
-					w.Header().Add("Set-Cookie", (&http.Cookie{
-						Name: COOKIE_KEY_SESSION,
-						Value: ss,
-						Path: "/",
-						MaxAge: 3600,
-						HttpOnly: true,
-						Secure: true,
-						SameSite: http.SameSiteDefaultMode,
-					}).String())
-					w.Header().Add("Set-Cookie", (&http.Cookie{
-						Name: "username",
-						Value: un,
-						Path: "/",
-						MaxAge: 3600,
-						HttpOnly: true,
-						Secure: true,
-						SameSite: http.SameSiteDefaultMode,
-					}).String())
-					FoundAt(w, "/")
-				}
 			}
+			
+			err = bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(ph))
+			if err == bcrypt.ErrMismatchedHashAndPassword {
+				LogTemplateError(rc.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+					Config: rc.Config,
+					ErrorMsg: "Invalid username or password.",
+				}))
+				return
+			} else if err != nil {
+				LogTemplateError(rc.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+					Config: rc.Config,
+					ErrorMsg: "Internal error: " + err.Error(),
+				}))
+				return
+			}
+			
+			if u.TFAConfig.Email.Enable {
+				confirmCode := newConfirmCode()
+				tempKey, err := bcrypt.GenerateFromPassword([]byte(u.PasswordHash+confirmCode), bcrypt.DefaultCost)
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed to process generated confirmation code: %s.", err), w, r)
+					return
+				}
+				rc.ConfirmCodeManager.Register(un, confirmCode, 10 * time.Minute)
+				err = rc.Mailer.SendPlainTextMail(u.Email, fmt.Sprintf("Confirmation Code For Login - %s", rc.Config.DepotName), fmt.Sprintf(`Hello %s,
+
+You're now trying to log in to %s. Since your account has set up email-based two-factor authentication, we have sent you this email.
+
+At the login page you should see a prompt asking you to enter a confirmation code. The code is as follows:
+
+    %s
+
+If this isn't you, we advise you to change your password on %s and other platforms (if you have reused the same password) immediately.
+
+%s
+`, u.Name, rc.Config.DepotName, confirmCode, rc.Config.DepotName, rc.Config.DepotName))
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed to send confirmation code email: %s.", err), w, r)
+					return
+				}
+				w.Header().Add("Set-Cookie", (&http.Cookie{
+					Name: COOKIE_KEY_USERNAME,
+					Value: u.Name,
+					Path: "/",
+					MaxAge: 600,
+					HttpOnly: true,
+					Secure: true,
+					SameSite: http.SameSiteDefaultMode,
+				}).String())
+				w.Header().Add("Set-Cookie", (&http.Cookie{
+					Name: COOKIE_KEY_TEMP_KEY,
+					Value: string(tempKey),
+					Path: "/",
+					MaxAge: 600,
+					HttpOnly: true,
+					Secure: true,
+					SameSite: http.SameSiteDefaultMode,
+				}).String())
+				FoundAt(w, "/login/confirm")
+				return
+			}
+			
+			ss := session.NewSessionString()
+			err = rc.SessionInterface.RegisterSession(un, ss)
+			if err != nil {
+				rc.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			
+			w.Header().Add("Set-Cookie", (&http.Cookie{
+				Name: COOKIE_KEY_SESSION,
+				Value: ss,
+				Path: "/",
+				MaxAge: 3600,
+				HttpOnly: true,
+				Secure: true,
+				SameSite: http.SameSiteDefaultMode,
+			}).String())
+			w.Header().Add("Set-Cookie", (&http.Cookie{
+				Name: "username",
+				Value: un,
+				Path: "/",
+				MaxAge: 3600,
+				HttpOnly: true,
+				Secure: true,
+				SameSite: http.SameSiteDefaultMode,
+			}).String())
+			FoundAt(w, "/")
+		},
+	))
+
+	http.HandleFunc("GET /login/confirm", UseMiddleware(
+		[]Middleware{Logged, RateLimit, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			if rc.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+				FoundAt(w, "/maintenance-notice")
+				return
+			}
+			username, err := r.Cookie(COOKIE_KEY_USERNAME)
+			if err != nil && err != http.ErrNoCookie{
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			LogTemplateError(rc.LoadTemplate("login-confirm").Execute(w, &templates.LoginConfirmTemplateModel{
+				Config: rc.Config,
+				LoginInfo: rc.LoginInfo,
+				Username: username.Value,
+			}))
+		},
+	))
+
+	http.HandleFunc("POST /login/confirm", UseMiddleware(
+		[]Middleware{Logged, RateLimit, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			err := r.ParseForm()
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			key, err := r.Cookie(COOKIE_KEY_TEMP_KEY)
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			username := r.Form.Get("username")
+			user, err := rc.DatabaseInterface.GetUserByName(username)
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to retrieve user: %s.", err), w, r)
+				return
+			}
+			code := r.Form.Get("confirmation-code")
+			err = bcrypt.CompareHashAndPassword([]byte(key.Value), []byte(user.PasswordHash+code))
+			if err == bcrypt.ErrMismatchedHashAndPassword {
+				LogTemplateError(rc.LoadTemplate("login-confirm").Execute(w, templates.LoginConfirmTemplateModel{
+					Config: rc.Config,
+					ErrorMsg: "Invalid confirmation code.",
+					Username: username,
+				}))
+				return
+			} else if err != nil {
+				LogTemplateError(rc.LoadTemplate("login").Execute(w, templates.LoginConfirmTemplateModel{
+					Config: rc.Config,
+					ErrorMsg: "Internal error: " + err.Error(),
+					Username: username,
+				}))
+				return
+			}
+			
+			ss := session.NewSessionString()
+			err = rc.SessionInterface.RegisterSession(username, ss)
+			if err != nil {
+				rc.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			
+			w.Header().Add("Set-Cookie", (&http.Cookie{
+				Name: COOKIE_KEY_SESSION,
+				Value: ss,
+				Path: "/",
+				MaxAge: 3600,
+				HttpOnly: true,
+				Secure: true,
+				SameSite: http.SameSiteDefaultMode,
+			}).String())
+			w.Header().Add("Set-Cookie", (&http.Cookie{
+				Name: "username",
+				Value: username,
+				Path: "/",
+				MaxAge: 3600,
+				HttpOnly: true,
+				Secure: true,
+				SameSite: http.SameSiteDefaultMode,
+			}).String())
+			FoundAt(w, "/")
 		},
 	))
 }

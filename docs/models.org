@@ -19,7 +19,9 @@
   	-- 7 - banned.
   	-- difference between admin & super admin: super admin can remove
   	-- admin status while admin can't.
-  	user_status INTEGER
+  	user_status INTEGER,
+  	-- user 2FA configuration in JSON.
+  	user_2fa_config TEXT
   );
   CREATE UNIQUE INDEX IF NOT EXISTS idx_aegis_user_user_name
   ON aegis_user (user_name);

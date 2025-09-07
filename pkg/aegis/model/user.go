@@ -31,8 +31,17 @@ type AegisUser struct {
 	// password hash.
 	PasswordHash string `json:"passwordHash"`
 	RegisterTime int64 `json:"regTime"`
-	Status AegisUserStatus `json: "status"`
+	Status AegisUserStatus `json:"status"`
 	// AuthKey []AegisAuthKey `json:"authKey"`
 	// SigningKey []AegisSigningKey `json:"signKey"`
+
+	TFAConfig AegisUser2FAConfig `json:"2fa"`
 }
+
+type AegisUser2FAConfig struct {
+	Email struct{
+		Enable bool `json:"enable"`
+	} `json:"email"`
+}
+
 

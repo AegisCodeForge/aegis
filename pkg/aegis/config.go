@@ -146,6 +146,10 @@ type AegisConfig struct {
 	// rate limiter
 	// 0 turns off the rate limiter.
 	MaxRequestInSecond float64 `json:"maxRequestInSecond"`
+
+	// confirm code manager.
+	// used in email 2fa.
+	ConfirmCodeManager AegisConfirmCodeManagerConfig `json:"confirmCode"`
 }
 
 const (
@@ -258,6 +262,12 @@ type AegisReceiptSystemConfig struct {
 	TablePrefix string `json:"tablePrefix"`
 }
 
+type AegisConfirmCodeManagerConfig struct {
+	// type. currently only supports "in-memory".
+	Type string `json:"type"`
+	DefaultTimeoutMinute int `json:"defaultTimeoutMinute"`
+}
+
 func (cfg *AegisConfig) ProperHTTPHostName() string {
 	return cfg.properHttpHostName
 }
@@ -341,8 +351,11 @@ func CreateConfigFile(p string) error {
 			Password: "",
 			TablePrefix: "aegis_receipt_",
 		},
-		
 		MaxRequestInSecond: 0,
+		ConfirmCodeManager: AegisConfirmCodeManagerConfig{
+			Type: "in-memory",
+			DefaultTimeoutMinute: 5,
+		},
 	}, "", "    ")
 	if err != nil { return err }
 	f.Write(marshalRes)

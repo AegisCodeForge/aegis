@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>settings of {{.User.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		Settings
+	  </h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "setting/_sidebar"}}
+
+	  <div class="setting-main main-side">
+		<h2>Two-factor authentication</h2>
+		{{if .ErrorMsg}}
+		{{if eq .ErrorMsg.Type "info"}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		{{end}}
+		<h3>Email</h3>
+		<form action="" method="POST">
+		  <input type="hidden" name="section" value="2fa" />
+		  <input type="hidden" name="type" value="email" />
+		  <div class="field"><label class="field-label" for="email-enable">Enable:</label> <input type="checkbox" name="email-enable" id="email-enable" {{if .User.TFAConfig.Email.Enable}}checked{{end}}/></div>
+		  <input type="submit" value="Save" />
+		</form>
+		
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

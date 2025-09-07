@@ -17,6 +17,7 @@ import (
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
 	"github.com/bctnry/aegis/pkg/aegis/session"
 	"github.com/bctnry/aegis/pkg/aegis/ssh"
+	"github.com/bctnry/aegis/pkg/aegis/confirm_code"
 	"github.com/bctnry/aegis/templates"
 )
 
@@ -33,6 +34,7 @@ type RouterContext struct {
 	LoginInfo *templates.LoginInfoModel
 	LastError error
 	RateLimiter *RateLimiter
+	ConfirmCodeManager confirm_code.AegisConfirmCodeManager
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {
