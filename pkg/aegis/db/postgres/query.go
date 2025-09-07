@@ -24,14 +24,15 @@ func (dbif *PostgresAegisDatabaseInterface) GetUserByName(name string) (*model.A
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT user_title, user_email, user_bio, user_website, user_reg_datetime, user_password_hash, user_status
+SELECT user_title, user_email, user_bio, user_website, user_reg_datetime, user_password_hash, user_status, user_2fa_config
 FROM %s_user
 WHERE user_name = $1
 `, pfx), name)
 	var title, email, bio, website, password string
+	var tfa model.AegisUser2FAConfig
 	var datetime time.Time
 	var status int
-	err := stmt.Scan(&title, &email, &bio, &website, &datetime, &password, &status)
+	err := stmt.Scan(&title, &email, &bio, &website, &datetime, &password, &status, &tfa)
 	if errors.Is(err, pgx.ErrNoRows) { return nil, db.ErrEntityNotFound }
 	if err != nil { return nil, err }
 	return &model.AegisUser{
@@ -43,6 +44,7 @@ WHERE user_name = $1
 		PasswordHash: password,
 		RegisterTime: datetime.Unix(),
 		Status: model.AegisUserStatus(status),
+		TFAConfig: tfa,
 	}, nil
 }
 
@@ -714,9 +716,9 @@ func (dbif *PostgresAegisDatabaseInterface) RegisterUser(name string, email stri
 	defer tx.Rollback(ctx)
 	t := time.Now()
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_reg_datetime, user_password_hash, user_status)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-`, pfx), name, name, email, new(string), new(string), t, passwordHash, status)
+INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_reg_datetime, user_password_hash, user_status, user_2fa_config)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+`, pfx), name, name, email, new(string), new(string), t, passwordHash, status, new(model.AegisUser2FAConfig))
 	if err != nil { return nil, err }
 	err = tx.Commit(ctx)
 	if err != nil { return nil, err }
@@ -740,9 +742,9 @@ func (dbif *PostgresAegisDatabaseInterface) UpdateUserInfo(name string, uobj *mo
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 UPDATE %s_user
-SET user_title = $1, user_email = $2, user_bio = $3, user_website = $4, user_status = $5
+SET user_title = $1, user_email = $2, user_bio = $3, user_website = $4, user_status = $5, user_2fa_config = $7
 WHERE user_name = $6
-`, pfx), uobj.Title, uobj.Email, uobj.Bio, uobj.Website, uobj.Status, name)
+`, pfx), uobj.Title, uobj.Email, uobj.Bio, uobj.Website, uobj.Status, name, uobj.TFAConfig)
 	if err != nil { return err }
 	err = tx.Commit(ctx)
 	if err != nil { return err }

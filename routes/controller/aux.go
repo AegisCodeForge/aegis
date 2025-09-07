@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"html"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"path"
@@ -235,3 +236,12 @@ func checkUserPassword(ctx *routes.RouterContext, username string, password stri
 	}
 	return true, nil
 }
+
+func newConfirmCode() string {
+	res := make([]byte, 0)
+	for range 6 {
+		res = append(res, "0123456789"[rand.IntN(10)])
+	}
+	return string(res)
+}
+

@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -20,13 +19,13 @@ func LogIfError(err error) {
 // go don't have ufcs so i'll have to suffer.
 func WithLog(f http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println(fmt.Sprintf(" %s %s", r.Method, r.URL.Path))
+		log.Printf(" %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
 		f(w, r)
 	}
 }
 func WithLogHandler(f http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Println(fmt.Sprintf(" %s %s", r.Method, r.URL.Path))
+		log.Printf(" %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
 		f.ServeHTTP(w, r)
 	}
 }
@@ -39,7 +38,7 @@ func FoundAt(w http.ResponseWriter, p string) {
 
 func LoadTemplate(t *template.Template, name string) *template.Template {
 	res := t.Lookup(name)
-	if res == nil { log.Fatal(fmt.Sprintf("Failed to find template \"%s\"", name)) }
+	if res == nil { log.Fatalf("Failed to find template \"%s\"", name) }
 	return res
 }
 

@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS %suser (
     user_website TEXT,
     user_reg_datetime TEXT,
     user_password_hash TEXT,
-    user_status INTEGER
+    user_status INTEGER,
+    user_2fa_config TEXT
 )`, pfx))
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
