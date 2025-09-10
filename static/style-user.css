@@ -1,3 +1,8 @@
+@media (max-width: 720px) {
+	.user-profile {
+		flex-direction: column;
+	}
+}
 .user-profile-repository-list {
 	flex-grow: 2;
 }

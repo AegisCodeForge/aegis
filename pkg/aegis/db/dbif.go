@@ -165,6 +165,16 @@ type AegisDatabaseInterface interface {
 	// the logic like acl controlled visibility applies.
 	CountRepositoryWithLabel(username string, label string) (int64, error)
 	GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error)
+
+	// NOTE: implementers should return "empty" (i.e. without actual data) model only.
+	NewSnippet(username string, name string, status uint8) (*model.Snippet, error)
+	GetAllSnippet(username string) ([]*model.Snippet, error)
+	CountAllVisibleSnippet(username string, viewingUser string, query string) (int64, error)
+	GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int, pageSize int) ([]*model.Snippet, error)
+	DeleteSnippet(username string, name string) error
+	SaveSnippetInfo(m *model.Snippet) error
+	GetSnippet(username string, name string) (*model.Snippet, error)
+	
 }
 
 

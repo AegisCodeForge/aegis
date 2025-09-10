@@ -1,6 +1,8 @@
 package db
 
-import "strings"
+import (
+	"strings"
+)
 
 func ToSqlSearchPattern(s string) string {
 	res := strings.ReplaceAll(s, "\\", "\\\\")
@@ -9,5 +11,4 @@ func ToSqlSearchPattern(s string) string {
 	res = "%" + res + "%"
 	return res
 }
-
 

@@ -475,6 +475,7 @@ FROM %s_repository
 WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize, username)
+		fmt.Println("tmt", err)
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
@@ -912,7 +913,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	if err = os.RemoveAll(p); err != nil { return nil, err }
-	if err = os.MkdirAll(p, os.ModeDir|0775); err != nil { return nil, err }
+	if err = os.MkdirAll(p, os.ModeDir|0755); err != nil { return nil, err }
 	lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 	if err != nil { return nil, err }
 	if err = model.InitLocalRepository(lr); err != nil { return nil, err }
@@ -1811,7 +1812,7 @@ FROM %s_namespace WHERE ns_owner = $1 OR ns_acl->'acl' ? $1
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_acl, ns_status
-FROM %s_namespace WHERE (ns_owner = $1 OR ns_acl->'acl' = $1) AND (ns_owner = $2 OR ns_acl->'acl' ? $2)
+FROM %s_namespace WHERE (ns_owner = $1 OR ns_acl->'acl' ? $1) AND (ns_owner = $2 OR ns_acl->'acl' ? $2)
 `, pfx), viewingUser, user)
 			if err != nil { return nil, err }
 		}
@@ -2979,6 +2980,235 @@ ORDER BY repo_name ASC, repo_namespace ASC LIMIT $5 OFFSET $6
 		})
 	}
 	return res, nil
+}
+
+
+func (dbif *PostgresAegisDatabaseInterface) NewSnippet(username string, name string, status uint8) (*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return nil, err }
+	defer tx.Rollback(ctx)
+	t := time.Now()
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+INSERT INTO %s_snippet(name, username, description, timestamp, status, shared_user)
+VALUES ($1, $2, $3, $4, $5, $6)
+`, pfx), name, username, new(string), t, status, "{}")
+	if err != nil { return nil, err }
+	p := path.Join(dbif.config.SnippetRoot, username, name)
+	err = os.RemoveAll(p)
+	if err != nil { return nil, err }
+	err = os.MkdirAll(p, os.ModeDir|0755)
+	if err != nil { return nil, err }
+	err = tx.Commit(ctx)
+	if err != nil { return nil, err }
+	return &model.Snippet{
+		Name: name,
+		BelongingUser: username,
+		Description: "",
+		Time: t.Unix(),
+		FileList: make(map[string]string, 0),
+	}, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetAllSnippet(username string) ([]*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1
+`, pfx), username)
+	if err != nil { return nil, err }
+	var name, desc string
+	var status uint8
+	var timestamp time.Time
+	var sharedUser map[string]bool
+	res := make([]*model.Snippet, 0)
+	for stmt.Next() {
+		err = stmt.Scan(&name, &desc, &timestamp, &status, &sharedUser)
+		if err != nil { return nil, err }
+		res = append(res, &model.Snippet{
+			Name: name,
+			BelongingUser: username,
+			Description: desc,
+			Status: status,
+			Time: timestamp.Unix(),
+			FileList: nil,
+			SharedUser: sharedUser,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) CountAllVisibleSnippet(username string, viewingUser string, query string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var stmt pgx.Row
+	var err error
+	if len(query) > 0 {
+		q := db.ToSqlSearchPattern(query)
+		if len(viewingUser) <= 0 {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_snippet
+WHERE username = $1 AND (status = 1) AND name LIKE $2 ESCAPE $3
+`, pfx), username, q, "\\")
+		} else if viewingUser == username {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_snippet
+WHERE username = $1 AND name LIKE $2 ESCAPE $3
+`, pfx), username, q, "\\")
+		} else {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_snippet
+WHERE username = $1 AND (status = 1 OR status = 2 OR (status = 4 AND shared_user ? $2)) AND name LIKE $3 ESCAPE $4
+`, pfx), username, viewingUser, q, "\\")
+		}
+	} else {
+		if len(viewingUser) <= 0 {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_snippet
+WHERE username = $1 AND (status = 1 OR status = 2)
+`, pfx), username)
+		} else if viewingUser == username {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_snippet
+WHERE username = $1
+`, pfx), username)
+		} else {
+			stmt = dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT COUNT(*) FROM %s_snippet
+WHERE username = $1 AND (status = 1 OR status = 2 OR (status = 4 AND shared_user ? $2))
+`, pfx), username, viewingUser)
+		}
+	}
+	var res int64
+	err = stmt.Scan(&res)
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int, pageSize int) ([]*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	var stmt pgx.Rows
+	var err error
+	if len(query) > 0 {
+		q := db.ToSqlSearchPattern(query)
+		if len(viewingUser) <= 0 {
+			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1 AND (status = 1) AND name LIKE $2 ESCAPE $3
+`, pfx), username, q, "\\")
+		} else if viewingUser == username {
+			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1 AND name LIKE $2 ESCAPE $3
+`, pfx), username, q, "\\")
+		} else {
+			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1 AND (status = 1 OR status = 2 OR (status = 4 AND shared_user ? $2)) AND name LIKE $3 ESCAPE $4
+`, pfx), username, viewingUser, q, "\\")
+		}
+	} else {
+		if len(viewingUser) <= 0 {
+			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1 AND (status = 1 OR status = 2)
+`, pfx), username)
+		} else if viewingUser == username {
+			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1
+`, pfx), username)
+		} else {
+			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1 AND (status = 1 OR status = 2 OR (status = 4 AND shared_user ? $2))
+`, pfx), username, viewingUser)
+		}
+	}
+	if err != nil { return nil, err }
+	var name, desc string
+	var status uint8
+	var timestamp time.Time
+	var sharedUser map[string]bool
+	res := make([]*model.Snippet, 0)
+	for stmt.Next() {
+		err = stmt.Scan(&name, &desc, &timestamp, &status, &sharedUser)
+		if err != nil { return nil, err }
+		res = append(res, &model.Snippet{
+			Name: name,
+			BelongingUser: username,
+			Description: desc,
+			Status: status,
+			Time: timestamp.Unix(),
+			FileList: nil,
+			SharedUser: sharedUser,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) DeleteSnippet(username string, name string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+DELETE FROM %s_snippet WHERE username = $1 AND name = $2
+`, pfx), username, name)
+	if err != nil { return err }
+	p := path.Join(dbif.config.SnippetRoot, username, name)
+	err = os.RemoveAll(p)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) SaveSnippetInfo(m *model.Snippet) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_snippet
+SET description = $1, status = $2, shared_user = $3
+WHERE username = $4 AND name = $5
+`, pfx), m.Description, m.Status, m.SharedUser, m.BelongingUser, m.Name)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetSnippet(username string, name string) (*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT description, timestamp, status, shared_user FROM %s_snippet
+WHERE username = $1 AND name = $2
+`, pfx), username, name)
+	var desc, shareduser string
+	var timestamp time.Time
+	var status uint8
+	err := stmt.Scan(&desc, &timestamp, &status, &shareduser)
+	if err != nil { return nil, err }
+	var su map[string]bool
+	err = json.Unmarshal([]byte(shareduser), &su)
+	if err != nil { return nil, err }
+	return &model.Snippet{
+		Name: name,
+		BelongingUser: username,
+		Description: desc,
+		Time: timestamp.Unix(),
+		Status: status,
+		FileList: nil,
+		SharedUser: su,
+	}, nil
 }
 
 

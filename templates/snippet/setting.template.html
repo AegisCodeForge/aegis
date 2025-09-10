@@ -1,0 +1,64 @@
+{{$snippet := .Snippet}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Snippet settings for {{.Snippet.BelongingUser}}:{{.Snippet.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-snippet.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  <div class="snippet-info">
+		<h1 class="snippet-name">
+		  <span style="font-size: 2rem;line-height:100%">Snippet Settings</span> <br />
+		<a href="/u/{{.Snippet.BelongingUser}}/snippet">{{.Snippet.BelongingUser}}</a>:<a href="/snippet/{{.Snippet.BelongingUser}}/{{.Snippet.Name}}">{{.Snippet.Name}}</a>
+		</h1>
+		<div class="snippet-nav">
+		  {{if and .LoginInfo (eq .Snippet.BelongingUser .LoginInfo.UserName)}}
+		<a href="/snippet/{{.Snippet.BelongingUser}}/{{.Snippet.Name}}/setting">Setting</a>
+		{{end}}
+		</div>
+	  </div>
+	</header>
+
+
+	<hr />
+
+	<form method="POST" action="" class="snippet-setting">
+	  <h2>Snippet Info</h2>
+	  <div class="field"><label class="field-label" for="status">Visibility:</label> <select name="status">
+		  <option value="1" {{if eq .Snippet.Status 1}}selected{{end}}>Public</option>
+		  <option value="2" {{if eq .Snippet.Status 2}}selected{{end}}>Internal</option>
+		  <option value="3" {{if eq .Snippet.Status 3}}selected{{end}}>Shared-Only (Link)</option>
+		  <option value="6" {{if eq .Snippet.Status 6}}selected{{end}}>Internal Shared-Only (Link)</option>
+		  <option value="4" {{if eq .Snippet.Status 4}}selected{{end}}>Shared-Only (Selected Users)</option>
+		  <option value="5" {{if eq .Snippet.Status 5}}selected{{end}}>Private</option>
+	  </select></div>
+	  <div class="field"><label class="field-label" for="shared-user">Shared User (user name separated with comma):</label>
+		<input name="shared-user" id="shared-user" value="{{toSeparatedKeys .Snippet.SharedUser}}" />
+	  </div>
+	  <div class="field"><label class="field-label" for="description">Description:</label> <textarea name="description" id="description">{{.Snippet.Description}}</textarea></div>
+	  <input type="submit" value="Save Info" />
+	</form>
+	<h2>File List</h2>
+	<div>
+	  <a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/setting/new">New File</a>
+	</div>
+	<div class="snippet-setting-file-list">
+	  {{range $k, $v := .Snippet.FileList}}
+	  <div class="snippet-setting-file">
+		{{$k}} <a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/setting/edit/{{$k}}">Edit</a> <a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/setting/delete/{{$k}}">Delete</a> 
+	  </div>
+	  {{end}}
+	</div>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

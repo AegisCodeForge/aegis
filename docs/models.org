@@ -1,5 +1,7 @@
 * models of aegis
 
+NOTE THAT this is only a general guide of how the tables would be implemented. the actual definition and types are database-dependent and one should refer to files in path =pkg/aegis/db/=.
+
 #+begin_src sql
   CREATE TABLE IF NOT EXISTS aegis_user (
       user_name TEXT UNIQUE,
@@ -138,7 +140,7 @@
   	email TEXT,
   	-- 0 - not verified. 1 - verified.
   	verified INTEGER,
-  	FOREIGN KEY (username) REFERENCES aegis_user(user_name)g
+  	FOREIGN KEY (username) REFERENCES aegis_user(user_name)
   );
 
   CREATE TABLE IF NOT EXISTS aegis_user_reg_request (
@@ -146,5 +148,17 @@
   	email TEXT,
   	reason TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS aegis_snippet (
+      username TEXT,
+  	snippet_name TEXT,
+  	snippet_description TEXT,
+  	snippet_timestamp INTEGER,
+  	-- 1 - public. 2 - internal, 3 - shared(link),
+  	-- 4 - shared(user), 5 - private, 6 - shared internal(link)
+  	snippet_status INTEGER,
+  	snippet_shared_user TEXT,
+  	FOREIGN KEY (username) REFERENCES aegis_user(user_name)
+  )
 #+end_src
 

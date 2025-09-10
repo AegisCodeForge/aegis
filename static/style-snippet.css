@@ -1,0 +1,17 @@
+.snippet-name {
+	line-height: 100%;
+	font-size: 3rem;
+	margin-top: 1rem;
+	margin-bottom: 0;
+	display: inline-block;
+}
+.snippet-name > a {
+	text-decoration: none;
+}
+.snippet-file-nav {
+	margin: 1rem;
+}
+.snippet-file-name {
+	font-weight: bold;
+}
+
