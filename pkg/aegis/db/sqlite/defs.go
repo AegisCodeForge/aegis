@@ -17,6 +17,7 @@ var requiredTableList = []string{
 	"user_authkey",
 	"user_signkey",
 	"user_email",
+	"user_reg_request",
 	"user",
 	"namespace",
 	"repository",
@@ -25,13 +26,14 @@ var requiredTableList = []string{
 	"issue_event",
 	"pull_request",
 	"pull_request_event",
+	"snippet",
 }
 
 func (dbif *SqliteAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {
 	stmt, err := dbif.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
 	if err != nil { return false, err }
 	for _, item := range requiredTableList {
-		tableName := dbif.config.Database.TablePrefix + item
+		tableName := dbif.config.Database.TablePrefix + "_" + item
 		r := stmt.QueryRow(tableName)
 		if r.Err() != nil { return false, r.Err() }
 		var a string

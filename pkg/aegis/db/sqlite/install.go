@@ -9,7 +9,7 @@ func (dbif *SqliteAegisDatabaseInterface) InstallTables() error {
 	if err != nil { return err }
 	defer tx.Rollback()
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %suser (
+CREATE TABLE IF NOT EXISTS %s_user (
     user_name TEXT UNIQUE,
     user_title TEXT,
     user_email TEXT,
@@ -22,23 +22,23 @@ CREATE TABLE IF NOT EXISTS %suser (
 )`, pfx))
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %suser_authkey (
+CREATE TABLE IF NOT EXISTS %s_user_authkey (
     user_name TEXT,
     key_name TEXT,
     key_text TEXT,
-    FOREIGN KEY (user_name) REFERENCES %suser(user_name)
+    FOREIGN KEY (user_name) REFERENCES %s_user(user_name)
 )`, pfx, pfx))
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %suser_signkey (
+CREATE TABLE IF NOT EXISTS %s_user_signkey (
     user_name TEXT,
     key_name TEXT,
     key_text TEXT,
-    FOREIGN KEY (user_name) REFERENCES %suser(user_name)
+    FOREIGN KEY (user_name) REFERENCES %s_user(user_name)
 )`, pfx, pfx))
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %snamespace (
+CREATE TABLE IF NOT EXISTS %s_namespace (
     ns_name TEXT UNIQUE,
   	ns_title TEXT,
   	ns_description TEXT,
@@ -47,11 +47,11 @@ CREATE TABLE IF NOT EXISTS %snamespace (
   	ns_reg_datetime TEXT,
     ns_acl TEXT,
   	ns_status INTEGER,
-      FOREIGN KEY (ns_owner) REFERENCES %suser(user_name)
+      FOREIGN KEY (ns_owner) REFERENCES %s_user(user_name)
 )`, pfx, pfx))
 	if err != nil { return err }
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %srepository (
+CREATE TABLE IF NOT EXISTS %s_repository (
     repo_type INTEGER,
     repo_fullname TEXT UNIQUE,
     repo_namespace TEXT,
@@ -63,12 +63,12 @@ CREATE TABLE IF NOT EXISTS %srepository (
   	repo_fork_origin_namespace TEXT,
   	repo_fork_origin_name TEXT,
     repo_label_list TEXT,
-      FOREIGN KEY (repo_namespace) REFERENCES %snamespace(ns_name)
+      FOREIGN KEY (repo_namespace) REFERENCES %s_namespace(ns_name)
 )`, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %srepo_redirect (
+CREATE TABLE IF NOT EXISTS %s_repo_redirect (
     old_ns TEXT,
     old_name TEXT,
 	new_ns TEXT,
@@ -78,31 +78,31 @@ CREATE TABLE IF NOT EXISTS %srepo_redirect (
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE UNIQUE INDEX IF NOT EXISTS idx_%suser_user_name
-ON %suser (user_name)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_%s_user_user_name
+ON %s_user (user_name)
 `, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE INDEX IF NOT EXISTS idx_%suser_authkey_user_name
-ON %suser_authkey (user_name);
+CREATE INDEX IF NOT EXISTS idx_%s_user_authkey_user_name
+ON %s_user_authkey (user_name);
 `, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE INDEX IF NOT EXISTS idx_%suser_signkey_user_name
-ON %suser_signkey (user_name);
+CREATE INDEX IF NOT EXISTS idx_%s_user_signkey_user_name
+ON %s_user_signkey (user_name);
 `, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE INDEX IF NOT EXISTS idx_%snamespace_ns_name
-ON %snamespace (ns_name);
+CREATE INDEX IF NOT EXISTS idx_%s_namespace_ns_name
+ON %s_namespace (ns_name);
 `, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %sissue (
+CREATE TABLE IF NOT EXISTS %s_issue (
     repo_namespace TEXT,
 	repo_name TEXT,
 	issue_id INTEGER,
@@ -114,15 +114,15 @@ CREATE TABLE IF NOT EXISTS %sissue (
 	issue_status INTEGER,
     issue_priority SMALLINT,
 	FOREIGN KEY (repo_namespace, repo_name)
-      REFERENCES %srepository(repo_namespace, repo_name),
+      REFERENCES %s_repository(repo_namespace, repo_name),
 	FOREIGN KEY (issue_author)
-	  REFERENCES %suser(user_name)
+	  REFERENCES %s_user(user_name)
 );
 `, pfx, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %sissue_event (
+CREATE TABLE IF NOT EXISTS %s_issue_event (
     issue_abs_id INTEGER,
 	-- 1 - comment.  2 - close as solved.  3 - close as discarded.
 	-- 4 - reopened.
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS %sissue_event (
 	issue_event_time INTEGER,
 	issue_event_author TEXT,
 	issue_event_content TEXT,
-    FOREIGN KEY (issue_abs_id) REFERENCES %sissue(rowid)
+    FOREIGN KEY (issue_abs_id) REFERENCES %s_issue(rowid)
 );
 `, pfx, pfx))
 	if err != nil { return err }
@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS %spull_request (
     merge_conflict_check_timestamp INT,
     pull_request_status INT,
     pull_request_timestamp INT,
-	FOREIGN KEY (username) REFERENCES %suser(user_name)
+	FOREIGN KEY (username) REFERENCES %s_user(user_name)
   )
 `, pfx, pfx))
 	if err != nil { return err }
@@ -184,16 +184,16 @@ ON %spull_request_event (pull_request_abs_id);
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %suser_email (
+CREATE TABLE IF NOT EXISTS %s_user_email (
     username TEXT,
 	email TEXT,
     verified INTEGER,
-	FOREIGN KEY (username) REFERENCES %suser(user_name)
+	FOREIGN KEY (username) REFERENCES %s_user(user_name)
 )`, pfx, pfx))
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %suser_reg_request (
+CREATE TABLE IF NOT EXISTS %s_user_reg_request (
     username TEXT,
 	email TEXT,
     password_hash TEXT,
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS %suser_reg_request (
 	if err != nil { return err }
 	
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %ssnippet (
+CREATE TABLE IF NOT EXISTS %s_snippet (
     snippet_full_name TEXT UNIQUE,
     name TEXT,
     username TEXT,
@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS %ssnippet (
     timestamp INTEGER,
     status INTEGER,
     shared_user TEXT,
-    FOREIGN KEY (username) REFERENCES %suser(user_name)
+    FOREIGN KEY (username) REFERENCES %s_user(user_name)
 )`, pfx, pfx))
 	if err != nil { return err }
 	
