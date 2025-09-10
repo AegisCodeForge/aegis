@@ -202,6 +202,19 @@ CREATE TABLE IF NOT EXISTS %suser_reg_request (
 )`, pfx))
 	if err != nil { return err }
 	
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %ssnippet (
+    snippet_full_name TEXT UNIQUE,
+    name TEXT,
+    username TEXT,
+	description TEXT,
+    timestamp INTEGER,
+    status INTEGER,
+    shared_user TEXT,
+    FOREIGN KEY (username) REFERENCES %suser(user_name)
+)`, pfx, pfx))
+	if err != nil { return err }
+	
 	tx.Commit()
 	return nil
 }

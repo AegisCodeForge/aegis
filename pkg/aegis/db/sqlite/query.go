@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -792,7 +793,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?)
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	err = os.RemoveAll(p)
 	if err != nil { return nil, err }
-	if err = os.MkdirAll(p, os.ModeDir|0775); err != nil {
+	if err = os.MkdirAll(p, os.ModeDir|0755); err != nil {
 		return nil, err
 	}
 	lr, err := model.CreateLocalRepository(repoType, ns, name, p)
@@ -3478,4 +3479,272 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) NewSnippet(username string, name string, status uint8) (*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return nil, err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %ssnippet(snippet_full_name, name, username, description, timestamp, status, shared_user)
+VALUES (?,?,?,?,?,?,?)
+`, pfx))
+	if err != nil { return nil, err }
+	t := time.Now()
+	_, err = stmt.Exec(fmt.Sprintf("%s:%s", username, name), name, username, new(string), t.Unix(), status, new(map[string]bool))
+	if err != nil { return nil, err }
+	p := path.Join(dbif.config.SnippetRoot, username, name)
+	os.RemoveAll(p)
+	err = os.MkdirAll(p, fs.ModeDir|0755)
+	if err != nil { return nil, err }
+	return &model.Snippet{
+		Name: name,
+		BelongingUser: username,
+		Description: "",
+		Time: t.Unix(),
+		FileList: nil,
+		Status: status,
+		SharedUser: nil,
+	}, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllSnippet(username string) ([]*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user
+FROM %ssnippet
+WHERE username = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r, err := stmt.Query(username)
+	if err != nil { return nil, err }
+	defer r.Close()
+	var name, desc string
+	var time int64
+	var status uint8
+	var shareduser string
+	res := make([]*model.Snippet, 0)
+	for r.Next() {
+		err = r.Scan(&name, &desc, &time, &status, &shareduser)
+		if err != nil { return nil, err }
+		var su map[string]bool
+		json.Unmarshal([]byte(shareduser), &su)
+		res = append(res, &model.Snippet{
+			Name: name,
+			BelongingUser: username,
+			Description: desc,
+			Time: time,
+			FileList: nil,
+			Status: status,
+			SharedUser: su,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleSnippet(username string, viewingUser string, query string) (int64, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var r *sql.Row
+	var err error
+	if len(query) > 0 {
+		q := db.ToSqlSearchPattern(query)
+		if len(viewingUser) <= 0 {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %ssnippet
+WHERE username = ? AND (status = 1) AND name LIKE ? ESCAPE ?
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username, q, "\\")
+		} else if viewingUser == username {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %ssnippet
+WHERE username = ? AND name LIKE ? ESCAPE ?
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username, q, "\\")
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %ssnippet
+WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?)) AND name LIKE ? ESCAPE ?
+`, pfx))
+			if err != nil { return 0, err }
+			u := db.ToSqlSearchPattern("\"" + viewingUser + "\"")
+			r = stmt.QueryRow(username, u, "\\", q, "\\")
+		}
+	} else {
+		if len(viewingUser) <= 0 {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %ssnippet
+WHERE username = ? AND (status = 1)
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username)
+		} else if viewingUser == username {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %ssnippet WHERE username = ?
+`, pfx))
+			if err != nil { return 0, err }
+			r = stmt.QueryRow(username)
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT COUNT(*) FROM %ssnippet
+WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?))
+`, pfx))
+			if err != nil { return 0, err }
+			u := db.ToSqlSearchPattern("\"" + viewingUser + "\"")
+			r = stmt.QueryRow(username, u, "\\")
+		}
+	}
+	if r.Err() != nil { return 0, r.Err() }
+	var res int64
+	err = r.Scan(&res)
+	if err != nil { return 0, err }
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int, pageSize int) ([]*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	var r *sql.Rows
+	var err error
+	if len(query) > 0 {
+		q := db.ToSqlSearchPattern(query)
+		if len(viewingUser) <= 0 {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ? AND (status = 1) AND name LIKE ? ESCAPE ?
+`, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(username, q, "\\")
+			if err != nil { return nil, err }
+		} else if viewingUser == username {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ? AND name LIKE ? ESCAPE ?
+`, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(username, q, "\\")
+			if err != nil { return nil, err }
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?)) AND name LIKE ? ESCAPE ?
+`, pfx))
+			if err != nil { return nil, err }
+			u := db.ToSqlSearchPattern("\"" + viewingUser + "\"")
+			r, err = stmt.Query(username, u, "\\", q, "\\")
+			if err != nil { return nil, err }
+		}
+	} else {
+		if len(viewingUser) <= 0 {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ? AND (status = 1)
+`, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(username)
+			if err != nil { return nil, err }
+		} else if viewingUser == username {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ?
+`, pfx))
+			if err != nil { return nil, err }
+			r, err = stmt.Query(username)
+			if err != nil { return nil, err }
+		} else {
+			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?))
+`, pfx))
+			if err != nil { return nil, err }
+			u := db.ToSqlSearchPattern("\"" + viewingUser + "\"")
+			r, err = stmt.Query(username, u, "\\")
+			if err != nil { return nil, err }
+		}
+	}
+	defer r.Close()
+	var name, desc string
+	var status uint8
+	var timestamp time.Time
+	var sharedUser map[string]bool
+	res := make([]*model.Snippet, 0)
+	for r.Next() {
+		err = r.Scan(&name, &desc, &timestamp, &status, &sharedUser)
+		if err != nil { return nil, err }
+		res = append(res, &model.Snippet{
+			Name: name,
+			BelongingUser: username,
+			Description: desc,
+			Status: status,
+			Time: timestamp.Unix(),
+			FileList: nil,
+			SharedUser: sharedUser,
+		})
+	}
+	return res, nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) DeleteSnippet(username string, name string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+DELETE FROM %ssnippet WHERE username = ? AND name = ?
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(username, name)
+	if err != nil { return err }
+	p := path.Join(dbif.config.SnippetRoot, username, name)
+	err = os.RemoveAll(p)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) SaveSnippetInfo(m *model.Snippet) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %ssnippet SET description = ?, status = ?, shared_user = ? WHERE username = ? AND name = ?
+`, pfx))
+	if err != nil { return err }
+	s, err := json.Marshal(m.SharedUser)
+	if err != nil { return err }
+	_, err = stmt.Exec(m.Description, m.Status, string(s), m.BelongingUser, m.Name)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetSnippet(username string, name string) (*model.Snippet, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT description, timestamp, status, shared_user FROM %ssnippet
+WHERE username = ? AND name = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(username, name)
+	if r.Err() != nil { return nil, r.Err() }
+	var desc, shareduser string
+	var timestamp int64
+	var status uint8
+	err = r.Scan(&desc, &timestamp, &status, &shareduser)
+	if err != nil { return nil, err }
+	var su map[string]bool
+	err = json.Unmarshal([]byte(shareduser), &shareduser)
+	if err != nil { return nil, err }
+	return &model.Snippet{
+		Name: name,
+		BelongingUser: username,
+		Description: desc,
+		Time: timestamp,
+		Status: status,
+		FileList: nil,
+		SharedUser: su,
+	}, nil
+}
 

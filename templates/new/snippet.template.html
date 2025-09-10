@@ -1,0 +1,52 @@
+{{$selected := .Selected}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>New snippet :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">
+		New Snippet
+	  </h1>
+	</header>
+	<hr />
+
+	<main>
+	  <div class="left-side">
+	  </div>
+
+	  <div class="setting-main main-side">
+		<h2>New snippet</h2>
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg.Message}}</div>
+		{{end}}
+		<form action="" method="POST">
+		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
+		  <div class="field"><label class="field-label" for="filename">File Name:</label> <input name="filename" /></div>
+		  <div class="field"><label class="field-label" for="status">Visibility:</label> <select name="status">
+			  <option value="1">Public</option>
+			  <option value="2">Internal</option>
+			  <option value="3">Shared-Only (Link)</option>
+			  <option value="4">Shared-Only (Selected Users)</option>
+			  <option value="5">Private</option>
+		  </select></div>
+		  <div class="field"><label class="field-label" for="content">Content:</label> <textarea name="content" id="content"></textarea></div>
+		  <input type="submit" value="New Snippet" />
+		</form>
+		
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

@@ -38,6 +38,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindRepositorySettingController(context)
 		bindNewNamespaceController(context)
 		bindNewRepositoryController(context)
+		bindNewSnippetController(context)
 
 		bindRegisterController(context)
 		bindReceiptController(context)
@@ -51,6 +52,8 @@ func InitializeRoute(context *routes.RouterContext) {
 
 		bindIssueController(context)
 		bindLabelController(context)
+
+		bindSnippetController(context)
 	}
 }
 

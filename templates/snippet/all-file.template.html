@@ -1,0 +1,57 @@
+{{$snippet := .Snippet}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Snippet {{.Snippet.BelongingUser}}:{{.Snippet.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-snippet.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  <div class="snippet-info">
+		<h1 class="snippet-name">
+		  <span style="font-size: 2rem;line-height:100%">Snippet</span> <br />
+		<a href="/u/{{.Snippet.BelongingUser}}/snippet">{{.Snippet.BelongingUser}}</a>:<a href="/snippet/{{.Snippet.BelongingUser}}/{{.Snippet.Name}}">{{.Snippet.Name}}</a>
+		</h1>
+		<div class="snippet-description">
+		  Created {{toFuzzyTime .Snippet.Time}} <span class="precise-time">{{toPreciseTime .Snippet.Time}}</span>
+		  <div>
+			{{.Snippet.Description}}
+		  </div>
+		</div>
+		<div class="snippet-nav">
+		  {{if and .LoginInfo (eq .Snippet.BelongingUser .LoginInfo.UserName)}}
+		<a href="/snippet/{{.Snippet.BelongingUser}}/{{.Snippet.Name}}/setting">Setting</a>
+		{{end}}
+		</div>
+	  </div>
+	</header>
+
+
+	<hr />
+
+	<div class="snippet-file-list">
+	  {{range $k, $v := .DisplayingFileList}}
+	  <div class="snippet-file">
+		<div class="snippet-file-nav">
+		  <svg class="file-list-item-icon">
+			<use href="/static/assets/icons.svg#file"></use>
+		  </svg>
+		  <span class="snippet-file-name"><a id="{{$k}}">{{$k}}</a></span> (<a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/raw/{{$k}}">Raw</a>)
+		</div>
+		<div class="snippet-file-content">
+		  {{template "_blob-text" (toBlobTextTemplateModel $v)}}
+		</div>
+	  </div>
+	  {{end}}
+	</div>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

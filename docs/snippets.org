@@ -1,0 +1,17 @@
+* snippets
+
+a snippet is like a "repository lite".
+
+a snippet allows for multiple files (but no subdirectory).
+
+there's no git clone (or any kind of clone) for snippets.
+
+there's no full acl for snippets, but a 5-tier system of visibility control exists:
+
++ public: anyone can see.
++ internal: anyone who logged in can see.
++ shared(link): anyone who has the link can see.
++ shared internal (link): anyone who logged in and has the link can see.
++ shared(user): anyone who's been explicitly selected by the owner can see.
++ private: only the owner can see.
+

@@ -154,6 +154,22 @@ CREATE TABLE IF NOT EXISTS %s_user_reg_request (
 )`, pfx))
 	err = tx.Commit(ctx)
 	if err != nil { return err }
+	// NOTE: the shared_user field in this table is implemented
+	// as an json kvtable (e.g. {"user1":true,"user2":true})
+	// for query w/ `shared_user ? USERNAME`.
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %s_snippet (
+    absid BIGINT GENERATED ALWAYS AS IDENTITY,
+    string_id VARCHAR(256),
+    name VARCHAR(64),
+    username VARCHAR(64) REFERENCES %s_user(user_name),
+	description VARCHAR(4096),
+    timestamp TIMESTAMP,
+    status SMALLINT,
+    shared_user JSONB
+)`, pfx, pfx))
+	err = tx.Commit(ctx)
+	if err != nil { return err }
 	return nil
 }
 

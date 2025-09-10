@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Edit file for snippet {{.BelongingUser}}:{{.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-snippet.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  <div class="snippet-info">
+		<h1 class="snippet-name">
+		  <span style="font-size: 2rem;line-height:100%">Edit File For Snippet</span> <br />
+		<a href="/u/{{.BelongingUser}}/snippet">{{.BelongingUser}}</a>:<a href="/snippet/{{.BelongingUser}}/{{.Name}}">{{.Name}}</a>
+		</h1>
+		<div class="snippet-nav">
+		  {{if and .LoginInfo (eq .BelongingUser .LoginInfo.UserName)}}
+		<a href="/snippet/{{.BelongingUser}}/{{.Name}}/setting">Setting</a>
+		{{end}}
+		</div>
+	  </div>
+	</header>
+
+
+	<hr />
+
+	<form method="POST" class="snippet-setting">
+	  <div class="field">File Name: {{.FileName}}</div>
+	  <div class="field"><label class="field-label" for="content">Content:</label> <textarea name="content" id="content">{{.FileContent}}</textarea></div>
+	  <input type="submit" value="Save" />
+	</form>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

@@ -150,6 +150,9 @@ type AegisConfig struct {
 	// confirm code manager.
 	// used in email 2fa.
 	ConfirmCodeManager AegisConfirmCodeManagerConfig `json:"confirmCode"`
+
+	// root directory for storing snippets.
+	SnippetRoot string `json:"snippetRoot"`
 }
 
 const (
@@ -451,7 +454,7 @@ func LoadConfigFile(p string) (*AegisConfig, error) {
 }
 
 func (cfg *AegisConfig) Sync() error {
-	p := cfg.FilePath 
+	p := cfg.FilePath
 	s, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil { return err }
 	st, err := os.Stat(p)

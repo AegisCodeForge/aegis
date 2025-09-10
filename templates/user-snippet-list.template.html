@@ -1,3 +1,4 @@
+{{$userName := .User.Name}}
 <!DOCTYPE html>
 <html>
   <head>
@@ -30,8 +31,8 @@
 	  </div>
 
 	  <div style="display: flex; flex-direction: column; flex-grow: 2">
-		<h2>Repository</h2>
-		<div><a href="/u/{{.User.Name}}/snippet">Snippet</a></div>
+		<h2>Snippets</h2>
+		<div><a href="/u/{{.User.Name}}">Repository</a></div>
 		<div class="list-nav">
 		  <div class="list-page-nav">
 			{{if gt .PageInfo.PageNum 1}}
@@ -57,26 +58,26 @@
 		  </div>
 		  <div class="list-search">
 		  <form class="list-search-form" action="" method="GET">
-			<label for="q">Search Repository:</label> <input class="list-search-tf" name="q" id="q" value="{{if .Query}}{{.Query}}{{end}}" />
+			<label for="q">Search Snippet:</label> <input class="list-search-tf" name="q" id="q" value="{{if .Query}}{{.Query}}{{end}}" />
 			<input type="submit" value="Search" />
 		  </form>
-		</div>
+		  </div>
 		</div>
 		<table class="list-table">
 		  <thead class="list-table-head">
 			<tr>
-			  <th>Repository</th>
-		<th>Description</th>
+			  <th>Snippet</th>
+			  <th>Description</th>
 			</tr>
 		  </thead>
 		  <tbody class="list-table-body">
-			{{range $value := .RepositoryList}}
-		<tr>
-		  <td><a href="{{getRepoPath $value.Namespace $value.Name}}">{{getRepoName $value.Namespace $value.Name}}</a></td>
-		<td>{{$value.Description}}</td>
-		  </tr>
-		  {{end}}
-		</tbody>
+			{{range $value := .SnippetList}}
+			<tr>
+			  <td><a href="/snippet/{{$userName}}/{{$value.Name}}">{{$value.Name}}</a></td>
+			  <td>{{$value.Description}}</td>
+			</tr>
+			{{end}}
+		  </tbody>
 		</table>
 	  </div>
 	</div>
