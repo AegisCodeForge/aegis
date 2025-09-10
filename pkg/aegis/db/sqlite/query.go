@@ -419,7 +419,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetRepositoryByName(nsName string, rep
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -618,7 +618,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(u
 	if len(username) > 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE repo_namespace = ?
 AND (repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
@@ -628,7 +628,7 @@ AND (repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? O
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE repo_namespace = ?
 AND (repo_status = 1 OR repo_status = 4)
 `, pfx))
@@ -670,7 +670,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryFromNamespace(ns strin
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE repo_namespace = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -784,7 +784,7 @@ func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name strin
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
+INSERT INTO %s_repository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
 VALUES (?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
@@ -817,7 +817,7 @@ func (dbif *SqliteAegisDatabaseInterface) SetUpCloneRepository(originNs string, 
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
+INSERT INTO %s_repository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
 VALUES (?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
@@ -851,7 +851,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateRepositoryInfo(ns string, name s
 	// TODO: these two queries can probaby be combined into one. fix this later.
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, repo_type FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT rowid, repo_type FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	v := stmt1.QueryRow(ns, name)
@@ -865,7 +865,7 @@ SELECT rowid, repo_type FROM %srepository WHERE repo_namespace = ? AND repo_name
 	if err != nil { tx.Rollback(); return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository
+UPDATE %s_repository
 SET repo_description = ?, repo_owner = ?, repo_status = ?
 WHERE rowid = ?
 `, pfx))
@@ -888,7 +888,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateRepositoryStatus(ns string, name
 	// TODO: these two queries can probaby be combined into one. fix this later.
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT rowid FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	v := stmt1.QueryRow(ns, name)
@@ -900,7 +900,7 @@ SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	tx, err := dbif.connection.Begin()
 	if err != nil { tx.Rollback(); return err }
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository
+UPDATE %s_repository
 SET repo_status = ?
 WHERE rowid = ?
 `, pfx))
@@ -916,7 +916,7 @@ func (dbif *SqliteAegisDatabaseInterface) MoveRepository(oldNs string, oldName s
 	// we first check if the new name is already taken
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT 1 FROM %srepository
+SELECT 1 FROM %s_repository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
@@ -928,7 +928,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	// this is sqlite thus we should be able to use rowid.
 	// for other db engine we would need a PRIMARY KEY INT AUTO_INCREMENT.
 	stmt2, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid FROM %srepository
+SELECT rowid FROM %s_repository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
@@ -938,7 +938,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt3, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository
+UPDATE %s_repository
 SET repo_namespace = ?, repo_name = ?
 WHERE rowid = ?
 `, pfx))
@@ -959,7 +959,7 @@ func (dbif *SqliteAegisDatabaseInterface) HardDeleteRepository(ns string, name s
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %srepository
+DELETE FROM %s_repository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { tx.Rollback(); return err }
@@ -1043,7 +1043,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSi
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1122,7 +1122,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllRepositoriesSearchResult(q str
 	searchPattern = "%" + searchPattern + "%"
 	stmt, err := dbif.connection.Prepare(
 		fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)`, pfx),
 	)
 	if err != nil { return 0, err }
@@ -1138,7 +1138,7 @@ WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)`, pfx),
 func (dbif *SqliteAegisDatabaseInterface) CountAllRepositories() (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(
-		fmt.Sprintf(`SELECT COUNT(*) FROM %srepository`, pfx),
+		fmt.Sprintf(`SELECT COUNT(*) FROM %s_repository`, pfx),
 	)
 	if err != nil { return 0, err }
 	defer stmt.Close()
@@ -1231,7 +1231,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum 
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_name, repo_fork_origin_namespace, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1312,7 +1312,7 @@ UPDATE %s_namespace SET ns_acl = ? WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) SetRepositoryACL(nsName string, repoName string, targetUserName string, aclt *model.ACLTuple) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_acl FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT repo_acl FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt1.Close()
@@ -1336,7 +1336,7 @@ SELECT repo_acl FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository SET repo_acl = ? WHERE repo_namespace = ? AND repo_name = ?
+UPDATE %s_repository SET repo_acl = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(aclStr, nsName, repoName)
@@ -1443,7 +1443,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(usern
 		upat := db.ToSqlSearchPattern(username)
 		stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository repo
+FROM %s_repository repo
 FULL JOIN (SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)) ns
 ON repo.repo_namespace = ns.ns_name
 WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
@@ -1457,7 +1457,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	} else {
 		stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository repo
+FROM %s_repository repo
 FULL JOIN (SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3) ns
 ON repo.repo_namespace = ns.ns_name
 WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
@@ -1599,7 +1599,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(us
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1616,7 +1616,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1635,7 +1635,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1651,7 +1651,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1751,7 +1751,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResul
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1765,7 +1765,7 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 			r = stmt.QueryRow(username, upattern, "\\", username, upattern, "\\", qpattern, "\\", qpattern, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1781,7 +1781,7 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -1794,7 +1794,7 @@ WHERE (
 			r = stmt.QueryRow(username, upattern, "\\", username, upattern, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
     SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
@@ -2127,14 +2127,14 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser 
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
@@ -2151,14 +2151,14 @@ ORDER BY repo_name ASC, repo_namespace ASC
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
@@ -2175,7 +2175,7 @@ ORDER BY repo_name ASC, repo_namespace ASC
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
@@ -2183,7 +2183,7 @@ ORDER BY repo_name ASC, repo_namespace ASC
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
@@ -2240,12 +2240,12 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllBelongingRepository(viewingUse
 	if len(viewingUser) <= 0 {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?) AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 `, pfx))
 		}
@@ -2259,12 +2259,12 @@ WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE 
 	} else if viewingUser == user {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 `, pfx))
@@ -2279,13 +2279,13 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 	} else {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
@@ -2310,7 +2310,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetForkRepositoryOfUser(username strin
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list
-FROM %srepository
+FROM %s_repository
 WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -3320,7 +3320,7 @@ SELECT rowid, username, email, password_hash, timestamp FROM %s_user_reg_request
 func (dbif *SqliteAegisDatabaseInterface) AddRepositoryLabel(ns string, name string, lbl string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name = ?
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? and repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt.QueryRow(ns, name)
@@ -3335,7 +3335,7 @@ SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name 
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
+UPDATE %s_repository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
@@ -3348,7 +3348,7 @@ UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_na
 func (dbif *SqliteAegisDatabaseInterface) RemoveRepositoryLabel(ns string, name string, lbl string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt.QueryRow(ns, name)
@@ -3364,7 +3364,7 @@ SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? AND repo_name 
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
+UPDATE %s_repository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
@@ -3377,7 +3377,7 @@ UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_na
 func (dbif *SqliteAegisDatabaseInterface) GetRepositoryLabel(ns string, name string) ([]string, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name = ?
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? and repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(ns, name)
@@ -3395,7 +3395,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountRepositoryWithLabel(username stri
 	var err error
 	if len(username) <= 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND repo_status = 1 OR repo_status = 4
 `, pfx))
@@ -3404,7 +3404,7 @@ AND repo_status = 1 OR repo_status = 4
 		if r.Err() != nil { return 0, r.Err() }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND (
     repo_status = 1 OR repo_status = 4 OR repo-status = 5
@@ -3426,7 +3426,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetRepositoryWithLabelPaginated(userna
 	var err error
 	if len(username) <= 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %srepository
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND repo_status = 1 OR repo_status = 4
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -3436,7 +3436,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if err != nil { return nil, err }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %srepository
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND (
     repo_status = 1 OR repo_status = 4 OR repo-status = 5
