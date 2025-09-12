@@ -73,6 +73,7 @@ type AegisConfig struct {
 
 	// http host name.
 	HttpHostName string `json:"hostName"`
+	// proper http host name (no trailing slash)
 	properHttpHostName string
 
 	// ssh host name.
@@ -271,6 +272,7 @@ type AegisConfirmCodeManagerConfig struct {
 	DefaultTimeoutMinute int `json:"defaultTimeoutMinute"`
 }
 
+// proper http host name. (no trailing slash.)
 func (cfg *AegisConfig) ProperHTTPHostName() string {
 	return cfg.properHttpHostName
 }

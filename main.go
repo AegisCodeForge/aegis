@@ -82,7 +82,7 @@ func main() {
 	// situation where we would absolutely not have the config file path. a
 	// `last-config` file is used as a hack to provide this info. see
 	// `docs/ssh.org` for more info.
-	if noConfig && len(mainCall) > 0 && mainCall[0] == "ssh" {
+	if noConfig && len(mainCall) > 0 && (mainCall[0] == "ssh" || mainCall[0] == "web-hooks") {
 		// assumes that we have a clone/push through ssh and assumes the program to be
 		// in the git user's ~/git-shell-commands. go doc said os.Executable may return
 		// symlink path if the program is run through symlink, but in this case we
@@ -96,8 +96,28 @@ func main() {
 		// we attempt to resolve config file location. this also means
 		// that on the same server one git user can only run one aegis
 		// instance on the same server.
+		// we first expect the executable to be at $HOME/git-shell-commands,
+		// which means we should reach $HOME by calling path.Dir twice.
 		lastCfgPath := path.Join(path.Dir(path.Dir(p)), "last-config")
 		f, err := os.ReadFile(lastCfgPath)
+		// if it's not found at that path, we try our best to find it
+		// from other places...
+		if err != nil {
+			subj := p
+			for err != nil {
+				d := path.Dir(subj)
+				tp := path.Join(d, "last-config")
+				f, err = os.ReadFile(tp)
+				if err == nil { break }
+				if path.Dir(d) == d {
+					// we've reached to the root of the fs. if we can't
+					// find it there, we have no chance of finding it.
+					fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
+					os.Exit(1)
+				}
+				subj = d
+			}
+		}
 		if err != nil {
 			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
 			os.Exit(1)
@@ -229,6 +249,18 @@ func main() {
 					return
 				}
 				HandleSSHLogin(&context, mainCall[1], mainCall[2])
+				return
+			case "web-hooks":
+				if len(mainCall) < 7 {
+					fmt.Print(gitlib.ToPktLine("Error format for `aegis web-hooks`."))
+					return
+				}
+				switch mainCall[1] {
+				case "send":
+					HandleWebHook(&context, mainCall[2], mainCall[3], mainCall[4], mainCall[5], mainCall[6])
+				default:
+					fmt.Print(gitlib.ToPktLine(fmt.Sprintf("Error command for `aegis web-hooks`: %s.", mainCall[1])))
+				}
 				return
 			}
 		}

@@ -9,6 +9,7 @@ import (
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
+	"github.com/bctnry/aegis/pkg/gitlib"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
@@ -814,6 +815,133 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			}
 
 			rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting/label", rfn), 0, "Added", "The specific tag has been added to the repository.", w, r)
+		},
+	))
+	
+	http.HandleFunc("GET /repo/{repoName}/setting/webhook",
+		UseMiddleware(
+			[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+			func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {		rfn := r.PathValue("repoName")
+				if !model.ValidRepositoryName(rfn) {
+					ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+					return
+				}
+				nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
+					return
+				}
+				if ctx.Config.UseNamespace && ns == nil {
+					ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+					return
+				}
+				if repo == nil {
+					ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+					return
+				}
+				repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
+				if !rc.LoginInfo.LoggedIn { FoundAt(w, repoPath); return }
+				// NOTE: we don't support editing namespace from web ui when in plain mode.
+				if rc.Config.PlainMode { FoundAt(w, repoPath); return }
+				isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+				isNsOwner := ns.Owner == rc.LoginInfo.UserName
+				rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+				repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+				nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+				isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+				if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
+					ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+						"Not enouhg privilege",
+						"Your user account seems to not have enough privilege for this action.",
+						w, r,
+					)
+					return
+				}
+				rc.LoginInfo.IsSettingMember = true
+				LogTemplateError(ctx.LoadTemplate("repo-setting/edit-webhook").Execute(w, templates.RepositorySettingEditWebHookTemplateModel{
+					Config: ctx.Config,
+					Repository: repo,
+					RepoFullName: rfn,
+					LoginInfo: rc.LoginInfo,
+				}))
+
+			},
+		),
+	)
+	
+	http.HandleFunc("POST /repo/{repoName}/setting/webhook", UseMiddleware(
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			if !model.ValidRepositoryName(rfn) {
+				ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
+				return
+			}
+			err := r.ParseForm()
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			lgr, ok := repo.Repository.(*gitlib.LocalGitRepository)
+			if !ok {
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 5, "Unsupported", "Webhooks only supports Git repositories.", w, r)
+				return
+			}
+			repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
+			if !rc.LoginInfo.LoggedIn { FoundAt(w, repoPath); return }
+			if rc.Config.PlainMode { FoundAt(w, repoPath); return }
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+					"Not enouhg privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = true
+			enableWebhook := len(r.Form.Get("enable")) > 0
+			repo.WebHookConfig.Enable = enableWebhook
+			repo.WebHookConfig.PayloadType = "json"
+			repo.WebHookConfig.Secret = strings.TrimSpace(r.Form.Get("secret"))
+			repo.WebHookConfig.TargetURL = strings.TrimSpace(r.Form.Get("target-url"))
+			err = rc.DatabaseInterface.UpdateRepositoryInfo(repo.Namespace, repo.Name, repo)
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to update repository info: %s", err), w, r)
+				return
+			}
+			if enableWebhook {
+				err = lgr.EnableWebHook(repo.FullName())
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed to setup webhook: %s", err), w, r)
+					return
+				}
+			} else {
+				err = lgr.DisableWebHook()
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed to disable webhook: %s", err), w, r)
+					return
+				}
+			}
+			rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting/webhook", repo.FullName()), 5, "Updated", "Your configuration of webhooks has been saved.", w, r)
 		},
 	))
 }

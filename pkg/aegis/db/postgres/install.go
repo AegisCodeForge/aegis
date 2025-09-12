@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS %s_repository (
     repo_fork_origin_namespace VARCHAR(64),
     repo_fork_origin_name VARCHAR(64),
     repo_label_list VARCHAR(512),
+    repo_webhook JSONB,
     UNIQUE (repo_namespace, repo_name)
 )`, pfx, pfx))
 	if err != nil { return err }

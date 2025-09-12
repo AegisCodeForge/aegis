@@ -114,6 +114,7 @@ func parseCommitObject(objid string, f io.Reader) (*CommitObject, error) {
 			Time: res.AuthorInfo.Time,
 		})
 	}
+	res.CommitTime = res.CommitterInfo.Time
 	res.rawData = sourceBytes
 	res.Signature = strings.Join(sig, "\n")
 	return &res, nil

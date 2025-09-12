@@ -1,0 +1,55 @@
+{{$repoName := .Repository.Name}}
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Settings of {{.Repository.Namespace}}:{{.Repository.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-repo-setting.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  {{template "_repo-header" .}}
+	</header>
+	<hr />
+
+	<main>
+	  {{template "repo-setting/_sidebar" .}}
+
+	  <div class="main-side">
+		
+		{{if .ErrorMsg}}
+		<div class="error-msg">{{.ErrorMsg}}</div>
+		{{end}}
+
+		<h2>Edit Webhook Setting</h2>
+
+		<form id="repository-setting-form" action="" method="POST">
+		  <div class="field"><label class="field-chkbox-label" for="enable">Enable Webhook:</label> <input type="checkbox" name="enable" id="enable" {{if .Repository.WebHookConfig.Enable}}checked{{end}} /></div>
+		  <div class="field">
+			<label class="field-label" for="secret">Secret:</label>
+			<input class="field-tf" name="secret" id="secret" value="{{.Repository.WebHookConfig.Secret}}" />
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="target-url">Target URL:</label>
+			<input class="field-tf" name="target-url" id="target-url" value="{{.Repository.WebHookConfig.TargetURL}}" />
+		  </div>
+		  <div class="field">
+			<input class="field-submit" type="submit" value="Update" />
+		  </div>
+		</form>
+
+
+	  </div>
+	</main>
+
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

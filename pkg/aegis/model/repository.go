@@ -1,8 +1,8 @@
 package model
 
 import (
+	"encoding/json"
 	"fmt"
-
 )
 
 type AegisRepositoryStatus int
@@ -47,6 +47,7 @@ func ValidStrictRepositoryName(s string) bool {
 type LocalRepository any
 
 type Repository struct {
+	AbsId int64 `json:"absid"`
 	Type uint8 `json:"type"`
 	Namespace string `json:"namespace"`
 	Name string `json:"name"`
@@ -60,6 +61,26 @@ type Repository struct {
 	ForkOriginName string `json:"forkOriginName"`
 	// reserved for features in the future.
 	RepoLabelList []string `json:"labelList"`
+	WebHookConfig *WebHookConfig `json:"webHookConfig"`
+}
+
+func ParseWebHookConfig(s string) (*WebHookConfig, error) {
+	var r WebHookConfig
+	err := json.Unmarshal([]byte(s), &r)
+	if err != nil { return nil, err }
+	return &r, nil
+}
+func (whc *WebHookConfig) String() string {
+	r, _ := json.Marshal(whc)
+	return string(r)
+}
+
+type WebHookConfig struct {
+	Enable bool `json:"enable"`
+	Secret string `json:"secret"`
+	TargetURL string `json:"targetUrl"`
+	// the type of the payload. currently only supports "json".
+	PayloadType string `json:"payloadType"`
 }
 
 func NewRepository(ns string, name string, localgr LocalRepository) (*Repository, error) {
