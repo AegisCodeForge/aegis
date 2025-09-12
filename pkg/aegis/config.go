@@ -3,14 +3,15 @@ package aegis
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"path"
 	"slices"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/gitlib"
 )
 
 type AegisConfig struct {
@@ -399,8 +400,13 @@ func (c *AegisConfig) RecalculateProperPath() error {
 			RawFragment: "",
 		}
 		c.properSshHostName = actualU.String()
+		host := u.Host
+		if strings.ContainsRune(host, ':') {
+			h, _, _ := net.SplitHostPort(host)
+			host = h
+		}
 		if u.Port() == "" || u.Port() == "22" {
-			c.gitSshHostName = fmt.Sprintf("%s@%s:", c.GitUser, u.Host)
+			c.gitSshHostName = fmt.Sprintf("%s@%s:", c.GitUser, host)
 		} else {
 			c.gitSshHostName = actualU.String()
 			if !strings.HasSuffix(c.gitSshHostName, "/") {
