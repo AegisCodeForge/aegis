@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/templates"
 )
 
@@ -91,6 +92,19 @@ var ErrorGuard Middleware = func(f HandlerFunc) HandlerFunc {
 			return
 		}
 		f(ctx, w, r)
+	}
+}
+
+func ValidRepositoryNameRequired(s string) Middleware {
+	return func(f HandlerFunc) HandlerFunc {
+		return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
+			repoName := r.PathValue(s)
+			if !model.ValidRepositoryName(repoName) {
+				ctx.ReportNotFound(repoName, "Repository", "Namespace", w, r)
+				return
+			}
+			f(ctx, w, r)
+		}
 	}
 }
 

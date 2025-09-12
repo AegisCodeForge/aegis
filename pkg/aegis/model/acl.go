@@ -15,6 +15,7 @@ type ACLTuple struct {
 	ArchiveRepository bool `json:"archiveRepo"`
 	DeleteRepository bool `json:"deleteRepo"`
 	EditHooks bool `json:"editHooks"`
+	EditWebHooks bool `json:"editWebHooks"`
 }
 
 type ACL struct {
@@ -26,7 +27,7 @@ func (aclt *ACLTuple) HasSettingPrivilege() bool {
 	if aclt == nil { return false }
 	// NOTE THAT having PushToRepository permission does not mean a
 	// user is allowed to go into the setting panels of things.
-	return aclt.AddMember || aclt.DeleteMember || aclt.EditMember || aclt.AddRepository || aclt.EditInfo || aclt.ArchiveRepository || aclt.DeleteRepository || aclt.EditHooks
+	return aclt.AddMember || aclt.DeleteMember || aclt.EditMember || aclt.AddRepository || aclt.EditInfo || aclt.ArchiveRepository || aclt.DeleteRepository || aclt.EditHooks || aclt.EditWebHooks
 }
 
 func NewACL() *ACL {
@@ -69,6 +70,7 @@ func ToCommaSeparatedString(aclt *ACLTuple) string {
 	if aclt.ArchiveRepository { res = append(res, "archiveRepo") }
 	if aclt.DeleteRepository { res = append(res, "deleteRepo") }
 	if aclt.EditHooks { res = append(res, "editHooks") }
+	if aclt.EditWebHooks { res = append(res, "editWebHooks") }
 	return strings.Join(res, ",")
 }
 

@@ -15,138 +15,163 @@ import (
 )
 
 func bindRepositorySettingController(ctx *RouterContext) {
-	http.HandleFunc("GET /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request){
-		rfn := r.PathValue("repoName")
-		if !model.ValidRepositoryName(rfn) {
-			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
-			return
-		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				FoundAt(w, "/login")
+	http.HandleFunc("GET /repo/{repoName}/setting", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
+			ValidRepositoryNameRequired("repoName"),
+		}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-		}
-		
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		// NOTE: we don't support editing namespace from web ui when in plain mode.
-		if ctx.Config.PlainMode { FoundAt(w, repoPath); return }
-		
-
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
-				"Not enouhg privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		loginInfo.IsSettingMember = true
-		LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, templates.RepositorySettingTemplateModel{
-			Config: ctx.Config,
-			Repository: repo,
-			RepoFullName: rfn,
-			LoginInfo: loginInfo,
-		}))
-	}))
-
-	http.HandleFunc("POST /repo/{repoName}/setting", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		if !model.ValidRepositoryName(rfn) {
-			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
-			return
-		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				FoundAt(w, "/login")
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
 				return
 			}
-		}
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-			
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		loginInfo.IsSettingMember = isSettingMember
-		err = r.ParseForm()
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		anythingChanged := false
-		newOwner := strings.TrimSpace(r.Form.Get("owner"))
-		if repo.Owner != newOwner {
-			if !isOwner && !isNsOwner && !loginInfo.IsAdmin && newOwner != repo.Owner {
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+					"Not enouhg privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = true
+			LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, templates.RepositorySettingTemplateModel{
+				Config: ctx.Config,
+				Repository: repo,
+				RepoFullName: rfn,
+				LoginInfo: rc.LoginInfo,
+			}))
+		},
+	))
+
+	http.HandleFunc("POST /repo/{repoName}/setting", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
+			ValidRepositoryNameRequired("repoName"),
+		}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			isOwner := isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			if !rc.LoginInfo.IsAdmin && !isOwner && !isSettingMember {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = isSettingMember
+			err = r.ParseForm()
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			anythingChanged := false
+			newOwner := strings.TrimSpace(r.Form.Get("owner"))
+			if repo.Owner != newOwner {
+				if !isOwner && !isNsOwner && !rc.LoginInfo.IsAdmin && newOwner != repo.Owner {
+					ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+						"Not enough privilege",
+						"Your user account seems to not have enough privilege for this action.",
+						w, r,
+					)
+					return
+				}
+				repo.Owner = newOwner
+				anythingChanged = true
+			}
+			newDescription := strings.TrimSpace(r.Form.Get("description"))
+			if repo.Description != newDescription {
+				anythingChanged = true
+			}
+			i, err := strconv.Atoi(r.Form.Get("status"))
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			hasEditInfoPriv := rc.LoginInfo.IsAdmin || isOwner || (repoPriv != nil && repoPriv.EditInfo) || (nsPriv != nil && nsPriv.EditInfo)
+			if anythingChanged && !hasEditInfoPriv {
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 5, "Not Enough Privilege", "You don't have enough privilege to perform this action.", w, r)
+				return
+			}
+			repo.Description = newDescription
+			repo.Status = model.AegisRepositoryStatus(i)
+			err = ctx.DatabaseInterface.UpdateRepositoryInfo(repo.Namespace, repo.Name, repo)
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to update repository info: %s", err), w, r)
+				return
+			}
+			LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, &templates.RepositorySettingTemplateModel{
+				Config: rc.Config,
+				LoginInfo: rc.LoginInfo,
+				Repository: repo,
+				RepoFullName: rfn,
+				ErrorMsg: "Updated.",
+			}))
+		},
+	))
+
+	http.HandleFunc("GET /repo/{repoName}/delete", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
+			ValidRepositoryNameRequired("repoName"),
+		}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			canDeleteRepo := (repoPriv != nil && repoPriv.DeleteRepository) || (nsPriv != nil && nsPriv.DeleteRepository)
+			if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !canDeleteRepo {
 				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
 					"Not enough privilege",
 					"Your user account seems to not have enough privilege for this action.",
@@ -154,302 +179,170 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				)
 				return
 			}
-			repo.Owner = newOwner
-			anythingChanged = true
-		}
-		newDescription := strings.TrimSpace(r.Form.Get("description"))
-		if repo.Description != newDescription {
-			anythingChanged = true
-		}
-		i, err := strconv.Atoi(r.Form.Get("status"))
-		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("namespace-setting/change-info").Execute(w, &templates.RepositorySettingTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Repository: repo,
-				RepoFullName: rfn,
-				ErrorMsg: "Invalid status value. Please try again.",
-			}))
-			return
-		}
-		hasEditInfoPriv := loginInfo.IsAdmin || isOwner || (repoPriv != nil && repoPriv.EditInfo) || (nsPriv != nil && nsPriv.EditInfo)
-		if anythingChanged && !hasEditInfoPriv {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, &templates.RepositorySettingTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Repository: repo,
-				RepoFullName: rfn,
-				ErrorMsg: "Not enough privilege.",
-			}))
-			return
-		}
-		repo.Description = newDescription
-		repo.Status = model.AegisRepositoryStatus(i)
-		err = ctx.DatabaseInterface.UpdateRepositoryInfo(repo.Namespace, repo.Name, repo)
-		if err != nil {
-			LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, &templates.RepositorySettingTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				Repository: repo,
-				RepoFullName: rfn,
-				ErrorMsg: fmt.Sprintf("Internal error while updating repo: %s.", err.Error()),
-			}))
-			return
-		}
-		LogTemplateError(ctx.LoadTemplate("repo-setting/change-info").Execute(w, &templates.RepositorySettingTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Repository: repo,
-			RepoFullName: rfn,
-			ErrorMsg: "Updated.",
-		}))
-	}))
 
-	http.HandleFunc("GET /repo/{repoName}/delete", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		if !model.ValidRepositoryName(rfn) {
-			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
-			return
-		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				FoundAt(w, "/login")
+			err = ctx.DatabaseInterface.HardDeleteRepository(repo.Namespace, repo.Name)
+			if err != nil {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Internal error",
+					fmt.Sprintf("Failed to delete repository: %s.", err.Error()),
+					w, r,
+				)
 				return
 			}
-		}
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
+			redirectTarget := "/"
+			if ctx.Config.UseNamespace { redirectTarget = fmt.Sprintf("/s/%s", ns.Name) }
+			ctx.ReportRedirect(redirectTarget, 3, "Deleted.", "The specified repository is deleted.", w, r)
+		},
+	))
 
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		canDeleteRepo := (repoPriv != nil && repoPriv.DeleteRepository) || (nsPriv != nil && nsPriv.DeleteRepository)
-		if !loginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !canDeleteRepo {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-
-		err = ctx.DatabaseInterface.HardDeleteRepository(repo.Namespace, repo.Name)
-		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
-				"Internal error",
-				fmt.Sprintf("Failed to delete repository: %s.", err.Error()),
-				w, r,
-			)
-			return
-		}
-		redirectTarget := "/"
-		if ctx.Config.UseNamespace { redirectTarget = fmt.Sprintf("/s/%s", ns.Name) }
-		ctx.ReportRedirect(redirectTarget, 3, "Deleted.", "The specified repository is deleted.", w, r)
-	}))
-
-	http.HandleFunc("GET /repo/{repoName}/setting/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				FoundAt(w, "/login")
+	http.HandleFunc("GET /repo/{repoName}/setting/member", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
+			ValidRepositoryNameRequired("repoName"),
+		}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-		}
-		rfn := r.PathValue("repoName")
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
-		if !loginInfo.IsAdmin && !isOwner && !isSettingMember {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
-		loginInfo.IsSettingMember = isSettingMember
-
-		var userList map[string]*model.ACLTuple
-		if repo.AccessControlList == nil {
-			userList = nil
-		} else {
-			userList = repo.AccessControlList.ACL
-		}
-		totalMemberCount := len(userList)
-		pageInfo, err := GeneratePageInfo(r, totalMemberCount)
-		k := auxfuncs.SortedKeys(userList)
-		
-		stidx := (pageInfo.PageNum-1)*pageInfo.PageSize
-		eidx := min(stidx+pageInfo.PageSize, totalMemberCount)
-		k = k[stidx:eidx]
-		page := make(map[string]*model.ACLTuple, 4)
-		if eidx - stidx > 0 {
-			for _, item := range k {
-				page[item] = userList[item]
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
 			}
-			userList = page
-		}
-		
-		LogTemplateError(ctx.LoadTemplate("repo-setting/member-list").Execute(w, templates.RepositorySettingMemberListTemplateModel{
-			Config: ctx.Config,
-			Repository: repo,
-			RepoFullName: rfn,
-			LoginInfo: loginInfo,
-			ACL: page,
-			PageInfo: pageInfo,
-		}))
-	}))
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			isOwner := isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
+			if !rc.LoginInfo.IsAdmin && !isOwner && !isSettingMember {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
+			rc.LoginInfo.IsSettingMember = isSettingMember
+
+			var userList map[string]*model.ACLTuple
+			if repo.AccessControlList == nil {
+				userList = nil
+			} else {
+				userList = repo.AccessControlList.ACL
+			}
+			totalMemberCount := len(userList)
+			pageInfo, err := GeneratePageInfo(r, totalMemberCount)
+			k := auxfuncs.SortedKeys(userList)
+			
+			stidx := (pageInfo.PageNum-1)*pageInfo.PageSize
+			eidx := min(stidx+pageInfo.PageSize, totalMemberCount)
+			k = k[stidx:eidx]
+			page := make(map[string]*model.ACLTuple, 4)
+			if eidx - stidx > 0 {
+				for _, item := range k {
+					page[item] = userList[item]
+				}
+				userList = page
+			}
+			
+			LogTemplateError(ctx.LoadTemplate("repo-setting/member-list").Execute(w, templates.RepositorySettingMemberListTemplateModel{
+				Config: ctx.Config,
+				Repository: repo,
+				RepoFullName: rfn,
+				LoginInfo: rc.LoginInfo,
+				ACL: page,
+				PageInfo: pageInfo,
+			}))
+
+		},
+	))
 	
-	http.HandleFunc("POST /repo/{repoName}/setting/member", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		rfn := r.PathValue("repoName")
-		if !model.ValidRepositoryName(rfn) {
-			ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
-			return
-		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				FoundAt(w, "/login")
+	http.HandleFunc("POST /repo/{repoName}/setting/member", UseMiddleware(
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			if !model.ValidRepositoryName(rfn) {
+				ctx.ReportNotFound(rfn, "Repository", "Namespace", w, r)
 				return
 			}
-		}
-		nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if ctx.Config.UseNamespace && ns == nil {
-			ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
-			return
-		}
-		if repo == nil {
-			ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
-			return
-		}
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-		if !loginInfo.LoggedIn { FoundAt(w, repoPath); return }
-		
-		isRepoOwner := repo.Owner == loginInfo.UserName
-		isNsOwner := ns.Owner == loginInfo.UserName
-		loginInfo.IsOwner = isRepoOwner || isNsOwner
-		isOwner := isRepoOwner || isNsOwner
-		repoPriv := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-		nsPriv := ns.ACL.GetUserPrivilege(loginInfo.UserName)
-		hasAddMemberPriv := (nsPriv != nil && nsPriv.AddMember) || (repoPriv != nil && repoPriv.AddMember)
-		if !loginInfo.IsAdmin && !isOwner && !hasAddMemberPriv {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
-				"Not enough privilege",
-				"Your user account seems to not have enough privilege for this action.",
-				w, r,
-			)
-			return
-		}
+			nsName, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if ctx.Config.UseNamespace && ns == nil {
+				ctx.ReportNotFound(repo.Namespace, "Namespace", "depot", w, r)
+				return
+			}
+			if repo == nil {
+				ctx.ReportNotFound(repoName, "Repository", nsName, w, r)
+				return
+			}
+			repoPath := fmt.Sprintf("/repo/%s", rfn)
+			if !rc.LoginInfo.LoggedIn { FoundAt(w, repoPath); return }
+			
+			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
+			isNsOwner := ns.Owner == rc.LoginInfo.UserName
+			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
+			isOwner := isRepoOwner || isNsOwner
+			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			hasAddMemberPriv := (nsPriv != nil && nsPriv.AddMember) || (repoPriv != nil && repoPriv.AddMember)
+			if !rc.LoginInfo.IsAdmin && !isOwner && !hasAddMemberPriv {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/setting", rfn), 0,
+					"Not enough privilege",
+					"Your user account seems to not have enough privilege for this action.",
+					w, r,
+				)
+				return
+			}
 
-		err = r.ParseForm()
-		if err != nil {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
-				"Invalid request",
-				"Failed to parse request.",
-				w, r,
-			)
-			return
-		}
-		username := strings.TrimSpace(r.Form.Get("username"))
-		if len(username) <= 0 {
-			ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
-				"Invalid request",
-				"User name cannot be empty.",
-				w, r,
-			)
-			return
-		}
-		t := &model.ACLTuple{
-			AddMember: len(r.Form.Get("addMember")) > 0,
-			DeleteMember: len(r.Form.Get("deleteMember")) > 0,
-			EditMember: len(r.Form.Get("editMember")) > 0,
-			AddRepository: false,
-			EditInfo: len(r.Form.Get("editInfo")) > 0,
-			PushToRepository: len(r.Form.Get("pushToRepo")) > 0,
-			ArchiveRepository: len(r.Form.Get("archiveRepo")) > 0,
-			DeleteRepository: len(r.Form.Get("deleteRepo")) > 0,
-			EditHooks: len(r.Form.Get("editHooks")) > 0,
-		}
-		err = ctx.DatabaseInterface.SetRepositoryACL(repo.Namespace, repo.Name, username, t)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		FoundAt(w, fmt.Sprintf("/repo/%s/setting/member", rfn))
-	}))
+			err = r.ParseForm()
+			if err != nil {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+					"Invalid request",
+					"Failed to parse request.",
+					w, r,
+				)
+				return
+			}
+			username := strings.TrimSpace(r.Form.Get("username"))
+			if len(username) <= 0 {
+				ctx.ReportRedirect(fmt.Sprintf("/repo/%s/member", rfn), 0,
+					"Invalid request",
+					"User name cannot be empty.",
+					w, r,
+				)
+				return
+			}
+			t := &model.ACLTuple{
+				AddMember: len(r.Form.Get("addMember")) > 0,
+				DeleteMember: len(r.Form.Get("deleteMember")) > 0,
+				EditMember: len(r.Form.Get("editMember")) > 0,
+				AddRepository: false,
+				EditInfo: len(r.Form.Get("editInfo")) > 0,
+				PushToRepository: len(r.Form.Get("pushToRepo")) > 0,
+				ArchiveRepository: len(r.Form.Get("archiveRepo")) > 0,
+				DeleteRepository: len(r.Form.Get("deleteRepo")) > 0,
+				EditWebHooks: len(r.Form.Get("editWebHooks")) > 0,
+			}
+			err = ctx.DatabaseInterface.SetRepositoryACL(repo.Namespace, repo.Name, username, t)
+			if err != nil {
+				ctx.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			FoundAt(w, fmt.Sprintf("/repo/%s/setting/member", rfn))
+
+		},
+	))
 
 	http.HandleFunc("GET /repo/{repoName}/setting/member/{userName}/edit", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		rfn := r.PathValue("repoName")
@@ -848,8 +741,8 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
 				repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
 				nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
-				isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
-				if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
+				allowEdit := (repoPriv != nil && repoPriv.EditWebHooks) || (nsPriv != nil && nsPriv.EditWebHooks)
+				if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !allowEdit {
 					ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
 						"Not enouhg privilege",
 						"Your user account seems to not have enough privilege for this action.",
@@ -908,8 +801,8 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
 			repoPriv := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
 			nsPriv := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
-			isSettingMember := repoPriv.HasSettingPrivilege() || nsPriv.HasSettingPrivilege()
-			if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !isSettingMember {
+			allowEdit := (repoPriv != nil && repoPriv.EditWebHooks) || (nsPriv != nil && nsPriv.EditWebHooks)
+			if !rc.LoginInfo.IsAdmin && !isRepoOwner && !isNsOwner && !allowEdit {
 				ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
 					"Not enouhg privilege",
 					"Your user account seems to not have enough privilege for this action.",
