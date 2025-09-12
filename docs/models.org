@@ -98,6 +98,8 @@ NOTE THAT this is only a general guide of how the tables would be implemented. t
   	repo_fork_origin_name TEXT,
   	-- fully quoted. (see docs/fuuly-quoted-pattern.org)
   	repo_label_list TEXT
+  	-- webhook config. currently only available for git repo.
+  	repo_webhook TEXT
   );
   CREATE TABLE IF NOT EXISTS aegis_repo_redirect (
       old_ns TEXT,

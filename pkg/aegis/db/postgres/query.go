@@ -258,14 +258,15 @@ func (dbif *PostgresAegisDatabaseInterface) GetRepositoryByName(nsName string, r
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_namespace = $1 AND repo_name = $2
 `, pfx), nsName, repoName)
-	var description, owner, acl, forkOriginNamespace, forkOriginName string
+	var description, owner, acl, forkOriginNamespace, forkOriginName, webhook string
 	var repoType, repoStatus int
+	var rowid int64
 	var labelList string
-	err := stmt.Scan(&repoType, &description, &owner, &acl, &repoStatus, &forkOriginNamespace, &forkOriginName, &labelList)
+	err := stmt.Scan(&repoType, &description, &owner, &acl, &repoStatus, &forkOriginNamespace, &forkOriginName, &labelList, &webhook, &rowid)
 	if errors.Is(err, pgx.ErrNoRows) { return nil, db.ErrEntityNotFound }
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
@@ -273,6 +274,7 @@ WHERE repo_namespace = $1 AND repo_name = $2
 	if err != nil { return nil, err }
 	res, err := model.NewRepository(nsName, repoName, localRepo)
 	if err != nil { return nil, err }
+	res.AbsId = rowid
 	res.Type = uint8(repoType)
 	res.Owner = owner
 	res.Status = model.AegisRepositoryStatus(repoStatus)
@@ -286,6 +288,9 @@ WHERE repo_namespace = $1 AND repo_name = $2
 	aclobj, err := model.ParseACL(acl)
 	if err != nil { return nil, err }
 	res.AccessControlList = aclobj
+	webhookobj, err := model.ParseWebHookConfig(webhook)
+	if err != nil { return nil, err }
+	res.WebHookConfig = webhookobj
 	return res, nil
 }
 
@@ -470,7 +475,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(use
 	var err error
 	if len(username) > 0 {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
@@ -478,7 +483,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 		fmt.Println("tmt", err)
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_status = 1
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
@@ -487,17 +492,21 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, description, owner, acl, forkOriginNs, forkOriginName string
+	var ns, name, description, owner, acl, forkOriginNs, forkOriginName, webhookstr string
 	var rType, rStatus int
+	var rowid int64
 	for stmt.Next() {
-		err = stmt.Scan(&rType, &ns, &name, &description, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName)
+		err = stmt.Scan(&rType, &ns, &name, &description, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		m, err := model.CreateLocalRepository(uint8(rType), ns, name, p)
 		if err != nil { return nil, err }
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Namespace: ns,
 			Name: name,
 			Description: description,
@@ -508,6 +517,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			Repository: m,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return  res, nil
@@ -522,14 +532,14 @@ func (dbif *PostgresAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(
 		queryPattern := db.ToSqlSearchPattern(query)
 		if len(username) > 0 {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, repo_absid
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3) AND ((repo_namespace LIKE $4 ESCAPE $5) OR (repo_name LIKE $6 ESCAPE $7))
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize, username, queryPattern, "%", queryPattern, "%")
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_status = 1
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
@@ -538,14 +548,14 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 	} else {
 		if len(username) > 0 {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_status = 1 OR repo_owner = $3 OR repo_acl->'acl' ? $3
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize, username)
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_status = 1
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
@@ -555,17 +565,21 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, description, owner, acl, forkOriginNs, forkOriginName string
+	var ns, name, description, owner, acl, forkOriginNs, forkOriginName, webhookstr string
 	var rType, rStatus int
+	var rowid int64
 	for stmt.Next() {
-		err = stmt.Scan(&rType, &ns, &name, &description, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName)
+		err = stmt.Scan(&rType, &ns, &name, &description, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		m, err := model.CreateLocalRepository(uint8(rType), ns, name, p)
 		if err != nil { return nil, err }
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Namespace: ns,
 			Name: name,
 			Description: description,
@@ -576,6 +590,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			Repository: m,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return  res, nil
@@ -618,17 +633,18 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllRepositoryFromNamespace(name s
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_namespace = $1
 `, pfx), name)
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	res := make(map[string]*model.Repository, 0)
+	var rType, rStatus int
+	var repoName, desc, owner, acl, forkOriginNs, forkOriginName, labelList, webhookstr string
+	var rowid int64
 	for stmt.Next() {
-		var rType, rStatus int
-		var repoName, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
-		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
+		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -639,7 +655,9 @@ WHERE repo_namespace = $1
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
 		res[name] = &model.Repository{
+			AbsId: rowid,
 			Namespace: name,
 			Name: repoName,
 			Description: desc,
@@ -651,6 +669,7 @@ WHERE repo_namespace = $1
 			ForkOriginName: forkOriginName,
 			Repository: m,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		}
 	}
 	return res, nil
@@ -663,13 +682,13 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace
 	var err error
 	if len(username) > 0 {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_namespace = $1 AND repo_status = 1
 `, pfx), ns)
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, repo_absid
 FROM %s_repository
 WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'acl' ? $2)
 `, pfx), ns, username)
@@ -678,10 +697,11 @@ WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'
 	defer stmt.Close()
 	res := make([]*model.Repository, 0)
 	var rType, rStatus int
-	var repoName, desc, owner, acl, forkOriginNs, forkOriginName string
+	var repoName, desc, owner, acl, forkOriginNs, forkOriginName, webhookstr string
 	var labelList string
+	var rowid int64
 	for stmt.Next() {
-		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
+		err := stmt.Scan(&rType, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -692,7 +712,9 @@ WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Namespace: ns,
 			Name: repoName,
 			Description: desc,
@@ -704,6 +726,7 @@ WHERE repo_namespace = $1 AND (repo_status = 1 OR repo_owner = $2 OR repo_acl->'
 			ForkOriginName: forkOriginName,
 			Repository: m,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -906,10 +929,11 @@ func (dbif *PostgresAegisDatabaseInterface) CreateRepository(ns string, name str
 	tx, err := dbif.pool.Begin(ctx)
 	if err != nil { return nil, err }
 	defer tx.Rollback(ctx)
+	webhookobj := new(model.WebHookConfig)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-`, pfx), repoType, ns, name, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, new(string), new(string), new(string))
+INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+`, pfx), repoType, ns, name, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, new(string), new(string), new(string), webhookobj)
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	if err = os.RemoveAll(p); err != nil { return nil, err }
@@ -923,6 +947,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	r.Type = repoType
 	r.Owner = owner
 	r.RepoLabelList = nil
+	r.WebHookConfig = webhookobj
 	return r, nil
 }
 
@@ -933,10 +958,11 @@ func (dbif *PostgresAegisDatabaseInterface) SetUpCloneRepository(originNs string
 	tx, err := dbif.pool.Begin(ctx)
 	if err != nil { return nil, err }
 	defer tx.Rollback(ctx)
+	webhookobj := new(model.WebHookConfig)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-`, pfx), model.REPO_TYPE_GIT, targetNs, targetName, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, originNs, originName, new(string))
+INSERT INTO %s_repository(repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+`, pfx), model.REPO_TYPE_GIT, targetNs, targetName, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, originNs, originName, new(string), webhookobj)
 	if err != nil { return nil, err }
 	originP := path.Join(dbif.config.GitRoot, originNs, originName)
 	targetP := path.Join(dbif.config.GitRoot, targetNs, targetName)
@@ -951,6 +977,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	r.Type = model.REPO_TYPE_GIT
 	r.Owner = owner
 	r.RepoLabelList = nil
+	r.WebHookConfig = webhookobj
 	return r, nil
 }
 
@@ -962,9 +989,9 @@ func (dbif *PostgresAegisDatabaseInterface) UpdateRepositoryInfo(ns string, name
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 UPDATE %s_repository
-SET repo_description = $1, repo_owner = $2, repo_status = $3
+SET repo_description = $1, repo_owner = $2, repo_status = $3, repo_webhook = $6
 WHERE repo_namespace = $4 AND repo_name = $5
-`, pfx), robj.Description, robj.Owner, robj.Status, ns, name)
+`, pfx), robj.Description, robj.Owner, robj.Status, ns, name, robj.WebHookConfig)
 	if err != nil { return err }
 	if err = tx.Commit(ctx); err != nil { return err }
 	return nil
@@ -1072,7 +1099,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllRepositories(pageNum int, page
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, repo_absid
 FROM %s_repository
 ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 `, pfx), pageSize, pageNum*pageSize)
@@ -1080,10 +1107,11 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 	defer stmt.Close()
 	res := make([]*model.Repository, 0)
 	var rType int
-	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
+	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName, labelList, webhookstr string
 	var rStatus int
+	var rowid int64
 	for stmt.Next() {
-		err = stmt.Scan(&rType, &ns, &name, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
+		err = stmt.Scan(&rType, &ns, &name, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1094,7 +1122,10 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: uint8(rType),
 			Namespace: ns,
 			Name: name,
@@ -1106,6 +1137,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -1277,7 +1309,7 @@ func (dbif *PostgresAegisDatabaseInterface) SearchForRepository(k string, pageNu
 	ctx := context.Background()
 	pattern := db.ToSqlSearchPattern(k)
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, repo_rowid
 FROM %s_repository
 WHERE repo_namespace LIKE $1 ESCAPE $2 OR repo_name LIKE $1 ESCAPE $2
 ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
@@ -1287,8 +1319,9 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
 		var rType, rStatus int
-		var repoNs, repoName, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
-		err := stmt.Scan(&rType, &repoNs, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList)
+		var repoNs, repoName, desc, owner, acl, forkOriginNs, forkOriginName, labelList, webhookstr string
+		var rowid int64
+		err := stmt.Scan(&rType, &repoNs, &repoName, &desc, &owner, &acl, &rStatus, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1299,7 +1332,9 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Namespace: repoNs,
 			Name: repoName,
 			Description: desc,
@@ -1311,6 +1346,7 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 			ForkOriginName: forkOriginName,
 			Repository: m,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -1855,14 +1891,14 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingRepository(viewingUse
 		if viewingUser == user {
 			if len(query) <= 0 {
 				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
 FROM %s_repository
 WHERE repo_owner = $1 OR repo_acl->'acl' ? $1
 ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 `, pfx), viewingUser, pageSize, pageNum*pageSize)
 			} else {
 				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
 FROM %s_repository
 WHERE (repo_owner = $1 OR repo_acl->'acl' ? $1)
 AND (repo_name LIKE $4 ESCAPE $5 OR repo_namespace LIKE $4 ESCAPE $5)
@@ -1872,14 +1908,14 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 		} else {
 			if len(query) <= 0 {
 				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1) AND (repo_owner = $2 OR repo_acl -> 'acl' ? $2)
 ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 `, pfx), viewingUser, user, pageSize, pageNum*pageSize)
 			} else {
 				stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4 OR repo_owner = $1 OR repo_acl->'acl' ? $1) AND (repo_owner = $2 OR repo_acl -> 'acl' ? $2)
 AND (repo_name LIKE $5 ESCAPE $6 OR repo_namespace LIKE $5 ESCAPE $6)
@@ -1890,14 +1926,14 @@ ORDER BY repo_absid ASC LIMIT $3 OFFSET $4
 	} else {
 		if len(query) <= 0 {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'acl' ? $1)
 ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 `, pfx), user, pageSize, pageNum*pageSize)
 		} else {
 			stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
 FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = $1 OR repo_acl->'acl' ? $1)
 AND (repo_name LIKE $4 ESCAPE $5 OR repo_namespace LIKE $4 ESCAPE $5)
@@ -1909,9 +1945,9 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
 		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName, labelList string
-		var status int64
+		var status, rowid int64
 		var repoType uint8
-		err := stmt.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName, &labelList)
+		err := stmt.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName, &labelList, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1923,6 +1959,7 @@ ORDER BY repo_absid ASC LIMIT $2 OFFSET $3
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: repoType,
 			Namespace: ns,
 			Name: name,
@@ -1996,7 +2033,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetForkRepositoryOfUser(username str
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list, repo_absid
 FROM %s_repository
 WHERE repo_owner = $1 AND repo_fork_origin_namespace = $2 AND repo_fork_origin_name = $3
 `, pfx), username, originNamespace, originName)
@@ -2004,10 +2041,11 @@ WHERE repo_owner = $1 AND repo_fork_origin_namespace = $2 AND repo_fork_origin_n
 	defer stmt.Close()
 	var ns, name, desc, acl, labelList string
 	var status int
+	var rowid int64
 	var repoType uint8
 	res := make([]*model.Repository, 0)
 	for stmt.Next() {
-		err = stmt.Scan(&repoType, &ns, &name, &desc, &acl, &status, &labelList)
+		err = stmt.Scan(&repoType, &ns, &name, &desc, &acl, &status, &labelList, &rowid)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
@@ -2022,6 +2060,7 @@ WHERE repo_owner = $1 AND repo_fork_origin_namespace = $2 AND repo_fork_origin_n
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
 		mr, err := model.NewRepository(ns, name, lr)
+		mr.AbsId = rowid
 		mr.Owner = username
 		mr.Type = repoType
 		mr.Status = model.AegisRepositoryStatus(status)
@@ -2602,7 +2641,7 @@ func (dbif *PostgresAegisDatabaseInterface) ResolveEmailToUsername(email string)
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT username FROM %s_user_email WHERE email = $2 AND verified = 1
+SELECT username FROM %s_user_email WHERE email = $1 AND verified = 1
 `, pfx), email)
 	var r string
 	err := stmt.Scan(&r)
@@ -2932,7 +2971,8 @@ func (dbif *PostgresAegisDatabaseInterface) GetRepositoryWithLabelPaginated(user
 	var err error
 	if len(username) <= 0 {
 		r, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %s_repository
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
+FROM %s_repository
 WHERE repo_label_list LIKE $1 ESCAPE $2
 AND (repo_status = 1 OR repo_status = 4)
 ORDER BY repo_name ASC, repo_namespace ASC LIMIT $3 OFFSET $4
@@ -2940,7 +2980,8 @@ ORDER BY repo_name ASC, repo_namespace ASC LIMIT $3 OFFSET $4
 		if err != nil { return nil, err }
 	} else {
 		r, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %s_repository
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_absid
+FROM %s_repository
 WHERE repo_label_list LIKE $1 ESCAPE $2
 AND (
     repo_status = 1 OR repo_status = 4 OR repo_status = 5
@@ -2953,10 +2994,11 @@ ORDER BY repo_name ASC, repo_namespace ASC LIMIT $5 OFFSET $6
 	var rtype uint8
 	var ns, name, desc, owner, acl string
 	var status int
+	var rowid int64
 	var forkOriginNs, forkOriginName, labelList string
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		err = r.Scan(&rtype, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+		err = r.Scan(&rtype, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -2966,6 +3008,7 @@ ORDER BY repo_name ASC, repo_namespace ASC LIMIT $5 OFFSET $6
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: rtype,
 			Namespace: ns,
 			Name: name,

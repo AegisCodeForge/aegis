@@ -28,7 +28,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetUserByName(name string) (*model.Aeg
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash, user_2fa_config
-FROM %suser
+FROM %s_user
 WHERE user_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -56,7 +56,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAuthKeyByName(userName string, keyN
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT key_text
-FROM %suser_authkey
+FROM %s_user_authkey
 WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -82,7 +82,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllAuthKeyByUsername(name string) (
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT key_name, key_text
-FROM %suser_authkey
+FROM %s_user_authkey
 WHERE user_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -106,7 +106,7 @@ WHERE user_name = ?
 func (dbif *SqliteAegisDatabaseInterface) RegisterAuthKey(username string, keyname string, keytext string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT 1 FROM %suser_authkey WHERE user_name = ? AND key_name = ?
+SELECT 1 FROM %s_user_authkey WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt1.QueryRow(username, keyname)
@@ -120,7 +120,7 @@ SELECT 1 FROM %suser_authkey WHERE user_name = ? AND key_name = ?
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %suser_authkey(user_name, key_name, key_text)
+INSERT INTO %s_user_authkey(user_name, key_name, key_text)
 VALUES (?,?,?)
 `, pfx))
 	if err != nil { return err }
@@ -137,7 +137,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateAuthKey(username string, keyname
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %suser_authkey SET key_text = ? WHERE user_name = ? AND key_name = ?
+UPDATE %s_user_authkey SET key_text = ? WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt.Close()
@@ -153,7 +153,7 @@ func (dbif *SqliteAegisDatabaseInterface) RemoveAuthKey(username string, keyname
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %suser_authkey
+DELETE FROM %s_user_authkey
 WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
@@ -168,7 +168,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllSignKeyByUsername(name string) (
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT key_name, key_text
-FROM %suser_signkey
+FROM %s_user_signkey
 WHERE user_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -192,7 +192,7 @@ WHERE user_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetSignKeyByName(userName string, keyName string) (*model.AegisSigningKey, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT key_text FROM %suser_signkey
+SELECT key_text FROM %s_user_signkey
 WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -215,7 +215,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateSignKey(username string, keyname
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %suser_signkey SET key_text = ? WHERE user_name = ? AND key_name = ?
+UPDATE %s_user_signkey SET key_text = ? WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt.Close()
@@ -229,7 +229,7 @@ UPDATE %suser_signkey SET key_text = ? WHERE user_name = ? AND key_name = ?
 func (dbif *SqliteAegisDatabaseInterface) RegisterSignKey(username string, keyname string, keytext string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT 1 FROM %suser_signkey WHERE user_name = ? AND key_name = ?
+SELECT 1 FROM %s_user_signkey WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt1.QueryRow(username, keyname)
@@ -243,7 +243,7 @@ SELECT 1 FROM %suser_signkey WHERE user_name = ? AND key_name = ?
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %suser_signkey(user_name, key_name, key_text)
+INSERT INTO %s_user_signkey(user_name, key_name, key_text)
 VALUES (?,?,?)
 `, pfx))
 	if err != nil { return err }
@@ -259,7 +259,7 @@ func (dbif *SqliteAegisDatabaseInterface) RemoveSignKey(username string, keyname
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %suser_signkey
+DELETE FROM %s_user_signkey
 WHERE user_name = ? AND key_name = ?
 `, pfx))
 	if err != nil { return err }
@@ -276,7 +276,7 @@ func (dbif *SqliteAegisDatabaseInterface) RegisterUser(name string, email string
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %suser(user_name, user_title, user_email, user_bio, user_website, user_password_hash, user_reg_datetime, user_status, user_2fa_config)
+INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_password_hash, user_reg_datetime, user_status, user_2fa_config)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `, pfx))
 	if err != nil { return nil, err }
@@ -312,7 +312,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateUserInfo(name string, uobj *mode
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %suser
+UPDATE %s_user
 SET
     user_title = ?, user_email = ?, user_bio = ?,
     user_website = ?, user_status = ?, user_2fa_config = ?
@@ -334,7 +334,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateUserPassword(name string, newPas
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %suser
+UPDATE %s_user
 SET user_password_hash = ?
 WHERE user_name = ?
 `, pfx))
@@ -352,7 +352,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateUserStatus(name string, newStatu
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %suser
+UPDATE %s_user
 SET user_status = ?
 WHERE user_name = ?
 `, pfx))
@@ -370,7 +370,7 @@ func (dbif *SqliteAegisDatabaseInterface) HardDeleteUserByName(name string) erro
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %suser WHERE user_name = ?
+DELETE FROM %s_user WHERE user_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(name)
@@ -387,7 +387,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetNamespaceByName(name string) (*mode
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE ns_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -418,17 +418,18 @@ WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetRepositoryByName(nsName string, repoName string) (*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
+FROM %s_repository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(nsName, repoName)
 	if r.Err() != nil { return nil, r.Err() }
-	var desc, owner, acl, forkOriginNs, forkOriginName, labelList string
+	var desc, owner, acl, forkOriginNs, forkOriginName, labelList, webhookstr string
 	var status int
+	var rowid int64
 	var repoType uint8
-	err = r.Scan(&repoType, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+	err = r.Scan(&repoType, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, db.ErrEntityNotFound
@@ -441,6 +442,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	}
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
 	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
+	res.AbsId = rowid
 	res.Type = repoType
 	res.Owner = owner
 	res.Status = model.AegisRepositoryStatus(status)
@@ -450,6 +452,8 @@ WHERE repo_namespace = ? AND repo_name = ?
 	aclobj, err := model.ParseACL(acl)
 	if err != nil { return nil, err }
 	res.AccessControlList = aclobj
+	webhookobj, err := model.ParseWebHookConfig(webhookstr)
+	res.WebHookConfig = webhookobj
 	return res, nil
 }
 
@@ -459,7 +463,7 @@ func (dbif *SqliteAegisDatabaseInterface) RegisterNamespace(name string, ownerUs
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %snamespace(ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl)
+INSERT INTO %s_namespace(ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl)
 VALUES (?,?,?,?,?,?,?,?)
 `, pfx))
 	t := time.Now().Unix()
@@ -504,7 +508,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespace(username string
 	if len(username) > 0 {
 		stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE (ns_status = 1 OR ns_status = 3) OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 `, pfx))
 		if err != nil { return nil, err }
@@ -513,7 +517,7 @@ WHERE (ns_status = 1 OR ns_status = 3) OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE 
 	} else {
 		stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE ns_status = 1
 `, pfx,))
 		if err != nil { return nil, err }
@@ -548,7 +552,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllNamespace() (map[string]*model.N
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 `, pfx))
 	if err != nil { return nil, err }
 	rs, err := stmt.Query()
@@ -581,7 +585,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaceByOwner(name string) (m
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE ns_status != 3 AND ns_status != 4 AND ns_owner = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -617,8 +621,8 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(u
 	var err error
 	if len(username) > 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
+FROM %s_repository
 WHERE repo_namespace = ?
 AND (repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
@@ -627,8 +631,8 @@ AND (repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? O
 		if err != nil { return nil, err }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
+FROM %s_repository
 WHERE repo_namespace = ?
 AND (repo_status = 1 OR repo_status = 4)
 `, pfx))
@@ -638,10 +642,10 @@ AND (repo_status = 1 OR repo_status = 4)
 	}
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
+	var name, desc, owner, acl, forkOriginName, forkOriginNs, labelList, webhookstr string
+	var status, rowid int64
 	for rs.Next() {
-		var name, desc, owner, acl, forkOriginName, forkOriginNs, labelList string
-		var status int64
-		err = rs.Scan(&name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+		err = rs.Scan(&name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -650,7 +654,10 @@ AND (repo_status = 1 OR repo_status = 4)
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Namespace: ns,
 			Name: name,
 			Owner: owner,
@@ -661,6 +668,7 @@ AND (repo_status = 1 OR repo_status = 4)
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -669,8 +677,8 @@ AND (repo_status = 1 OR repo_status = 4)
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryFromNamespace(ns string) (map[string]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
+FROM %s_repository
 WHERE repo_namespace = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -679,10 +687,10 @@ WHERE repo_namespace = ?
 	defer rs.Close()
 	res := make(map[string]*model.Repository, 0)
 	for rs.Next() {
-		var name, desc, acl, owner, forkOriginNs, forkOriginName, labelList string
-		var status int64
+		var name, desc, acl, owner, forkOriginNs, forkOriginName, labelList, webhookstr string
+		var status, rowid int64
 		var rtype uint8
-		err = rs.Scan(&rtype, &name, &desc, &owner, &acl, &status, &labelList)
+		err = rs.Scan(&rtype, &name, &desc, &owner, &acl, &status, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -691,7 +699,10 @@ WHERE repo_namespace = ?
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res[name] = &model.Repository{
+			AbsId: rowid,
 			Type: rtype,
 			Namespace: ns,
 			Name: name,
@@ -703,6 +714,7 @@ WHERE repo_namespace = ?
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		}
 	}
 	return res, nil
@@ -713,7 +725,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateNamespaceInfo(name string, nsobj
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %snamespace
+UPDATE %s_namespace
 SET ns_title = ?, ns_description = ?, ns_email = ?, ns_owner = ?, ns_status = ?
 WHERE ns_name = ?
 `, pfx))
@@ -730,7 +742,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateNamespaceOwner(name string, newO
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %snamespace
+UPDATE %s_namespace
 SET ns_owner = ?
 WHERE ns_name = ?
 `, pfx))
@@ -747,7 +759,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateNamespaceStatus(name string, new
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %snamespace
+UPDATE %s_namespace
 SET ns_status = ?
 WHERE ns_name = ?
 `, pfx))
@@ -764,7 +776,7 @@ func (dbif *SqliteAegisDatabaseInterface) HardDeleteNamespaceByName(name string)
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %snamespace WHERE ns_name = ?
+DELETE FROM %s_namespace WHERE ns_name = ?
 `, pfx))
 	if err != nil { tx.Rollback(); return err }
 	_, err = stmt.Exec(name)
@@ -783,12 +795,13 @@ func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name strin
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }
 	defer tx.Rollback()
+	webhookobj := new(model.WebHookConfig)
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
-VALUES (?,?,?,?,?,?,?,?,?,?)
+INSERT INTO %s_repository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
+VALUES (?,?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(repoType, fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string), new(string))
+	_, err = stmt1.Exec(repoType, fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string), new(string), webhookobj.String())
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
 	err = os.RemoveAll(p)
@@ -805,6 +818,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?)
 	r.Type = repoType
 	r.Owner = owner
 	r.RepoLabelList = nil
+	r.WebHookConfig = webhookobj
 	if err != nil { return nil, err }
 	return r, nil
 }
@@ -816,12 +830,13 @@ func (dbif *SqliteAegisDatabaseInterface) SetUpCloneRepository(originNs string, 
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }
 	defer tx.Rollback()
+	webhookobj := new(model.WebHookConfig)
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %srepository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list)
-VALUES (?,?,?,?,?,?,?,?,?,?)
+INSERT INTO %s_repository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
+VALUES (?,?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName, new(string))
+	_, err = stmt1.Exec(targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName, new(string), webhookobj.String())
 	if err != nil {
 		// TODO: find a better way to do this...
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
@@ -843,6 +858,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?)
 	r.Type = model.GetAegisType(targetRepo)
 	r.Owner = owner
 	r.RepoLabelList = nil
+	r.WebHookConfig = webhookobj
 	if err != nil { return nil, err }
 	return r, nil
 }
@@ -851,7 +867,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateRepositoryInfo(ns string, name s
 	// TODO: these two queries can probaby be combined into one. fix this later.
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, repo_type FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT rowid, repo_type FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	v := stmt1.QueryRow(ns, name)
@@ -865,12 +881,12 @@ SELECT rowid, repo_type FROM %srepository WHERE repo_namespace = ? AND repo_name
 	if err != nil { tx.Rollback(); return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository
-SET repo_description = ?, repo_owner = ?, repo_status = ?
+UPDATE %s_repository
+SET repo_description = ?, repo_owner = ?, repo_status = ?, repo_webhook = ?
 WHERE rowid = ?
 `, pfx))
 	if err != nil { return err }
-	_, err = stmt2.Exec(robj.Description, robj.Owner, robj.Status, rowid)
+	_, err = stmt2.Exec(robj.Description, robj.Owner, robj.Status, rowid, robj.WebHookConfig.String())
 	if err != nil { return err }
 	err = tx.Commit()
 	if err != nil { return err }
@@ -888,7 +904,7 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateRepositoryStatus(ns string, name
 	// TODO: these two queries can probaby be combined into one. fix this later.
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT rowid FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	v := stmt1.QueryRow(ns, name)
@@ -900,7 +916,7 @@ SELECT rowid FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	tx, err := dbif.connection.Begin()
 	if err != nil { tx.Rollback(); return err }
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository
+UPDATE %s_repository
 SET repo_status = ?
 WHERE rowid = ?
 `, pfx))
@@ -912,54 +928,12 @@ WHERE rowid = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) MoveRepository(oldNs string, oldName string, newNs string, newName string) error {
-	// we first check if the new name is already taken
-	pfx := dbif.config.Database.TablePrefix
-	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT 1 FROM %srepository
-WHERE repo_namespace = ? AND repo_name = ?
-`, pfx))
-	if err != nil { return err }
-	v := stmt1.QueryRow(newNs, newName)
-	if v.Err() != nil { return v.Err() }
-	var s string
-	v.Scan(&s)
-	if len(s) > 0 { return db.ErrEntityAlreadyExists }
-	// this is sqlite thus we should be able to use rowid.
-	// for other db engine we would need a PRIMARY KEY INT AUTO_INCREMENT.
-	stmt2, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid FROM %srepository
-WHERE repo_namespace = ? AND repo_name = ?
-`, pfx))
-	if err != nil { return err }
-	v = stmt2.QueryRow(oldNs, oldName)
-	if v.Err() != nil { return v.Err() }
-	v.Scan(&s)
-	tx, err := dbif.connection.Begin()
-	if err != nil { return err }
-	stmt3, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository
-SET repo_namespace = ?, repo_name = ?
-WHERE rowid = ?
-`, pfx))
-	if err != nil { return err }
-	_, err = stmt3.Exec(newNs, newName, s)
-	if err != nil { return err }
-	oldPath := path.Join(dbif.config.GitRoot, oldNs, oldName)
-	newPath := path.Join(dbif.config.GitRoot, newNs, newName)
-	err = os.Rename(oldPath, newPath)
-	if err != nil { tx.Rollback(); return err }
-	err = tx.Commit()
-	if err != nil { tx.Rollback(); return err }
-	return nil
-}
-
 func (dbif *SqliteAegisDatabaseInterface) HardDeleteRepository(ns string, name string) error {
 	pfx := dbif.config.Database.TablePrefix
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %srepository
+DELETE FROM %s_repository
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { tx.Rollback(); return err }
@@ -977,7 +951,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllUsers(pageNum int, pageSize int)
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash
-FROM %suser
+FROM %s_user
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1008,7 +982,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1042,8 +1016,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook
+FROM %s_repository
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1052,11 +1026,11 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs, labelList string
+	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs, labelList, webhookstr string
 	var status int
 	var repoType uint8
 	for r.Next() {
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginNs, &forkOriginName, &labelList)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginNs, &forkOriginName, &labelList, &webhookstr)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1067,6 +1041,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
 			Type: repoType,
 			Namespace: ns,
@@ -1079,6 +1055,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -1087,7 +1064,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) CountAllUser() (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(
-		fmt.Sprintf(`SELECT COUNT(*) FROM %suser`, pfx),
+		fmt.Sprintf(`SELECT COUNT(*) FROM %s_user`, pfx),
 	)
 	if err != nil { return 0, err }
 	defer stmt.Close()
@@ -1102,7 +1079,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllUser() (int64, error) {
 func (dbif *SqliteAegisDatabaseInterface) CountAllNamespace() (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(
-		fmt.Sprintf(`SELECT COUNT(*) FROM %snamespace`, pfx),
+		fmt.Sprintf(`SELECT COUNT(*) FROM %s_namespace`, pfx),
 	)
 	if err != nil { return 0, err }
 	defer stmt.Close()
@@ -1122,7 +1099,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllRepositoriesSearchResult(q str
 	searchPattern = "%" + searchPattern + "%"
 	stmt, err := dbif.connection.Prepare(
 		fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)`, pfx),
 	)
 	if err != nil { return 0, err }
@@ -1138,7 +1115,7 @@ WHERE (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)`, pfx),
 func (dbif *SqliteAegisDatabaseInterface) CountAllRepositories() (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(
-		fmt.Sprintf(`SELECT COUNT(*) FROM %srepository`, pfx),
+		fmt.Sprintf(`SELECT COUNT(*) FROM %s_repository`, pfx),
 	)
 	if err != nil { return 0, err }
 	defer stmt.Close()
@@ -1155,7 +1132,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForUser(k string, pageNum int, p
 	pattern := db.ToSqlSearchPattern(k)
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash
-FROM %suser
+FROM %s_user
 WHERE user_name LIKE ? ESCAPE ? OR user_title LIKE ? ESCAPE ?
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1191,7 +1168,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum i
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1230,8 +1207,8 @@ func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum 
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_name, repo_fork_origin_namespace, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_name, repo_fork_origin_namespace, repo_label_list, repo_webhook, rowid
+FROM %s_repository
 WHERE (repo_namespace LIKE ? ESCAPE ? OR repo_name LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1241,11 +1218,12 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer r.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs, labelList string
+	var ns, name, desc, acl, owner, forkOriginName, forkOriginNs, labelList, webhookstr string
 	var status int
+	var rowid int64
 	var repoType uint8
 	for r.Next() {
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginName, &forkOriginNs, &labelList)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &owner, &status, &forkOriginName, &forkOriginNs, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1256,7 +1234,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: repoType,
 			Namespace: ns,
 			Name: name,
@@ -1267,6 +1248,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -1275,7 +1257,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) SetNamespaceACL(nsName string, targetUserName string, aclt *model.ACLTuple) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT ns_acl FROM %snamespace WHERE ns_name = ?
+SELECT ns_acl FROM %s_namespace WHERE ns_name = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt1.Close()
@@ -1299,7 +1281,7 @@ SELECT ns_acl FROM %snamespace WHERE ns_name = ?
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %snamespace SET ns_acl = ? WHERE ns_name = ?
+UPDATE %s_namespace SET ns_acl = ? WHERE ns_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(aclStr, nsName)
@@ -1312,7 +1294,7 @@ UPDATE %snamespace SET ns_acl = ? WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) SetRepositoryACL(nsName string, repoName string, targetUserName string, aclt *model.ACLTuple) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_acl FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT repo_acl FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt1.Close()
@@ -1336,7 +1318,7 @@ SELECT repo_acl FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository SET repo_acl = ? WHERE repo_namespace = ? AND repo_name = ?
+UPDATE %s_repository SET repo_acl = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(aclStr, nsName, repoName)
@@ -1354,7 +1336,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllComprisingNamespace(username str
 	pattern = "%" + pattern + "%"
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1393,7 +1375,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespacePaginated(userna
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE ns_status = 1 %s
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx, privateSelectClause))
@@ -1442,9 +1424,9 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(usern
 	if len(username) > 0 {
 		upat := db.ToSqlSearchPattern(username)
 		stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository repo
-FULL JOIN (SELECT ns_name, ns_status FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)) ns
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
+FROM %s_repository repo
+FULL JOIN (SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)) ns
 ON repo.repo_namespace = ns.ns_name
 WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
 OR (repo_status = 1 OR repo_status = 4 OR repo_status = 5)
@@ -1456,9 +1438,9 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if err != nil { return nil, err }
 	} else {
 		stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository repo
-FULL JOIN (SELECT ns_name, ns_status FROM %snamespace WHERE ns_status = 1 OR ns_status = 3) ns
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
+FROM %s_repository repo
+FULL JOIN (SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3) ns
 ON repo.repo_namespace = ns.ns_name
 WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
 OR (repo_status = 1 OR repo_status = 4)
@@ -1471,11 +1453,11 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	if err != nil { return nil, err }
 	defer rs.Close()
 	res := make([]*model.Repository, 0)
-	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName, labelList string
-	var status int64
+	var ns, name, desc, owner, acl, forkOriginNs, forkOriginName, labelList, webhookstr string
+	var status, rowid int64
 	var repoType uint8
 	for rs.Next() {
-		err = rs.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+		err = rs.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -1486,7 +1468,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if len(labelList) > 0 {
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: repoType,
 			Namespace: ns,
 			Name: name,
@@ -1498,6 +1483,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -1521,7 +1507,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(use
 		if len(username) > 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 AND (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -1532,7 +1518,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 AND (ns_status = 1 OR ns_status = 3)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -1545,7 +1531,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if len(username) > 0 {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1555,7 +1541,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE (ns_status = 1 OR ns_status = 3)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))
@@ -1598,10 +1584,10 @@ func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(us
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
+FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name, ns_status FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1615,10 +1601,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			if err != nil { return nil, err }
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
+FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1634,10 +1620,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
+FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1650,10 +1636,10 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			if err != nil { return nil, err }
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name
-FROM %srepository repo
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
+FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1668,17 +1654,20 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	defer r.Close()
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		var ns, name, desc, acl, forkOriginNamespace, forkOriginName string
-		var status int64
+		var ns, name, desc, acl, forkOriginNamespace, forkOriginName, webhookstr string
+		var status, rowid int64
 		var repoType uint8
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &status, &forkOriginNamespace, &forkOriginName)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &status, &forkOriginNamespace, &forkOriginName, &webhookstr, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
 		p := path.Join(dbif.config.GitRoot, ns, name)
 		lr, err := model.CreateLocalRepository(repoType, ns, name, p)
 		if err != nil { return nil, err }
+		webhookobj, err := model.ParseWebHookConfig(webhookstr)
+		if err != nil { return nil, err }
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: repoType,
 			Namespace: ns,
 			Name: name,
@@ -1688,6 +1677,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Repository: lr,
 			ForkOriginNamespace: forkOriginNamespace,
 			ForkOriginName: forkOriginName,
+			WebHookConfig: webhookobj,
 		})
 	}
 	return res, nil
@@ -1703,14 +1693,14 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleNamespaceSearchResult(u
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %snamespace
+SELECT COUNT(*) FROM %s_namespace
 WHERE (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?) AND (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow(username, upattern, "\\", qpattern, "\\", qpattern, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %snamespace
+SELECT COUNT(*) FROM %s_namespace
 WHERE (ns_status = 1 OR ns_status = 3)
 AND (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 `, pfx))
@@ -1721,14 +1711,14 @@ AND (ns_name LIKE ? ESCAPE ? OR ns_title LIKE ? ESCAPE ?)
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %snamespace
+SELECT COUNT(*) FROM %s_namespace
 WHERE (ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow(username, upattern, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %snamespace WHERE (ns_status = 1 OR ns_status = 3)
+SELECT COUNT(*) FROM %s_namespace WHERE (ns_status = 1 OR ns_status = 3)
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow()
@@ -1751,9 +1741,9 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResul
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1765,9 +1755,9 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 			r = stmt.QueryRow(username, upattern, "\\", username, upattern, "\\", qpattern, "\\", qpattern, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1781,9 +1771,9 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 		if len(username) > 0 {
 			upattern := db.ToSqlSearchPattern(username)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1794,9 +1784,9 @@ WHERE (
 			r = stmt.QueryRow(username, upattern, "\\", username, upattern, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository repo
+SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %snamespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1817,7 +1807,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllRepositoryIssue(ns string, name 
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, issue_id, issue_author, issue_status, issue_title, issue_content, issue_timestamp
-FROM %sissue
+FROM %s_issue
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1851,7 +1841,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetRepositoryIssue(ns string, name str
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, issue_timestamp, issue_author, issue_title, issue_content, issue_status
-FROM %sissue
+FROM %s_issue
 WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1880,7 +1870,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllRepositoryIssue(ns string, nam
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*)
-FROM %sissue
+FROM %s_issue
 WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return 0, err }
@@ -1896,7 +1886,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 func (dbif *SqliteAegisDatabaseInterface) NewRepositoryIssue(ns string, name string, author string, title string, content string) (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %sissue WHERE repo_namespace = ? AND repo_name = ?
+SELECT COUNT(*) FROM %s_issue WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return 0, err }
 	defer stmt.Close()
@@ -1910,7 +1900,7 @@ SELECT COUNT(*) FROM %sissue WHERE repo_namespace = ? AND repo_name = ?
 	if err != nil { return 0, err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %sissue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status)
+INSERT INTO %s_issue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status)
 VALUES (?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return 0, err }
@@ -1927,7 +1917,7 @@ func (dbif *SqliteAegisDatabaseInterface) HardDeleteRepositoryIssue(ns string, n
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+DELETE FROM %s_issue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt.Close()
@@ -1944,7 +1934,7 @@ func (dbif *SqliteAegisDatabaseInterface) SetIssuePriority(namespace string, nam
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %sissue SET issue_priority = ? WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+UPDATE %s_issue SET issue_priority = ? WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(priority, namespace, name, id)
@@ -1957,7 +1947,7 @@ UPDATE %sissue SET issue_priority = ? WHERE repo_namespace = ? AND repo_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+SELECT rowid FROM %s_issue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
 	if err != nil { return nil, err }
 	defer stmt1.Close()
@@ -1968,7 +1958,7 @@ SELECT rowid FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_i
 	if err != nil { return nil, err }
 	stmt2, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, issue_event_type, issue_event_time, issue_event_author, issue_event_content
-FROM %sissue_event
+FROM %s_issue_event
 WHERE issue_abs_id = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -1997,7 +1987,7 @@ WHERE issue_abs_id = ?
 func (dbif *SqliteAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, issue_status FROM %sissue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
+SELECT rowid, issue_status FROM %s_issue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt.Close()
@@ -2011,7 +2001,7 @@ SELECT rowid, issue_status FROM %sissue WHERE repo_namespace = ? AND repo_name =
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %sissue_event(issue_abs_id, issue_event_type, issue_event_time, issue_event_author, issue_event_content) VALUES (?,?,?,?,?)
+INSERT INTO %s_issue_event(issue_abs_id, issue_event_type, issue_event_time, issue_event_author, issue_event_content) VALUES (?,?,?,?,?)
 `, pfx))
 	if err != nil { return err }
 	defer stmt2.Close()
@@ -2028,7 +2018,7 @@ INSERT INTO %sissue_event(issue_abs_id, issue_event_type, issue_event_time, issu
 	}
 	if newIssueStatus != issueStatus {
 		stmt3, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %sissue SET issue_status = ? WHERE rowid = ?
+UPDATE %s_issue SET issue_status = ? WHERE rowid = ?
 `, pfx))
 		if err != nil { return err }
 		defer stmt3.Close()
@@ -2046,7 +2036,7 @@ func (dbif *SqliteAegisDatabaseInterface) HardDeleteRepositoryIssueEvent(eventAb
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %sissue_event WHERE rowid = ?
+DELETE FROM %s_issue_event WHERE rowid = ?
 `, pfx))
 	if err != nil { return err }
 	defer stmt.Close()
@@ -2069,7 +2059,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingNamespace(viewingUser s
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
-FROM %snamespace
+FROM %s_namespace
 WHERE (%s) AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 `, pfx, nsStatusClause))
 	if err != nil { return nil, err }
@@ -2126,15 +2116,15 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser 
 	if len(viewingUser) <= 0 {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
@@ -2150,15 +2140,15 @@ ORDER BY repo_name ASC, repo_namespace ASC
 	} else if viewingUser == user {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
@@ -2174,16 +2164,16 @@ ORDER BY repo_name ASC, repo_namespace ASC
 	} else {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY repo_name ASC, repo_namespace ASC
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
@@ -2202,9 +2192,9 @@ ORDER BY repo_name ASC, repo_namespace ASC
 	res := make([]*model.Repository, 0)
 	for r.Next() {
 		var ns, name, desc, acl, owner, forkOriginNamespace, forkOriginName, labelList string
-		var status int64
+		var status, rowid int64
 		var repoType uint8
-		err := r.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName, &labelList)
+		err := r.Scan(&repoType, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNamespace, &forkOriginName, &labelList, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -2216,6 +2206,7 @@ ORDER BY repo_name ASC, repo_namespace ASC
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: repoType,
 			Namespace: ns,
 			Name: name,
@@ -2240,12 +2231,12 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllBelongingRepository(viewingUse
 	if len(viewingUser) <= 0 {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?) AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 `, pfx))
 		}
@@ -2259,12 +2250,12 @@ WHERE (repo_status = 1 OR repo_status = 4) AND (repo_owner = ? OR repo_acl LIKE 
 	} else if viewingUser == user {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 `, pfx))
@@ -2279,13 +2270,13 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 	} else {
 		if len(query) <= 0 {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 `, pfx))
 		} else {
 			stmt, err = dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_status = 1 OR repo_status = 4 OR repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
@@ -2309,8 +2300,8 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 func (dbif *SqliteAegisDatabaseInterface) GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list
-FROM %srepository
+SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_label_list, rowid
+FROM %s_repository
 WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_name = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -2321,8 +2312,9 @@ WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_nam
 	for r.Next() {
 		var ns, name, desc, acl, labelList string
 		var status int
+		var rowid int64
 		var repoType uint8
-		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &status, &labelList)
+		err = r.Scan(&repoType, &ns, &name, &desc, &acl, &status, &labelList, &rowid)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, nil
@@ -2337,6 +2329,7 @@ WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_nam
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
 		mr, err := model.NewRepository(ns, name, lr)
+		mr.AbsId = rowid
 		mr.Owner = username
 		mr.Type = repoType
 		mr.Status = model.AegisRepositoryStatus(status)
@@ -2424,7 +2417,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountIssue(query string, namespace str
 		}
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %sissue %s
+SELECT COUNT(*) FROM %s_issue %s
 `, pfx, condition))
 	if err != nil { return 0, err }
 	var cnt int
@@ -2456,7 +2449,7 @@ func (dbif *SqliteAegisDatabaseInterface) SearchIssuePaginated(query string, nam
 	}
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, issue_id, issue_author, issue_status, issue_title, issue_content, issue_timestamp, issue_priority
-FROM %sissue
+FROM %s_issue
 WHERE repo_namespace = ? AND repo_name = ? %s %s
 ORDER BY issue_priority DESC, issue_timestamp DESC LIMIT ? OFFSET ?
 `, pfx, statusClause, queryClause))
@@ -2709,7 +2702,7 @@ func (dbif *SqliteAegisDatabaseInterface) CheckAndMergePullRequest(absId int64, 
 	if !r.Successful { return nil }
 	pfx := dbif.config.Database.TablePrefix
 	stmt0, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT user_email, user_title FROM %suser WHERE user_name = ?
+SELECT user_email, user_title FROM %s_user WHERE user_name = ?
 `, pfx))
 	if err != nil { return err }
 	rr := stmt0.QueryRow(username)
@@ -2970,7 +2963,7 @@ ORDER BY pull_request_timestamp DESC LIMIT ? OFFSET ?
 func (dbif *SqliteAegisDatabaseInterface) GetAllRegisteredEmailOfUser(username string) ([]struct{Email string;Verified bool}, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT email, verified FROM %suser_email WHERE username = ?
+SELECT email, verified FROM %s_user_email WHERE username = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r, err := stmt.Query(username)
@@ -2996,7 +2989,7 @@ func (dbif *SqliteAegisDatabaseInterface) AddEmail(username string, email string
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %suser_email(username, email, verified) VALUES (?, ?, 0)
+INSERT INTO %s_user_email(username, email, verified) VALUES (?, ?, 0)
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username, email)
@@ -3012,7 +3005,7 @@ func (dbif *SqliteAegisDatabaseInterface) VerifyRegisteredEmail(username string,
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %suser_email SET verified = 1 WHERE username = ? AND email = ?
+UPDATE %s_user_email SET verified = 1 WHERE username = ? AND email = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username, email)
@@ -3028,7 +3021,7 @@ func (dbif *SqliteAegisDatabaseInterface) DeleteRegisteredEmail(username string,
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %suser_email WHERE username = ? AND email = ?
+DELETE FROM %s_user_email WHERE username = ? AND email = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username, email)
@@ -3041,7 +3034,7 @@ DELETE FROM %suser_email WHERE username = ? AND email = ?
 func (dbif *SqliteAegisDatabaseInterface) CheckIfEmailVerified(username string, email string) (bool, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT verified FROM %suser_email WHERE username = ? AND email = ?
+SELECT verified FROM %s_user_email WHERE username = ? AND email = ?
 `, pfx))
 	if err != nil { return false, err }
 	s := stmt.QueryRow(username, email)
@@ -3055,7 +3048,7 @@ SELECT verified FROM %suser_email WHERE username = ? AND email = ?
 func (dbif *SqliteAegisDatabaseInterface) ResolveEmailToUsername(email string) (string, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT username FROM %suser_email WHERE email = ? AND verified = 1
+SELECT username FROM %s_user_email WHERE email = ? AND verified = 1
 `, pfx))
 	if err != nil { return "", err }
 	defer stmt.Close()
@@ -3078,7 +3071,7 @@ func (dbif *SqliteAegisDatabaseInterface) ResolveMultipleEmailToUsername(emailLi
 		i += 1
 	}
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT email, username FROM %suser_email WHERE verified = 1 AND email IN (%s)
+SELECT email, username FROM %s_user_email WHERE verified = 1 AND email IN (%s)
 `, pfx, strings.Join(q, ",")))
 	if err != nil { return nil, err }
 	defer stmt.Close()
@@ -3100,7 +3093,7 @@ func (dbif *SqliteAegisDatabaseInterface) InsertRegistrationRequest(username str
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %suser_reg_request(username, email, password_hash, reason, timestamp) VALUES (?,?,?,?,?)
+INSERT INTO %s_user_reg_request(username, email, password_hash, reason, timestamp) VALUES (?,?,?,?,?)
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username, email, passwordHash, reason, time.Now().Unix())
@@ -3113,7 +3106,7 @@ INSERT INTO %suser_reg_request(username, email, password_hash, reason, timestamp
 func (dbif *SqliteAegisDatabaseInterface) ApproveRegistrationRequest(absid int64) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT username, email, password_hash FROM %suser_reg_request
+SELECT username, email, password_hash FROM %s_user_reg_request
 WHERE rowid = ?
 `, pfx))
 	if err != nil { return err }
@@ -3135,7 +3128,7 @@ WHERE rowid = ?
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %suser_reg_request WHERE username = ?
+DELETE FROM %s_user_reg_request WHERE username = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username)
@@ -3148,7 +3141,7 @@ DELETE FROM %suser_reg_request WHERE username = ?
 func (dbif *SqliteAegisDatabaseInterface) DisapproveRegistrationRequest(absid int64) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt1, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT username FROM %suser_reg_request
+SELECT username FROM %s_user_reg_request
 WHERE rowid = ?
 `, pfx))
 	if err != nil { return err }
@@ -3163,7 +3156,7 @@ WHERE rowid = ?
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %suser_reg_request WHERE username = ?
+DELETE FROM %s_user_reg_request WHERE username = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username)
@@ -3177,7 +3170,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNu
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT username, email, password_hash, reason, timestamp
-FROM %suser_reg_request
+FROM %s_user_reg_request
 ORDER BY timestamp DESC LIMIT ? OFFSET ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -3206,7 +3199,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetRequestOfUsernamePaginated(username
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, email, password_hash, reason, timestamp
-FROM %suser_reg_request
+FROM %s_user_reg_request
 WHERE username = ?
 ORDER BY timestamp DESC LIMIT ? OFFSET ?
 `, pfx))
@@ -3239,14 +3232,14 @@ func (dbif *SqliteAegisDatabaseInterface) CountRegistrationRequest(query string)
 	query = strings.TrimSpace(query)
 	if len(query) <= 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %suser_reg_request
+SELECT COUNT(*) FROM %s_user_reg_request
 `, pfx))
 		if err != nil { return 0, err }
 		r = stmt.QueryRow()
 		if r.Err() != nil { return 0, r.Err() }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %suser_reg_request WHERE username LIKE ? ESCAPE ?
+SELECT COUNT(*) FROM %s_user_reg_request WHERE username LIKE ? ESCAPE ?
 `, pfx))
 		if err != nil { return 0, err }
 		r = stmt.QueryRow(db.ToSqlSearchPattern(query), "\\")
@@ -3264,14 +3257,14 @@ func (dbif *SqliteAegisDatabaseInterface) SearchRegistrationRequestPaginated(que
 	query = strings.TrimSpace(query)
 	if len(query) <= 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request ORDER BY timestamp DESC LIMIT ? OFFSET ?
+SELECT rowid, username, email, password_hash, timestamp FROM %s_user_reg_request ORDER BY timestamp DESC LIMIT ? OFFSET ?
 `, pfx))
 		if err != nil { return nil, err }
 		r, err = stmt.Query(pageSize, pageNum*pageSize)
 		if err != nil { return nil, err }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request WHERE  username LIKE ? ESCAPE ? ORDER BY timestamp LIMIT ? OFFSET ?
+SELECT rowid, username, email, password_hash, timestamp FROM %s_user_reg_request WHERE  username LIKE ? ESCAPE ? ORDER BY timestamp LIMIT ? OFFSET ?
 `, pfx))
 		if err != nil { return nil, err }
 		r, err = stmt.Query(db.ToSqlSearchPattern(query), "\\",  pageSize, pageNum*pageSize)
@@ -3299,7 +3292,7 @@ SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request 
 func (dbif *SqliteAegisDatabaseInterface) GetRegistrationRequestByAbsId(absid int64) (*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request WHERE rowid = ?
+SELECT rowid, username, email, password_hash, timestamp FROM %s_user_reg_request WHERE rowid = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r, err := stmt.Query(absid)
@@ -3320,7 +3313,7 @@ SELECT rowid, username, email, password_hash, timestamp FROM %suser_reg_request 
 func (dbif *SqliteAegisDatabaseInterface) AddRepositoryLabel(ns string, name string, lbl string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name = ?
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? and repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt.QueryRow(ns, name)
@@ -3335,7 +3328,7 @@ SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name 
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
+UPDATE %s_repository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
@@ -3348,7 +3341,7 @@ UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_na
 func (dbif *SqliteAegisDatabaseInterface) RemoveRepositoryLabel(ns string, name string, lbl string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? AND repo_name = ?
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	r := stmt.QueryRow(ns, name)
@@ -3364,7 +3357,7 @@ SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? AND repo_name 
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
+UPDATE %s_repository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt2.Exec(fmt.Sprintf("{%s}", strings.Join(tags, "}{")), ns, name)
@@ -3377,7 +3370,7 @@ UPDATE %srepository SET repo_label_list = ? WHERE repo_namespace = ? AND repo_na
 func (dbif *SqliteAegisDatabaseInterface) GetRepositoryLabel(ns string, name string) ([]string, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT repo_label_list FROM %srepository WHERE repo_namespace = ? and repo_name = ?
+SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? and repo_name = ?
 `, pfx))
 	if err != nil { return nil, err }
 	r := stmt.QueryRow(ns, name)
@@ -3395,7 +3388,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountRepositoryWithLabel(username stri
 	var err error
 	if len(username) <= 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND repo_status = 1 OR repo_status = 4
 `, pfx))
@@ -3404,7 +3397,7 @@ AND repo_status = 1 OR repo_status = 4
 		if r.Err() != nil { return 0, r.Err() }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %srepository
+SELECT COUNT(*) FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND (
     repo_status = 1 OR repo_status = 4 OR repo-status = 5
@@ -3426,7 +3419,8 @@ func (dbif *SqliteAegisDatabaseInterface) GetRepositoryWithLabelPaginated(userna
 	var err error
 	if len(username) <= 0 {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %srepository
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND repo_status = 1 OR repo_status = 4
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -3436,7 +3430,8 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 		if err != nil { return nil, err }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list FROM %srepository
+SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, rowid
+FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND (
     repo_status = 1 OR repo_status = 4 OR repo-status = 5
@@ -3450,10 +3445,11 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	var rtype uint8
 	var ns, name, desc, owner, acl string
 	var status int
+	var rowid int64
 	var forkOriginNs, forkOriginName, labelList string
 	res := make([]*model.Repository, 0)
 	for r.Next() {
-		err = r.Scan(&rtype, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList)
+		err = r.Scan(&rtype, &ns, &name, &desc, &owner, &acl, &status, &forkOriginNs, &forkOriginName, &labelList, &rowid)
 		if err != nil { return nil, err }
 		a, err := model.ParseACL(acl)
 		if err != nil { return nil, err }
@@ -3463,6 +3459,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 		}
 		res = append(res, &model.Repository{
+			AbsId: rowid,
 			Type: rtype,
 			Namespace: ns,
 			Name: name,
@@ -3485,7 +3482,7 @@ func (dbif *SqliteAegisDatabaseInterface) NewSnippet(username string, name strin
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %ssnippet(snippet_full_name, name, username, description, timestamp, status, shared_user)
+INSERT INTO %s_snippet(snippet_full_name, name, username, description, timestamp, status, shared_user)
 VALUES (?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
@@ -3511,7 +3508,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllSnippet(username string) ([]*mod
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT name, description, timestamp, status, shared_user
-FROM %ssnippet
+FROM %s_snippet
 WHERE username = ?
 `, pfx))
 	if err != nil { return nil, err }
@@ -3549,21 +3546,21 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleSnippet(username string
 		q := db.ToSqlSearchPattern(query)
 		if len(viewingUser) <= 0 {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %ssnippet
+SELECT COUNT(*) FROM %s_snippet
 WHERE username = ? AND (status = 1) AND name LIKE ? ESCAPE ?
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow(username, q, "\\")
 		} else if viewingUser == username {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %ssnippet
+SELECT COUNT(*) FROM %s_snippet
 WHERE username = ? AND name LIKE ? ESCAPE ?
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow(username, q, "\\")
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %ssnippet
+SELECT COUNT(*) FROM %s_snippet
 WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?)) AND name LIKE ? ESCAPE ?
 `, pfx))
 			if err != nil { return 0, err }
@@ -3573,20 +3570,20 @@ WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user 
 	} else {
 		if len(viewingUser) <= 0 {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %ssnippet
+SELECT COUNT(*) FROM %s_snippet
 WHERE username = ? AND (status = 1)
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow(username)
 		} else if viewingUser == username {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %ssnippet WHERE username = ?
+SELECT COUNT(*) FROM %s_snippet WHERE username = ?
 `, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow(username)
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT COUNT(*) FROM %ssnippet
+SELECT COUNT(*) FROM %s_snippet
 WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?))
 `, pfx))
 			if err != nil { return 0, err }
@@ -3609,7 +3606,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username
 		q := db.ToSqlSearchPattern(query)
 		if len(viewingUser) <= 0 {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ? AND (status = 1) AND name LIKE ? ESCAPE ?
 `, pfx))
 			if err != nil { return nil, err }
@@ -3617,7 +3614,7 @@ WHERE username = ? AND (status = 1) AND name LIKE ? ESCAPE ?
 			if err != nil { return nil, err }
 		} else if viewingUser == username {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ? AND name LIKE ? ESCAPE ?
 `, pfx))
 			if err != nil { return nil, err }
@@ -3625,7 +3622,7 @@ WHERE username = ? AND name LIKE ? ESCAPE ?
 			if err != nil { return nil, err }
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?)) AND name LIKE ? ESCAPE ?
 `, pfx))
 			if err != nil { return nil, err }
@@ -3636,7 +3633,7 @@ WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user 
 	} else {
 		if len(viewingUser) <= 0 {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ? AND (status = 1)
 `, pfx))
 			if err != nil { return nil, err }
@@ -3644,7 +3641,7 @@ WHERE username = ? AND (status = 1)
 			if err != nil { return nil, err }
 		} else if viewingUser == username {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ?
 `, pfx))
 			if err != nil { return nil, err }
@@ -3652,7 +3649,7 @@ WHERE username = ?
 			if err != nil { return nil, err }
 		} else {
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT name, description, timestamp, status, shared_user FROM %ssnippet
+SELECT name, description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user LIKE ? ESCAPE ?))
 `, pfx))
 			if err != nil { return nil, err }
@@ -3689,7 +3686,7 @@ func (dbif *SqliteAegisDatabaseInterface) DeleteSnippet(username string, name st
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-DELETE FROM %ssnippet WHERE username = ? AND name = ?
+DELETE FROM %s_snippet WHERE username = ? AND name = ?
 `, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(username, name)
@@ -3708,7 +3705,7 @@ func (dbif *SqliteAegisDatabaseInterface) SaveSnippetInfo(m *model.Snippet) erro
 	if err != nil { return err }
 	defer tx.Rollback()
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-UPDATE %ssnippet SET description = ?, status = ?, shared_user = ? WHERE username = ? AND name = ?
+UPDATE %s_snippet SET description = ?, status = ?, shared_user = ? WHERE username = ? AND name = ?
 `, pfx))
 	if err != nil { return err }
 	s, err := json.Marshal(m.SharedUser)
@@ -3723,7 +3720,7 @@ UPDATE %ssnippet SET description = ?, status = ?, shared_user = ? WHERE username
 func (dbif *SqliteAegisDatabaseInterface) GetSnippet(username string, name string) (*model.Snippet, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT description, timestamp, status, shared_user FROM %ssnippet
+SELECT description, timestamp, status, shared_user FROM %s_snippet
 WHERE username = ? AND name = ?
 `, pfx))
 	if err != nil { return nil, err }
