@@ -11,7 +11,7 @@
   {{if or (.LoginInfo.IsOwner) (.LoginInfo.IsSettingMember) (.LoginInfo.IsAdmin)}}
   <a href="/s/{{.Namespace.Name}}/setting">Settings</a>
   {{end}}
-  <a href="/new/repo?ns={{.Namespace.Name}}">New repository</a>
+  <a href="/s/{{.Namespace.Name}}/new-repo">New repository</a>
 </div>
 {{end}}
 {{end}}
