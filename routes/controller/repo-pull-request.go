@@ -75,7 +75,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 		if err != nil { f = 0 }
 		count, err := ctx.DatabaseInterface.CountPullRequest(q, s.Namespace, s.Name, int(f))
 		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
+			ctx.ReportInternalError(fmt.Sprintf("Failed to count pull request: %s", err.Error()), w, r)
 			return
 		}
 		pageCount := int(count) / int(ps)
@@ -90,7 +90,7 @@ func bindRepositoryPullRequestController(ctx *routes.RouterContext) {
 		}
 		prList, err := ctx.DatabaseInterface.SearchPullRequestPaginated(q, s.Namespace, s.Name, int(f), int(p-1), int(ps))
 		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
+			ctx.ReportInternalError(fmt.Sprintf("Failed to search for pull request: %s", err.Error()), w, r)
 			return
 		}
 		routes.LogTemplateError(ctx.LoadTemplate("pull-request/pull-request-list").Execute(w, &templates.RepositoryPullRequestListTemplateModel{

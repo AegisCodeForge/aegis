@@ -6,7 +6,7 @@
     <b>Tagged Object</b>: <a href="{{getRootPath .RepoName .Tag.TaggedObjType .Tag.TaggedObjId}}">{{.Tag.TaggedObjType}}:{{.Tag.TaggedObjId}}</a><br />
     <b>Tagger</b>: 
     <span class="tagger-name">{{.Tag.TaggerInfo.AuthorName}}</span>
-    (<span class="tagger-email"><a href="{{resolveToUsername .EmailUserMapping .Tag.TaggerInfo.AuthorEmail}}">{{.Tag.TaggerInfo.AuthorEmail}}</a></span>)
+    (<span class="tagger-email"><a href="{{resolveEmailToLink .EmailUserMapping .Tag.TaggerInfo.AuthorEmail}}">{{.Tag.TaggerInfo.AuthorEmail}}</a></span>)
     @ <span class="tagger-time">{{toFuzzyTime .Tag.TaggerInfo.Time}} ({{.Tag.TaggerInfo.Time}})</span><br />
     <b>Message</b>:<p class="tag-message">{{.Tag.TagMessage}}</p>
     {{if gt (len .Tag.Signature) 0}}

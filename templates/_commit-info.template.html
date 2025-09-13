@@ -6,21 +6,21 @@
   <b>Authors</b> @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} <span class="precise-time">{{.Commit.AuthorInfo.Time}}</span></span><br />
   <ul style="margin: 0">
 	<li><span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
-	  (<span class="author-email commit-author-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)</li>
+	  (<span class="author-email commit-author-email"><a href="{{resolveEmailToLink .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)</li>
 	{{range $k := .Commit.CoAuthorInfo}}
 	<li><span class="author-name commit-author-name">{{.AuthorName}}</span>
-	  (<span class="author-email commit-author-email"><a href="{{resolveToUsername $emailUserMapping .AuthorEmail}}">{{.AuthorEmail}}</a></span>)</li>
+	  (<span class="author-email commit-author-email"><a href="{{resolveEmailToLink $emailUserMapping .AuthorEmail}}">{{.AuthorEmail}}</a></span>)</li>
 	{{end}}
   </ul>
   {{else}}
   <b>Author</b>:
   <span class="author-name commit-author-name">{{.Commit.AuthorInfo.AuthorName}}</span>
-  (<span class="author-email commit-author-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
+  (<span class="author-email commit-author-email"><a href="{{resolveEmailToLink .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.AuthorInfo.AuthorEmail}}</a></span>)
   @ <span class="author-time commit-author-time">{{toFuzzyTime .Commit.AuthorInfo.Time}} <span class="precise-time">{{.Commit.AuthorInfo.Time}}</span></span><br />
   {{end}}
   <b>Committer</b>: 
   <span class="committer-name">{{.Commit.CommitterInfo.AuthorName}}</span>
-  (<span class="committer-email"><a href="{{resolveToUsername .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)
+  (<span class="committer-email"><a href="{{resolveEmailToLink .EmailUserMapping .Commit.AuthorInfo.AuthorEmail}}">{{.Commit.CommitterInfo.AuthorEmail}}</a></span>)
   @ <span class="committer-time">{{toFuzzyTime .Commit.CommitterInfo.Time}} <span class="precise-time">{{.Commit.CommitterInfo.Time}}</span></span><br />
   <b>Message</b>:<p class="commit-message">{{.Commit.CommitMessage}}</p>
   {{if gt (len .Commit.Signature) 0}}

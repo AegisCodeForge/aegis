@@ -36,7 +36,10 @@
 	  There are no older commits.
 	  {{else}}
 	  {{range .CommitHistory}}
-	  <div class="commit-history-item commit-info">
+	  {{$authorUserName := resolveEmailToUsername $emailUserMapping .AuthorInfo.AuthorEmail}}
+	  {{$committerUserName := resolveEmailToUsername $emailUserMapping .CommitterInfo.AuthorEmail}}
+	  <details class="commit-history-item commit-info">
+		<summary class="commit-history-item-summary">{{slice .Id 0 8}} by <a href="{{resolveEmailToLink $emailUserMapping .AuthorInfo.AuthorEmail}}">{{$authorUserName}}</a> @  <span class="author-time commit-author-time">{{toFuzzyTime .AuthorInfo.Time}} <span class="precise-time">{{.AuthorInfo.Time}}</span></span></summary>
 		<b>Commit</b> <a href="{{$repoPath}}/commit/{{.Id}}">{{.Id}}</a> (<a href="{{$repoPath}}/diff/{{.Id}}">Diff</a>) (<a href="{{$repoPath}}/commit/{{.Id}}">Tree</a>) (<a href="{{$repoPath}}/history/commit:{{.Id}}">Full History</a>)<br />
 		<b>Author</b>:
 		<span class="author-name commit-author-name">{{.AuthorInfo.AuthorName}}</span>
@@ -44,13 +47,13 @@
 		@ <span class="author-time commit-author-time">{{toFuzzyTime .AuthorInfo.Time}} <span class="precise-time">{{.AuthorInfo.Time}}</span></span><br />
 		<b>Committer</b>: 
 		<span class="committer-name">{{.CommitterInfo.AuthorName}}</span>
-		(<span class="committer-email"><a href="{{resolveToUsername $emailUserMapping .CommitterInfo.AuthorEmail}}">{{.CommitterInfo.AuthorEmail}}</a></span>)
+		(<span class="committer-email"><a href="{{resolveEmailToLink $emailUserMapping .CommitterInfo.AuthorEmail}}">{{.CommitterInfo.AuthorEmail}}</a></span>)
 		@ <span class="committer-time">{{toFuzzyTime .CommitterInfo.Time}} <span class="precise-time">{{.CommitterInfo.Time}}</span></span><br />
 		<b>Message</b>:<p class="commit-message">{{.CommitMessage}}</p>
 		{{if gt (len .Signature) 0}}
 		<details><summary><b>Commit Signature</b></summary><pre>{{.Signature}}</pre></details>
 		{{end}}
-	  </div>
+	  </details>
   	  {{end}}
 	  {{end}}
 	</div>

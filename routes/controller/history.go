@@ -78,7 +78,6 @@ func bindHistoryController(ctx *RouterContext) {
 				return
 			}
 		}
-
 		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		nodeName := r.PathValue("nodeName")
 		nodeNameElem := strings.Split(nodeName, ":")
@@ -115,7 +114,7 @@ func bindHistoryController(ctx *RouterContext) {
 			}))
 			return
 		}
-		h, err := rr.GetCommitHistoryN(cid, 11)
+		h, err := rr.GetCommitHistoryN(cid, 21)
 		if err != nil {
 			LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
 				ErrorCode: 500,
@@ -134,7 +133,6 @@ func bindHistoryController(ctx *RouterContext) {
 			m[k.CommitterInfo.AuthorEmail] = ""
 		}
 		_, err = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
-		fmt.Println(err)
 		// NOTE: we don't check, we just assume the emails are not verified
 		// to anyone if an error occur.
 		
