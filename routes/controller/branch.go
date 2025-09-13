@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
 	"mime"
 	"net/http"
+	"os/exec"
 	"path"
 	"strings"
 
@@ -139,11 +141,13 @@ func bindBranchController(ctx *RouterContext) {
 			return
 		}
 
+		isTargetBlob := target.Type() == gitlib.BLOB
+
 		// if it's a query for snapshot of a tree we directly output
 		// the tree object as a .zip file
 		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
 		if isSnapshotRequest {
-			if target.Type() == gitlib.BLOB {
+			if isTargetBlob {
 				mime := mime.TypeByExtension(path.Ext(treePath))
 				if len(mime) <= 0 { mime = "application/octet-stream" }
 				w.Header().Add("Content-Type", mime)
@@ -179,46 +183,66 @@ func bindBranchController(ctx *RouterContext) {
 		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
 		
 		isBlameRequest := r.URL.Query().Has("blame")
-		if isBlameRequest {
-			if target.Type() == gitlib.BLOB {
-				mime := mime.TypeByExtension(path.Ext(treePath))
-				if len(mime) <= 0 { mime = "application/octet-stream" }
-				if !strings.HasPrefix(mime, "image/") {
-					dirPath := path.Dir(treePath) + "/"
-					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
-					if err != nil {
-						ctx.ReportInternalError(err.Error(), w, r)
-						return
-					}
-					blame, err := rr.Blame(cobj, treePath)
-					if err != nil {
-						ctx.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
-						return
-					}
-					LogTemplateError(ctx.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
-						Repository: repo,
-						RepoHeaderInfo: *repoHeaderInfo,
-						TreeFileList: &templates.TreeFileListTemplateModel{
-							ShouldHaveParentLink: len(treePath) > 0,
-							RepoPath: fmt.Sprintf("/repo/%s", rfn),
-							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
-							TreePath: dirPath,
-							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
-						},
-						TreePath: treePathModelValue,
-						PermaLink: permaLink,
-						Blame: blame,
-						CommitInfo: commitInfo,
-						TagInfo: nil,
-						LoginInfo: loginInfo,
-						Config: ctx.Config,
-					}))
+		if isBlameRequest && isTargetBlob {
+			mime := mime.TypeByExtension(path.Ext(treePath))
+			if len(mime) <= 0 { mime = "application/octet-stream" }
+			if !strings.HasPrefix(mime, "image/") {
+				dirPath := path.Dir(treePath) + "/"
+				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
+				blame, err := rr.Blame(cobj, treePath)
+				if err != nil {
+					ctx.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
+					return
+				}
+				LogTemplateError(ctx.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+					Repository: repo,
+					RepoHeaderInfo: *repoHeaderInfo,
+					TreeFileList: &templates.TreeFileListTemplateModel{
+						ShouldHaveParentLink: len(treePath) > 0,
+						RepoPath: fmt.Sprintf("/repo/%s", rfn),
+						RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
+						TreePath: dirPath,
+						FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+					},
+					TreePath: treePathModelValue,
+					PermaLink: permaLink,
+					Blame: blame,
+					CommitInfo: commitInfo,
+					TagInfo: nil,
+					LoginInfo: loginInfo,
+					Config: ctx.Config,
+				}))
+				return
 			}
 		}
 		
-		
+		isEditRequest := r.URL.Query().Has("edit")
+		if isEditRequest && isTargetBlob {
+			mime := mime.TypeByExtension(path.Ext(treePath))
+			if len(mime) <= 0 { mime = "application/octet-stream" }
+			if !strings.HasPrefix(mime, "image/") {
+				LogTemplateError(ctx.LoadTemplate("edit-file").Execute(w, &templates.EditFileTemplateModel{
+					Config: ctx.Config,
+					Repository: repo,
+					RepoHeaderInfo: *repoHeaderInfo,
+					PermaLink: permaLink,
+					FullTreePath: treePath,
+					FileContent: string(target.(*gitlib.BlobObject).Data),
+					CommitInfo: commitInfo,
+					TagInfo: nil,
+					LoginInfo: loginInfo,
+				}))
+			} else {
+				// TODO: upload.
+			}
+			return
+		}
+			
+			
 		switch target.Type() {
 		case gitlib.TREE:
 			if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
@@ -319,8 +343,97 @@ func bindBranchController(ctx *RouterContext) {
 		default:
 			ctx.ReportInternalError("", w, r)
 		}
-
 	}))
+
+	http.HandleFunc("POST /repo/{repoName}/branch/{branchName}/{treePath...}", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, GlobalVisibility,
+			ValidRepositoryNameRequired("repoName"),
+			ErrorGuard,
+		}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			_, _, _, repo, err := rc.ResolveRepositoryFullName(rfn)
+			if err == routes.ErrNotFound {
+				rc.ReportNotFound(rfn, "Repository", "Depot", w, r)
+				return
+			}
+			if err != nil {
+				rc.ReportInternalError(err.Error(), w, r)
+				return
+			}
+			if repo.Type != model.REPO_TYPE_GIT {
+				rc.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
+				return
+			}
+			if rc.Config.PlainMode {
+				FoundAt(w, fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, r.PathValue("branchName"), r.PathValue("treePath")))
+				return
+			}
+			err = r.ParseForm()
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			if repo.Owner != rc.LoginInfo.UserName {
+				rc.ReportRedirect(
+					fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, r.PathValue("branchName"), r.PathValue("treePath")),
+					5,
+					"Not Enough Privilege",
+					"Your account doesn't have enough privilege to perform this action.",
+					w, r,
+				)
+			}
+			commitMessage := r.Form.Get("commit-message")
+			content := r.Form.Get("content")
+			branchName := r.PathValue("branchName")
+			treePath := r.PathValue("treePath")
+			payload := fmt.Sprintf(`commit refs/heads/%s
+mark :1
+author %s <%s> now
+committer %s <%s> now
+data %d
+%s
+from refs/heads/%s^0
+M 100644 inline %s
+data %d
+%s
+get-mark :1`,
+				branchName,
+				rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail,
+				rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail,
+				len(commitMessage),
+				commitMessage,
+				branchName,
+				treePath,
+				len(content),
+				content,
+			)
+			cmd := exec.Command("git", "fast-import", "--date-format=now", "--quiet")
+			stdoutBuf := new(bytes.Buffer)
+			stderrBuf := new(bytes.Buffer)
+			cmd.Dir = repo.LocalPath
+			cmd.Stdout = stdoutBuf
+			cmd.Stderr = stderrBuf
+			cmd.Stdin = bytes.NewReader([]byte(payload))
+			err = cmd.Run()
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to fast-import commit: %s; %s", err.Error(), stderrBuf.String()), w, r)
+				return
+			}
+			commitId := strings.TrimSpace(stdoutBuf.String())
+			cmd2 := exec.Command("git", "update-ref", fmt.Sprintf("refs/heads/%s", branchName), commitId)
+			cmd2.Dir = repo.LocalPath
+			stderrBuf.Reset()
+			cmd2.Stderr = stderrBuf
+			err = cmd2.Run()
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Failed to update ref: %s; %s", err.Error(), stderrBuf.String()), w, r)
+				return
+			}
+			rc.ReportRedirect(fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, branchName, treePath), 5, "Updated", "Your edit has been saved to the repository.", w, r)
+		},
+	))
 }
 
 

@@ -82,6 +82,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		return &templates.LoginInfoModel{
 			LoggedIn: loggedIn,
 			UserName: "",
+			UserFullName: "",
+			UserEmail: "",
 			IsOwner: false,
 			IsSettingMember: false,
 			IsAdmin: false,
@@ -94,6 +96,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 		return &templates.LoginInfoModel{
 			LoggedIn: loggedIn,
 			UserName: "",
+			UserFullName: "",
+			UserEmail: "",
 			IsOwner: false,
 			IsSettingMember: false,
 			IsAdmin: false,
@@ -107,6 +111,8 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 	return &templates.LoginInfoModel{
 		LoggedIn: res,
 		UserName: un,
+		UserFullName: u.Title,
+		UserEmail: u.Email,
 		IsOwner: false,
 		IsSettingMember: false,
 		IsAdmin: u.Status == model.ADMIN || u.Status == model.SUPER_ADMIN,

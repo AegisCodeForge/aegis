@@ -5,19 +5,20 @@ package routes
 // together and is not used to manage lifetimes & stuff AT ALL.
 
 import (
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/bctnry/aegis/pkg/aegis/confirm_code"
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/pkg/aegis/mail"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
 	"github.com/bctnry/aegis/pkg/aegis/session"
 	"github.com/bctnry/aegis/pkg/aegis/ssh"
-	"github.com/bctnry/aegis/pkg/aegis/confirm_code"
 	"github.com/bctnry/aegis/templates"
 )
 
@@ -168,6 +169,8 @@ func ParseRepositoryFullName(str string) (string, string) {
 	}
 	return namespaceName, repoName
 }
+
+var ErrNotFound = errors.New("Requested object not found")
 
 // we need the namespace acl to supplement the repository acl in terms
 // of business logic.
