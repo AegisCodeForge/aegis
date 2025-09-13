@@ -2,18 +2,18 @@
 package templates
 
 import "time"
+import "fmt"
 
 func(s interface{}) string {
-	var timestamp int64
 	timeObj, ok := s.(time.Time)
 	if !ok {
-		timestamp, ok = s.(int64)
+		timestamp, ok := s.(int64)
 		if !ok {
 			panic("Cannot determine time type")
 		}
+		return time.Unix(timestamp, 0).Format(time.RFC3339)
 	} else {
-		timestamp = timeObj.Unix()
+		return timeObj.Format(time.RFC3339)
 	}
-	return time.Unix(timestamp, 0).String()
 }
 

@@ -17,10 +17,9 @@ type AuthorTime struct {
 func parseTimezoneOffset(s string) (int, error) {
 	if s == "Z" { return 0, nil }
 	if len(s) != 5 { return 0, errors.New("Invalid timezone offset string") }
-
-	hour := (int(s[1]) - int('0') * 10) + (int(s[2]) - int('0'))
-	minute := (int(s[3]) - int('0') * 10) + (int(s[4]) - int('0'))
-	total := (hour * 60 + minute) * 60
+	hour := ((int(s[1]) - int('0')) * 10) + (int(s[2]) - int('0'))
+	minute := ((int(s[3]) - int('0')) * 10) + (int(s[4]) - int('0'))
+	total := hour * 60 + minute
 	if s[0] == '-' { total = -total }
 	return total, nil
 }
