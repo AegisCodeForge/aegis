@@ -71,9 +71,25 @@ func bindNamespaceController(ctx *RouterContext) {
 				ctx.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			loginInfo.IsOwner = ns.Owner == loginInfo.UserName
-			v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
-			loginInfo.IsSettingMember = v
+			if ns.Status == model.NAMESPACE_INTERNAL {
+				if !loginInfo.LoggedIn {
+					ctx.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+					return
+				}
+			}
+			if ns.Status == model.NAMESPACE_NORMAL_PRIVATE {
+				if !loginInfo.LoggedIn {
+					ctx.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+					return
+				}
+				loginInfo.IsOwner = ns.Owner == loginInfo.UserName
+				v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
+				loginInfo.IsSettingMember = v
+				if !loginInfo.IsAdmin && !loginInfo.IsOwner && !loginInfo.IsSettingMember {
+					ctx.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+					return
+				}
+			}
 			s, err := ctx.DatabaseInterface.GetAllVisibleRepositoryFromNamespace(loginInfo.UserName, ns.Name)
 			if err != nil {
 				ctx.ReportInternalError(err.Error(), w, r)
