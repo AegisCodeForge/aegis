@@ -23,7 +23,7 @@
 	  </div>
 	  <div class="file main-side">
 		<div class="main-side-top">
-		  <span><b>Editing file</b> {{.FullTreePath}}  </span>
+		  <span style="flex-grow: 2"><b>Editing file</b> {{.FullTreePath}}  </span>
 		  <div class="file-nav">{{if eq .LoginInfo.UserName .Repository.Owner}}<a href="?">Source</a> {{end}}<a href="?blame">Blame</a> <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
 		</div>
 
@@ -31,7 +31,7 @@
 		  <input type="hidden" name="action" value="edit"/>
 		  <div class="field">
 			<label class="field-label" for="content">Content:</label>
-			<textarea name="content" id="content">{{.FileContent}}</textarea>
+			<textarea style="height:30rem" name="content" id="content">{{.FileContent}}</textarea>
 		  </div>
 		  <div class="field">
 			<label class="field-label" for="commit-message">Commit Message:</label>
