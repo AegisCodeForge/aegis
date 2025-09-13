@@ -49,6 +49,7 @@ func bindNewRepositoryController(ctx *RouterContext) {
 			Selected: r.URL.Query().Get("ns"),
 		}))
 	}))
+	
 	http.HandleFunc("POST /new/repo", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		loginInfo, err := GenerateLoginInfoModel(ctx, r)
 		if err != nil {

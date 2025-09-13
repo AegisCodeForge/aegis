@@ -20,14 +20,27 @@
 	
 	<main>
 	  <div class="file-tree left-side">
-		{{template "_tree-file-list" .TreeFileList}}
 	  </div>
 	  <div class="file main-side">
 		<div class="main-side-top">
-		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
-		  <div class="file-nav">{{if eq .LoginInfo.UserName .Repository.Owner}}<a href="?edit">Edit</a> {{end}}{{if .AllowBlame}}<a href="?blame">Blame</a>{{end}} <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+		  <span><b>Editing file</b> {{.FullTreePath}}  </span>
+		  <div class="file-nav">{{if eq .LoginInfo.UserName .Repository.Owner}}<a href="?">Source</a> {{end}}<a href="?blame">Blame</a> <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
 		</div>
-		{{template "_blob-text" .File}}
+
+		<form class="edit-file-form" action="" method="POST">
+		  <input type="hidden" name="action" value="edit"/>
+		  <div class="field">
+			<label class="field-label" for="content">Content:</label>
+			<textarea name="content" id="content">{{.FileContent}}</textarea>
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="commit-message">Commit Message:</label>
+			<textarea name="commit-message" id="commit-message"></textarea>
+		  </div>
+		  <div class="field">
+			<input type="submit" value="Submit" />
+		  </div>
+		</form>
 	  </div>
 	</main>
 	

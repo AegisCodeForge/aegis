@@ -27,7 +27,7 @@
 
 	<hr />
 
-	<form method="POST" action="" class="snippet-setting">
+	<form method="POST" action="" id="snippet-setting-form">
 	  <h2>Snippet Info</h2>
 	  <div class="field"><label class="field-label" for="status">Visibility:</label> <select name="status">
 		  <option value="1" {{if eq .Snippet.Status 1}}selected{{end}}>Public</option>
@@ -38,7 +38,7 @@
 		  <option value="5" {{if eq .Snippet.Status 5}}selected{{end}}>Private</option>
 	  </select></div>
 	  <div class="field"><label class="field-label" for="shared-user">Shared User (user name separated with comma):</label>
-		<input name="shared-user" id="shared-user" value="{{toSeparatedKeys .Snippet.SharedUser}}" />
+		<input class="field-tf" name="shared-user" id="shared-user" value="{{toSeparatedKeys .Snippet.SharedUser}}" />
 	  </div>
 	  <div class="field"><label class="field-label" for="description">Description:</label> <textarea name="description" id="description">{{.Snippet.Description}}</textarea></div>
 	  <input type="submit" value="Save Info" />
@@ -47,13 +47,13 @@
 	<div>
 	  <a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/setting/new">New File</a>
 	</div>
-	<div class="snippet-setting-file-list">
+	<ul class="snippet-setting-file-list">
 	  {{range $k, $v := .Snippet.FileList}}
-	  <div class="snippet-setting-file">
+	  <li class="snippet-setting-file">
 		{{$k}} <a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/setting/edit/{{$k}}">Edit</a> <a href="/snippet/{{$snippet.BelongingUser}}/{{$snippet.Name}}/setting/delete/{{$k}}">Delete</a> 
-	  </div>
+	  </li>
 	  {{end}}
-	</div>
+	</ul>
 	
     <hr />
 	<footer>

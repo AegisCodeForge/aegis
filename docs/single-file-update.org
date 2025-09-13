@@ -1,0 +1,43 @@
+* single file update
+
+currently aegis uses git-fast-import. the process consists of two commands:
+
++ =git fast-import --date-format=now --quiet=
+  + we send the payload to its stdin.
+  + we read the content of its stdout.
++ =git update-ref [ref-full-name] [commit-id]=
+  + =[ref-full-name]= are the ones that starts with =refs/heads/=, like =refs/heads/master=.
+  + =[commit-id]= comes from the stdout from the first command.
+
+** how =git-fast-import= is used
+
+#+begin_src
+commit [ref-full-name]
+mark :1
+author [user-full-name] <[user-email]> now
+committer [user-full-name] <[user-email> now
+data <<%
+[commit message]
+%
+from [ref-full-name]^0
+M [mode] inline [path]
+data <<%
+data
+%
+
+get-mark :1
+#+end_src
+
+according to [[https://git-scm.com/docs/git-fast-import][git-fast-import's documentation]]:
+
++ the =commit= line specifies the branch the new commit needs to be made on.
++ =mark= marks the commit. we need to add a mark here so we can retrieve the id of new commit with =get-mark= command at the last.
++ the next 3 command is for specifying the author, the committer and the commit message.
+  + if you need to add a signature, you need to use the separate =gpgsig= command instead of appending the signature to the commit message, since unlike co-authored-by, gpg signature and commit messages are different slots in a commit object.
++ the =from= command is used to specify the parent commit of the created commit. use =[ref-full-name]^0= to specify the latest commit of the branch.
++ the line with =M= is a filemodify command that specifies the creation of a new file or a modification of an existing one.
+  + if you use =inline= you need to use a =data= command to specify the data of the resulting file.
+  + instead of using =inline= in the =M= command, one can first add the resulting file into the repository as a blob and do =M [mode] [blob-id] [path]= instead.
+
+the =data= command has two forms which I will not describe here. currently aegis use the "delimited" form for commit message and "length-specified" form for text data, since delimited form cannot describe data that doesn't end with line feed.
+

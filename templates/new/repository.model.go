@@ -14,5 +14,6 @@ type NewRepositoryTemplateModel struct {
 	}
 	NamespaceList map[string]*model.Namespace
 	Selected string
+	PredefinedNamespace string
 }
 

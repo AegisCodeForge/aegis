@@ -5,6 +5,8 @@ package templates
 type LoginInfoModel struct {
 	LoggedIn bool
 	UserName string
+	UserFullName string
+	UserEmail string
 	IsOwner bool
 	IsStrictOwner bool
 	IsSettingMember bool
