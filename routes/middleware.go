@@ -26,13 +26,25 @@ func UseMiddleware(w []Middleware, ctx *RouterContext, f HandlerFunc) http.Handl
 	i := len(w)-2
 	for i >= 0 { res = w[i](res); i -= 1; }
 	return func(w http.ResponseWriter, r *http.Request) {
-		res(ctx, w, r);
+		rc := ctx.NewLocal()
+		res(rc, w, r);
 	}
 }
 
 var Logged Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
 		log.Printf(" %s %s\n", r.Method, r.URL.Path)
+		f(ctx, w, r)
+	}
+}
+
+var ValidPOSTRequestRequired Middleware = func(f HandlerFunc) HandlerFunc {
+	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			ctx.ReportNormalError("Invalid request", w, r)
+			return
+		}
 		f(ctx, w, r)
 	}
 }
@@ -109,8 +121,8 @@ func ValidRepositoryNameRequired(s string) Middleware {
 }
 
 func CheckGlobalVisibleToUser(ctx *RouterContext, loginInfo *templates.LoginInfoModel) bool {
-	if loginInfo == nil { return false }
 	if ctx.Config.PlainMode { return true }
+	if loginInfo == nil { return false }
 	switch ctx.Config.GlobalVisibility {
 	case aegis.GLOBAL_VISIBILITY_PUBLIC: return true
 	case aegis.GLOBAL_VISIBILITY_PRIVATE: return loginInfo.LoggedIn

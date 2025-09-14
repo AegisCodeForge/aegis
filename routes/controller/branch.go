@@ -9,7 +9,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -26,328 +25,306 @@ func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName str
 }
 
 func bindBranchController(ctx *RouterContext) {
-	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		var err error
-		var loginInfo *templates.LoginInfoModel = nil
-		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
+	http.HandleFunc("GET /repo/{repoName}/branch/{branchName}/{treePath...}", UseMiddleware(
+		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			rfn := r.PathValue("repoName")
+			if !model.ValidRepositoryName(rfn) {
+				rc.ReportNotFound(rfn, "Repository", "Depot", w, r)
+				return
+			}
+			_, repoName, ns, repo, err := rc.ResolveRepositoryFullName(rfn)
+			if err == routes.ErrNotFound {
+				rc.ReportNotFound(rfn, "Repository", "Depot", w, r)
+				return
+			}
 			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
+				rc.ReportInternalError(err.Error(), w, r)
 				return
 			}
-		}		
-		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
+			if repo.Type != model.REPO_TYPE_GIT {
+				rc.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				if !ctx.Config.PlainMode {
-					FoundAt(w, "/login")
-				} else {
-					FoundAt(w, "/private-notice")
+			}
+			if !rc.Config.PlainMode {
+				rc.LoginInfo.IsOwner = (repo.Owner == rc.LoginInfo.UserName) || (ns.Owner == rc.LoginInfo.UserName)
+			}
+			if !rc.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+				t := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
+				if t == nil {
+					t = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
 				}
+				if t == nil {
+					LogTemplateError(rc.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
+						LoginInfo: rc.LoginInfo,
+						ErrorCode: 403,
+						ErrorMessage: "Not enough privilege.",
+					}))
+					return
+				}
+			}
+			
+			branchName := r.PathValue("branchName")
+			repoHeaderInfo := GenerateRepoHeader("branch", branchName)
+			
+			treePath := r.PathValue("treePath")
+
+			rr := repo.Repository.(*gitlib.LocalGitRepository)
+			err = rr.SyncAllBranchList()
+			if err != nil {
+				rc.ReportInternalError(
+					fmt.Sprintf(
+						"Cannot sync branch list for %s: %s",
+						repoName,
+						err.Error(),
+					), w, r,
+				)
 				return
 			}
-		}
-		rfn := r.PathValue("repoName")
-		if !model.ValidRepositoryName(rfn) {
-			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
-			return
-		}
-		_, repoName, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
-		if err == routes.ErrNotFound {
-			ctx.ReportNotFound(rfn, "Repository", "Depot", w, r)
-			return
-		}
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
-		if repo.Type != model.REPO_TYPE_GIT {
-			ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
-			return
-		}
-		if !ctx.Config.PlainMode {
-			loginInfo.IsOwner = (repo.Owner == loginInfo.UserName) || (ns.Owner == loginInfo.UserName)
-		}
-		if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
-			t := repo.AccessControlList.GetUserPrivilege(loginInfo.UserName)
-			if t == nil {
-				t = ns.ACL.GetUserPrivilege(loginInfo.UserName)
-			}
-			if t == nil {
-				LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-					LoginInfo: loginInfo,
-					ErrorCode: 403,
-					ErrorMessage: "Not enough privilege.",
-				}))
+			br, ok := rr.BranchIndex[branchName]
+			if !ok {
+				rc.ReportNotFound(branchName, "Branch", repoName, w, r)
 				return
 			}
-		}
-		
-		branchName := r.PathValue("branchName")
-		repoHeaderInfo := GenerateRepoHeader("branch", branchName)
-		
-		treePath := r.PathValue("treePath")
+			gobj, err := rr.ReadObject(br.HeadId)
+			if err != nil {
+				rc.ReportObjectReadFailure(br.HeadId, err.Error(), w, r)
+				return
+			}
+			if gobj.Type() != gitlib.COMMIT {
+				rc.ReportObjectTypeMismatch(gobj.ObjectId(), "COMMIT", gobj.Type().String(), w, r)
+				return
+			}
 
-		rr := repo.Repository.(*gitlib.LocalGitRepository)
-		err = rr.SyncAllBranchList()
-		if err != nil {
-			ctx.ReportInternalError(
-				fmt.Sprintf(
-					"Cannot sync branch list for %s: %s",
-					repoName,
-					err.Error(),
-				), w, r,
-			)
-			return
-		}
-		br, ok := rr.BranchIndex[branchName]
-		if !ok {
-			ctx.ReportNotFound(branchName, "Branch", repoName, w, r)
-			return
-		}
-		gobj, err := rr.ReadObject(br.HeadId)
-		if err != nil {
-			ctx.ReportObjectReadFailure(br.HeadId, err.Error(), w, r)
-			return
-		}
-		if gobj.Type() != gitlib.COMMIT {
-			ctx.ReportObjectTypeMismatch(gobj.ObjectId(), "COMMIT", gobj.Type().String(), w, r)
-			return
-		}
+			cobj := gobj.(*gitlib.CommitObject)
+			m := make(map[string]string, 0)
+			m[cobj.AuthorInfo.AuthorEmail] = ""
+			m[cobj.CommitterInfo.AuthorEmail] = ""
+			_, err = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			// NOTE: we don't check, we just assume the emails are not verified
+			// to anyone if an error occur.
+			commitInfo := &templates.CommitInfoTemplateModel{
+				RootPath: fmt.Sprintf("/repo/%s", rfn),
+				Commit: cobj,
+				EmailUserMapping: m,
+			}
+			gobj, err = rr.ReadObject(cobj.TreeObjId)
+			if err != nil { rc.ReportInternalError(err.Error(), w, r) }
+			target, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
+			if err != nil {
+				rc.ReportInternalError(err.Error(), w, r)
+				return
+			}
 
-		cobj := gobj.(*gitlib.CommitObject)
-		m := make(map[string]string, 0)
-		m[cobj.AuthorInfo.AuthorEmail] = ""
-		m[cobj.CommitterInfo.AuthorEmail] = ""
-		_, err = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
-		// NOTE: we don't check, we just assume the emails are not verified
-		// to anyone if an error occur.
-		commitInfo := &templates.CommitInfoTemplateModel{
-			RootPath: fmt.Sprintf("/repo/%s", rfn),
-			Commit: cobj,
-			EmailUserMapping: m,
-		}
-		gobj, err = rr.ReadObject(cobj.TreeObjId)
-		if err != nil { ctx.ReportInternalError(err.Error(), w, r) }
-		target, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
-		if err != nil {
-			ctx.ReportInternalError(err.Error(), w, r)
-			return
-		}
+			isTargetBlob := target.Type() == gitlib.BLOB
 
-		isTargetBlob := target.Type() == gitlib.BLOB
+			// if it's a query for snapshot of a tree we directly output
+			// the tree object as a .zip file
+			isSnapshotRequest :=  r.URL.Query().Has("snapshot")
+			if isSnapshotRequest {
+				if isTargetBlob {
+					mime := mime.TypeByExtension(path.Ext(treePath))
+					if len(mime) <= 0 { mime = "application/octet-stream" }
+					w.Header().Add("Content-Type", mime)
+					w.Write((target.(*gitlib.BlobObject)).Data)
+					return
+				} else {
+					handleBranchSnapshotRequest(rr, branchName, target, w)
+					return
+				}
+			}
 
-		// if it's a query for snapshot of a tree we directly output
-		// the tree object as a .zip file
-		isSnapshotRequest :=  r.URL.Query().Has("snapshot")
-		if isSnapshotRequest {
-			if isTargetBlob {
+			tp1 := make([]string, 0)
+			treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
+			for item := range strings.SplitSeq(treePath, "/") {
+				if len(item) <= 0 { continue }
+				tp1 = append(tp1, item)
+				treePathSegmentList = append(treePathSegmentList, struct{
+					Name string; RelPath string
+				}{
+					Name: item, RelPath: strings.Join(tp1, "/"),
+				})
+			}
+			
+			rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "branch", branchName)
+			repoPath := fmt.Sprintf("/repo/%s", rfn)
+			rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName)
+			treePathModelValue := &templates.TreePathTemplateModel{
+				RootFullName: rootFullName,
+				RootPath: rootPath,
+				TreePath: treePath,
+				TreePathSegmentList: treePathSegmentList,
+			}
+			permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
+			
+			isBlameRequest := r.URL.Query().Has("blame")
+			if isBlameRequest && isTargetBlob {
 				mime := mime.TypeByExtension(path.Ext(treePath))
 				if len(mime) <= 0 { mime = "application/octet-stream" }
-				w.Header().Add("Content-Type", mime)
-				w.Write((target.(*gitlib.BlobObject)).Data)
-				return
-			} else {
-				handleBranchSnapshotRequest(rr, branchName, target, w)
+				if !strings.HasPrefix(mime, "image/") {
+					dirPath := path.Dir(treePath) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						rc.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					blame, err := rr.Blame(cobj, treePath)
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
+						return
+					}
+					LogTemplateError(rc.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						TreeFileList: &templates.TreeFileListTemplateModel{
+							ShouldHaveParentLink: len(treePath) > 0,
+							RepoPath: fmt.Sprintf("/repo/%s", rfn),
+							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
+							TreePath: dirPath,
+							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+						},
+						TreePath: treePathModelValue,
+						PermaLink: permaLink,
+						Blame: blame,
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: rc.LoginInfo,
+						Config: rc.Config,
+					}))
+					return
+				}
+			}
+			
+			isEditRequest := r.URL.Query().Has("edit")
+			if isEditRequest && isTargetBlob {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				if !strings.HasPrefix(mime, "image/") {
+					LogTemplateError(rc.LoadTemplate("edit-file").Execute(w, &templates.EditFileTemplateModel{
+						Config: rc.Config,
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						PermaLink: permaLink,
+						FullTreePath: treePath,
+						FileContent: string(target.(*gitlib.BlobObject).Data),
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: rc.LoginInfo,
+					}))
+				} else {
+					// TODO: upload.
+				}
 				return
 			}
-		}
-
-		tp1 := make([]string, 0)
-		treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
-		for item := range strings.SplitSeq(treePath, "/") {
-			if len(item) <= 0 { continue }
-			tp1 = append(tp1, item)
-			treePathSegmentList = append(treePathSegmentList, struct{
-				Name string; RelPath string
-			}{
-				Name: item, RelPath: strings.Join(tp1, "/"),
-			})
-		}
-		
-		rootFullName := fmt.Sprintf("%s@%s:%s", rfn, "branch", branchName)
-		repoPath := fmt.Sprintf("/repo/%s", rfn)
-		rootPath := fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName)
-		treePathModelValue := &templates.TreePathTemplateModel{
-			RootFullName: rootFullName,
-			RootPath: rootPath,
-			TreePath: treePath,
-			TreePathSegmentList: treePathSegmentList,
-		}
-		permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
-		
-		isBlameRequest := r.URL.Query().Has("blame")
-		if isBlameRequest && isTargetBlob {
-			mime := mime.TypeByExtension(path.Ext(treePath))
-			if len(mime) <= 0 { mime = "application/octet-stream" }
-			if !strings.HasPrefix(mime, "image/") {
-				dirPath := path.Dir(treePath) + "/"
-				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
+			
+			
+			switch target.Type() {
+			case gitlib.TREE:
+				if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
+					FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
 					return
 				}
-				blame, err := rr.Blame(cobj, treePath)
-				if err != nil {
-					ctx.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
-					return
+				// NOTE: this is intentional. by the time we've reached here
+				// `treePath` would end with a slash `/`, and the first `path.Dir`
+				// call would only remove that slash, whose result is not the path
+				// of the parent directory.
+				var parentTreeFileList *templates.TreeFileListTemplateModel = nil
+				if treePath != "" {
+					dirPath := path.Dir(path.Dir(treePath)) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						rc.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					parentTreeFileList = &templates.TreeFileListTemplateModel{
+						ShouldHaveParentLink: len(treePath) > 0,
+						RepoPath: repoPath,
+						RootPath: rootPath,
+						TreePath: dirPath,
+						FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+					}
 				}
-				LogTemplateError(ctx.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+				// TODO: find a better way to do this...
+				for i, k := range target.(*gitlib.TreeObject).ObjectList {
+					cid, err := rr.ResolvePathLastCommitId(cobj, treePath + k.Name)
+					if err != nil { continue }
+					o, err := rr.ReadObject(strings.TrimSpace(cid))
+					if err != nil { continue }
+					target.(*gitlib.TreeObject).ObjectList[i].LastCommit = o.(*gitlib.CommitObject)
+				}
+				LogTemplateError(rc.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 					Repository: repo,
 					RepoHeaderInfo: *repoHeaderInfo,
 					TreeFileList: &templates.TreeFileListTemplateModel{
 						ShouldHaveParentLink: len(treePath) > 0,
-						RepoPath: fmt.Sprintf("/repo/%s", rfn),
-						RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
+						RepoPath: repoPath,
+						RootPath: rootPath,
+						TreePath: treePath,
+						FileList: target.(*gitlib.TreeObject).ObjectList,
+					},
+					ParentTreeFileList: parentTreeFileList,
+					PermaLink: permaLink,
+					TreePath: treePathModelValue,
+					CommitInfo: commitInfo,
+					TagInfo: nil,
+					LoginInfo: rc.LoginInfo,
+					Config: rc.Config,
+				}))
+			case gitlib.BLOB:
+				dirPath := path.Dir(treePath) + "/"
+				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+				if err != nil {
+					rc.ReportInternalError(err.Error(), w, r)
+					return
+				}
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				templateType := "file-text"
+				if strings.HasPrefix(mime, "image/") {
+					templateType = "file-image"
+				}
+				bobj := target.(*gitlib.BlobObject)
+				if r.URL.Query().Has("raw") {
+					w.Header().Add("Content-Type", mime)
+					w.Write(bobj.Data)
+					return
+				}
+				str := string(bobj.Data)
+				filename := path.Base(treePath)
+				coloredStr, err := colorSyntax(filename, str)
+				if err == nil { str = coloredStr }
+				LogTemplateError(rc.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
+					Repository: repo,
+					RepoHeaderInfo: *repoHeaderInfo,
+					File: templates.BlobTextTemplateModel{
+						FileLineCount: strings.Count(str, "\n"),
+						FileContent: str,
+					},
+					PermaLink: permaLink,
+					TreeFileList: &templates.TreeFileListTemplateModel{
+						ShouldHaveParentLink: len(treePath) > 0,
+						RepoPath: repoPath,
+						RootPath: rootPath,
 						TreePath: dirPath,
 						FileList: dirObj.(*gitlib.TreeObject).ObjectList,
 					},
+					AllowBlame: !strings.HasPrefix(mime, "image/"),
 					TreePath: treePathModelValue,
-					PermaLink: permaLink,
-					Blame: blame,
 					CommitInfo: commitInfo,
 					TagInfo: nil,
-					LoginInfo: loginInfo,
-					Config: ctx.Config,
+					LoginInfo: rc.LoginInfo,
+					Config: rc.Config,
 				}))
-				return
+			default:
+				rc.ReportInternalError("", w, r)
 			}
-		}
-		
-		isEditRequest := r.URL.Query().Has("edit")
-		if isEditRequest && isTargetBlob {
-			mime := mime.TypeByExtension(path.Ext(treePath))
-			if len(mime) <= 0 { mime = "application/octet-stream" }
-			if !strings.HasPrefix(mime, "image/") {
-				LogTemplateError(ctx.LoadTemplate("edit-file").Execute(w, &templates.EditFileTemplateModel{
-					Config: ctx.Config,
-					Repository: repo,
-					RepoHeaderInfo: *repoHeaderInfo,
-					PermaLink: permaLink,
-					FullTreePath: treePath,
-					FileContent: string(target.(*gitlib.BlobObject).Data),
-					CommitInfo: commitInfo,
-					TagInfo: nil,
-					LoginInfo: loginInfo,
-				}))
-			} else {
-				// TODO: upload.
-			}
-			return
-		}
-			
-			
-		switch target.Type() {
-		case gitlib.TREE:
-			if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
-				FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
-				return
-			}
-			// NOTE: this is intentional. by the time we've reached here
-			// `treePath` would end with a slash `/`, and the first `path.Dir`
-			// call would only remove that slash, whose result is not the path
-			// of the parent directory.
-			var parentTreeFileList *templates.TreeFileListTemplateModel = nil
-			if treePath != "" {
-				dirPath := path.Dir(path.Dir(treePath)) + "/"
-				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
-				}
-				parentTreeFileList = &templates.TreeFileListTemplateModel{
-					ShouldHaveParentLink: len(treePath) > 0,
-					RepoPath: repoPath,
-					RootPath: rootPath,
-					TreePath: dirPath,
-					FileList: dirObj.(*gitlib.TreeObject).ObjectList,
-				}
-			}
-			// TODO: find a better way to do this...
-			for i, k := range target.(*gitlib.TreeObject).ObjectList {
-				cid, err := rr.ResolvePathLastCommitId(cobj, treePath + k.Name)
-				if err != nil { continue }
-				o, err := rr.ReadObject(strings.TrimSpace(cid))
-				if err != nil { continue }
-				target.(*gitlib.TreeObject).ObjectList[i].LastCommit = o.(*gitlib.CommitObject)
-			}
-			LogTemplateError(ctx.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
-				Repository: repo,
-				RepoHeaderInfo: *repoHeaderInfo,
-				TreeFileList: &templates.TreeFileListTemplateModel{
-					ShouldHaveParentLink: len(treePath) > 0,
-					RepoPath: repoPath,
-					RootPath: rootPath,
-					TreePath: treePath,
-					FileList: target.(*gitlib.TreeObject).ObjectList,
-				},
-				ParentTreeFileList: parentTreeFileList,
-				PermaLink: permaLink,
-				TreePath: treePathModelValue,
-				CommitInfo: commitInfo,
-				TagInfo: nil,
-				LoginInfo: loginInfo,
-				Config: ctx.Config,
-			}))
-		case gitlib.BLOB:
-			dirPath := path.Dir(treePath) + "/"
-			dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			mime := mime.TypeByExtension(path.Ext(treePath))
-			if len(mime) <= 0 { mime = "application/octet-stream" }
-			templateType := "file-text"
-			if strings.HasPrefix(mime, "image/") {
-				templateType = "file-image"
-			}
-			bobj := target.(*gitlib.BlobObject)
-			if r.URL.Query().Has("raw") {
-				w.Header().Add("Content-Type", mime)
-				w.Write(bobj.Data)
-				return
-			}
-			str := string(bobj.Data)
-			filename := path.Base(treePath)
-			coloredStr, err := colorSyntax(filename, str)
-			if err == nil { str = coloredStr }
-			LogTemplateError(ctx.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
-				Repository: repo,
-				RepoHeaderInfo: *repoHeaderInfo,
-				File: templates.BlobTextTemplateModel{
-					FileLineCount: strings.Count(str, "\n"),
-					FileContent: str,
-				},
-				PermaLink: permaLink,
-				TreeFileList: &templates.TreeFileListTemplateModel{
-					ShouldHaveParentLink: len(treePath) > 0,
-					RepoPath: repoPath,
-					RootPath: rootPath,
-					TreePath: dirPath,
-					FileList: dirObj.(*gitlib.TreeObject).ObjectList,
-				},
-				AllowBlame: !strings.HasPrefix(mime, "image/"),
-				TreePath: treePathModelValue,
-				CommitInfo: commitInfo,
-				TagInfo: nil,
-				LoginInfo: loginInfo,
-				Config: ctx.Config,
-			}))
-		default:
-			ctx.ReportInternalError("", w, r)
-		}
-	}))
+		},
+	))
 
 	http.HandleFunc("POST /repo/{repoName}/branch/{branchName}/{treePath...}", UseMiddleware(
 		[]Middleware{
-			Logged, LoginRequired, GlobalVisibility,
+			Logged, ValidPOSTRequestRequired,
+			LoginRequired, GlobalVisibility,
 			ValidRepositoryNameRequired("repoName"),
 			ErrorGuard,
 		}, ctx,

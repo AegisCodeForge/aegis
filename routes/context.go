@@ -42,6 +42,24 @@ func (ctx RouterContext) LoadTemplate(name string) *template.Template {
 	return ctx.MasterTemplate.Lookup(name)
 }
 
+func (ctx *RouterContext) NewLocal() *RouterContext {
+	return &RouterContext{
+		Config: ctx.Config,
+		MasterTemplate: ctx.MasterTemplate,
+		GitRepositoryList: ctx.GitRepositoryList,
+		GitNamespaceList: ctx.GitNamespaceList,
+		DatabaseInterface: ctx.DatabaseInterface,
+		SessionInterface: ctx.SessionInterface,
+		SSHKeyManagingContext: ctx.SSHKeyManagingContext,
+		ReceiptSystem: ctx.ReceiptSystem,
+		Mailer: ctx.Mailer,
+		LoginInfo: &templates.LoginInfoModel{},
+		LastError: ctx.LastError,
+		RateLimiter: ctx.RateLimiter,
+		ConfirmCodeManager: ctx.ConfirmCodeManager,
+	}
+}
+
 func (ctx RouterContext) ReportNotFound(objName string, objType string, namespace string, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(404)
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,

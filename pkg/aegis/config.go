@@ -9,12 +9,14 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 )
 
 type AegisConfig struct {
+	lock sync.RWMutex
 	FilePath string
 	// the version of the configuration file. currently only 0 is
 	// allowed.
@@ -296,6 +298,14 @@ func (cfg *AegisConfig) ProperReceiptSystemPath() string {
 
 func (cfg *AegisConfig) GitSSHHostName() string {
 	return cfg.gitSshHostName
+}
+
+func (cfg *AegisConfig) LockForSync() {
+	cfg.lock.Lock()
+}
+
+func (cfg *AegisConfig) Unlock() {
+	cfg.lock.Unlock()
 }
 
 func CreateConfigFile(p string) error {
