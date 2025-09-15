@@ -39,7 +39,7 @@ func bindAdminReceiptListController(ctx *RouterContext) {
 				receiptList, err = rc.ReceiptSystem.GetAllReceipt(int(pageNum-1), int(pageSize))
 			}
 			if err != nil {
-				rc.ReportInternalError(fmt.Sprintln("Failed to get receipt: %s", err), w, r)
+				rc.ReportInternalError(fmt.Sprintf("Failed to get receipt: %s", err), w, r)
 				return
 			}
 			LogTemplateError(rc.LoadTemplate("admin/receipt-list").Execute(w, &templates.AdminReceiptListTemplateModel{

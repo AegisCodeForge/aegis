@@ -7,15 +7,17 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-
 func bindMaintenanceNoticeController(ctx *RouterContext) {
-	http.HandleFunc("GET /maintenance-notice", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, _ := GenerateLoginInfoModel(ctx, r)
-		LogTemplateError(ctx.LoadTemplate("maintenance-notice").Execute(w, &templates.MaintenanceNoticeTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Message: ctx.Config.MaintenanceMessage,
-		}))
-	}))
+	http.HandleFunc("GET /maintenance-notice", UseMiddleware(
+		[]Middleware{Logged, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			loginInfo, _ := GenerateLoginInfoModel(ctx, r)
+			LogTemplateError(ctx.LoadTemplate("maintenance-notice").Execute(w, &templates.MaintenanceNoticeTemplateModel{
+				Config: ctx.Config,
+				LoginInfo: loginInfo,
+				Message: ctx.Config.MaintenanceMessage,
+			}))
+		},
+	))
 }
 

@@ -20,7 +20,10 @@ func bindNewSnippetController(ctx *RouterContext) {
 		},
 	))
 	http.HandleFunc("POST /new/snippet", UseMiddleware(
-		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, ValidPOSTRequestRequired,
+			UseLoginInfo, LoginRequired,
+			GlobalVisibility, ErrorGuard,
+		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			err := r.ParseForm()
 			if err != nil {

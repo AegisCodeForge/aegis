@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
@@ -13,99 +12,77 @@ import (
 
 func bindNamespaceController(ctx *RouterContext) {
 	if !ctx.Config.UseNamespace { return }
-	http.HandleFunc("GET /s/{namespace}", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		namespaceName := r.PathValue("namespace")
-		if !model.ValidNamespaceName(namespaceName) {
-			ctx.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
-			return
-		}
-		var ns *model.Namespace
-		var ok bool
-		var err error
-		var loginInfo *templates.LoginInfoModel
-		if !ctx.Config.PlainMode {
-			loginInfo, err = GenerateLoginInfoModel(ctx, r)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
+	http.HandleFunc("GET /s/{namespace}", UseMiddleware(
+		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			namespaceName := r.PathValue("namespace")
+			if !model.ValidNamespaceName(namespaceName) {
+				rc.ReportNotFound(namespaceName, "Repository", "Depot", w, r)
 				return
 			}
-		}
-		if ctx.Config.PlainMode || !CheckGlobalVisibleToUser(ctx, loginInfo) {
-			switch ctx.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
-				FoundAt(w, "/maintenance-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
-				FoundAt(w, "/shutdown-notice")
-				return
-			case aegis.GLOBAL_VISIBILITY_PRIVATE:
-				if !ctx.Config.PlainMode {
-					FoundAt(w, "/login")
-				} else {
-					FoundAt(w, "/private-notice")
-				}
-				return
-			}
-		}
-		if ctx.Config.PlainMode {
-			ns, ok = ctx.GitNamespaceList[namespaceName]
-			if !ok {
-				err = ctx.SyncAllNamespacePlain()
-				if err != nil {
-					ctx.ReportInternalError(err.Error(), w, r)
-					return
-				}
-				ns, ok = ctx.GitNamespaceList[namespaceName]
+			var ns *model.Namespace
+			var ok bool
+			var err error
+			if rc.Config.PlainMode {
+				ns, ok = rc.GitNamespaceList[namespaceName]
 				if !ok {
-					ctx.ReportNotFound(namespaceName, "Namespace", ctx.Config.DepotName, w, r)
+					err = rc.SyncAllNamespacePlain()
+					if err != nil {
+						rc.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					ns, ok = rc.GitNamespaceList[namespaceName]
+					if !ok {
+						rc.ReportNotFound(namespaceName, "Namespace", rc.Config.DepotName, w, r)
+						return
+					}
+				}
+				LogTemplateError(rc.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
+					Namespace: ns,
+					Config: rc.Config,
+				}))
+			} else {
+				ns, err = rc.DatabaseInterface.GetNamespaceByName(namespaceName)
+				if err != nil {
+					rc.ReportInternalError(err.Error(), w, r)
 					return
 				}
-			}
-			LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
-				Namespace: ns,
-				Config: ctx.Config,
-			}))
-		} else {
-			ns, err = ctx.DatabaseInterface.GetNamespaceByName(namespaceName)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			if ns.Status == model.NAMESPACE_INTERNAL {
-				if !loginInfo.LoggedIn {
-					ctx.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+				if ns.Status == model.NAMESPACE_INTERNAL {
+					if !rc.LoginInfo.LoggedIn {
+						rc.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+						return
+					}
+				}
+				if ns.Status == model.NAMESPACE_NORMAL_PRIVATE {
+					if !rc.LoginInfo.LoggedIn {
+						rc.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+						return
+					}
+					rc.LoginInfo.IsOwner = ns.Owner == rc.LoginInfo.UserName
+					v := ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName).HasSettingPrivilege()
+					rc.LoginInfo.IsSettingMember = v
+					if !rc.LoginInfo.IsAdmin && !rc.LoginInfo.IsOwner && !rc.LoginInfo.IsSettingMember {
+						rc.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
+						return
+					}
+				}
+				s, err := rc.DatabaseInterface.GetAllVisibleRepositoryFromNamespace(rc.LoginInfo.UserName, ns.Name)
+				if err != nil {
+					rc.ReportInternalError(err.Error(), w, r)
 					return
 				}
-			}
-			if ns.Status == model.NAMESPACE_NORMAL_PRIVATE {
-				if !loginInfo.LoggedIn {
-					ctx.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
-					return
+				ns.RepositoryList = make(map[string]*model.Repository, 0)
+				for _, k := range s {
+					ns.RepositoryList[k.Name] = k
 				}
-				loginInfo.IsOwner = ns.Owner == loginInfo.UserName
-				v := ns.ACL.GetUserPrivilege(loginInfo.UserName).HasSettingPrivilege()
-				loginInfo.IsSettingMember = v
-				if !loginInfo.IsAdmin && !loginInfo.IsOwner && !loginInfo.IsSettingMember {
-					ctx.ReportNotFound(namespaceName, "Namespace", "Depot", w, r)
-					return
-				}
+				LogTemplateError(rc.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
+					Namespace: ns,
+					LoginInfo: rc.LoginInfo,
+					Config: rc.Config,
+				}))
 			}
-			s, err := ctx.DatabaseInterface.GetAllVisibleRepositoryFromNamespace(loginInfo.UserName, ns.Name)
-			if err != nil {
-				ctx.ReportInternalError(err.Error(), w, r)
-				return
-			}
-			ns.RepositoryList = make(map[string]*model.Repository, 0)
-			for _, k := range s {
-				ns.RepositoryList[k.Name] = k
-			}
-			LogTemplateError(ctx.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
-				Namespace: ns,
-				LoginInfo: loginInfo,
-				Config: ctx.Config,
-			}))
-		}
-	}))
+		},
+	))
 	
 	http.HandleFunc("GET /s/{namespace}/new-repo", UseMiddleware(
 		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
@@ -139,16 +116,13 @@ func bindNamespaceController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("POST /s/{namespace}/new-repo", UseMiddleware(
-		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, ValidPOSTRequestRequired,
+			LoginRequired, GlobalVisibility, ErrorGuard,
+		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			nsName := r.PathValue("namespace")
 			if !model.ValidNamespaceName(nsName) {
 				rc.ReportNotFound(nsName, "Namespace", "Depot", w, r)
-				return
-			}
-			err := r.ParseForm()
-			if err != nil {
-				rc.ReportNormalError("Invalid request", w, r)
 				return
 			}
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(nsName)

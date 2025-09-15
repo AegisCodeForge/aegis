@@ -12,7 +12,7 @@ import (
 func bindSettingEmailController(ctx *RouterContext) {
 	http.HandleFunc("GET /setting/email", UseMiddleware(
 		[]Middleware{
-			Logged, LoginRequired, GlobalVisibility,
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			e, err := rc.DatabaseInterface.GetAllRegisteredEmailOfUser(rc.LoginInfo.UserName)
@@ -42,8 +42,8 @@ func bindSettingEmailController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("POST /setting/email", UseMiddleware(
-		[]Middleware{
-			Logged, LoginRequired, GlobalVisibility,
+		[]Middleware{ Logged, ValidPOSTRequestRequired,
+			LoginRequired, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			err := r.ParseForm()
@@ -67,7 +67,7 @@ func bindSettingEmailController(ctx *RouterContext) {
 	
 	http.HandleFunc("GET /setting/email/verify", UseMiddleware(
 		[]Middleware{
-			Logged, LoginRequired, GlobalVisibility,
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			err := r.ParseForm()
@@ -97,24 +97,18 @@ We wish you all the best in your future endeavours.
 
 %s
 `, rc.LoginInfo.UserName, rc.Config.DepotName, rc.Config.ProperHTTPHostName(), rid, rc.Config.DepotName)
-			err = rc.Mailer.SendPlainTextMail(email, title, body)
-			if err != nil {
-				
-			}
+			go func() {
+				rc.Mailer.SendPlainTextMail(email, title, body)
+			}()
 			rc.ReportRedirect("/setting/email", 3, "Verification Email Sent", "Please follow the instruction in the email to verify this email.", w, r)
 		},
 	))
 	
 	http.HandleFunc("GET /setting/email/primary", UseMiddleware(
 		[]Middleware{
-			Logged, LoginRequired, GlobalVisibility,
+			Logged, LoginRequired, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			err := r.ParseForm()
-			if err != nil {
-				rc.ReportNormalError("Invalid request", w, r)
-				return
-			}
 			email := r.URL.Query().Get("email")
 			if len(email) <= 0 {
 				rc.ReportRedirect("/setting/email", 3, "Invalid Request", "This email is not associated with your user account.", w, r)

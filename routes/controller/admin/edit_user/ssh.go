@@ -39,7 +39,6 @@ func bindAdminEditUserSSHController(ctx *RouterContext) {
 				User: u,
 				KeyList: s,
 			}))
-			return
 		},
 	))
 	
@@ -71,7 +70,6 @@ func bindAdminEditUserSSHController(ctx *RouterContext) {
 				User: u,
 				Key: k,
 			}))
-			return
 		},
 	))
 	

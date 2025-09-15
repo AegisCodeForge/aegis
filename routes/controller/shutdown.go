@@ -9,13 +9,15 @@ import (
 
 
 func bindShutdownNoticeController(ctx *RouterContext) {
-	http.HandleFunc("GET /shutdown-notice", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, _ := GenerateLoginInfoModel(ctx, r)
-		LogTemplateError(ctx.LoadTemplate("shutdown-notice").Execute(w, &templates.ShutdownNoticeTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Message: ctx.Config.ShutdownMessage,
-		}))
-	}))
+	http.HandleFunc("GET /shutdown-notice", UseMiddleware(
+		[]Middleware{Logged, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			LogTemplateError(rc.LoadTemplate("shutdown-notice").Execute(w, &templates.ShutdownNoticeTemplateModel{
+				Config: rc.Config,
+				LoginInfo: rc.LoginInfo,
+				Message: rc.Config.ShutdownMessage,
+			}))
+		},
+	))
 }
 

@@ -130,3 +130,4 @@ func bindUserController(ctx *RouterContext) {
 		},
 	))
 }
+
