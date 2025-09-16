@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+	<link rel="stylesheet" href="/static/style.css">
+	<title>Edit file at {{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.Repository.Name}} :: {{.Config.DepotName}}</title>
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  {{template "_repo-header" .}}
+	</header>
+	
+	<div class="node-description">
+	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
+	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	</div>
+	
+	<hr />
+	
+	<main>
+	  <div class="file-tree left-side">
+	  </div>
+	  <div class="file main-side">
+		<div class="main-side-top">
+		  <span style="flex-grow: 2"><b>Replacing file</b> {{.FullTreePath}}  </span>
+		  <div class="file-nav">{{if eq .LoginInfo.UserName .Repository.Owner}}<a href="?">Source</a> {{end}}<a href="?blame">Blame</a> <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+		</div>
+
+		<form class="edit-file-form" action="" method="POST" enctype="multipart/form-data">
+		  <input type="hidden" name="action" value="replace"/>
+		  <div class="field">
+			<label class="field-label" for="file-upload">Upload file:</label>
+			<input type="file" name="file-upload" />
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="commit-message">Commit Message:</label>
+			<textarea name="commit-message" id="commit-message"></textarea>
+		  </div>
+		  <div class="field">
+			<input type="submit" value="Submit" />
+		  </div>
+		</form>
+	  </div>
+	</main>
+	
+	<hr />
+	
+	<footer>
+	  <a href="{{getRepoPath .Repository.Namespace .Repository.Name}}">Back (Repository)</a>
+	  <a href="/">Back (Depot)</a>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

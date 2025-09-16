@@ -514,6 +514,14 @@ func bindBranchController(ctx *RouterContext) {
 						return
 					}
 				}
+			case "replace":
+				treePath = r.PathValue("treePath")
+				f, e, err := r.FormFile("file-upload")
+				commitId, err = addFileToRepoReader(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, f, e.Size)
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
+					return
+				}
 			}
 			commitId = strings.TrimSpace(commitId)
 			cmd2 := exec.Command("git", "update-ref", fmt.Sprintf("refs/heads/%s", branchName), commitId)
