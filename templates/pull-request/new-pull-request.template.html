@@ -44,7 +44,9 @@
 		<p>There is no repository available for creating a pull request. <a href="{{$repoPath}}/fork">Create a fork and push your changes to your fork first.</a></p>
 		{{end}}
 		{{else}}
+		{{if not .ChosenProviderRepository}}
 		<p>There is no repository available for creating a pull request. <a href="{{$repoPath}}/fork">Create a fork and push your changes to your fork first.</a></p>
+		{{end}}
 		{{end}}
 
 		{{if .ProviderBranchList}}

@@ -96,10 +96,10 @@ func bindUserController(ctx *RouterContext) {
 			}
 			
 			pStr := r.URL.Query().Get("p")
-			p, err := strconv.ParseInt(pStr, 10, 64)
+			p, err := strconv.ParseInt(pStr, 10, 32)
 			if err != nil || p <= 0 { p = 1 }
 			sStr := r.URL.Query().Get("s")
-			s, err := strconv.ParseInt(sStr, 10, 64)
+			s, err := strconv.ParseInt(sStr, 10, 32)
 			if err != nil || s <= 0 { s = 30 }
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
 			count, err := rc.DatabaseInterface.CountAllVisibleSnippet(username, viewingUser, q)

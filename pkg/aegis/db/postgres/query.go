@@ -936,6 +936,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 `, pfx), repoType, ns, name, new(string), owner, model.NewACL(), model.REPO_NORMAL_PUBLIC, new(string), new(string), new(string), webhookobj)
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
+	if !db.IsSubDir(dbif.config.GitRoot, p) {
+		return nil, errors.New("Invalid repository path")
+	}
 	if err = os.RemoveAll(p); err != nil { return nil, err }
 	if err = os.MkdirAll(p, os.ModeDir|0755); err != nil { return nil, err }
 	lr, err := model.CreateLocalRepository(repoType, ns, name, p)
@@ -978,6 +981,7 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	r.Owner = owner
 	r.RepoLabelList = nil
 	r.WebHookConfig = webhookobj
+	fmt.Println("done!")
 	return r, nil
 }
 
@@ -2131,7 +2135,7 @@ SELECT COUNT(*) FROM %s_pull_request WHERE receiver_namespace = $1 AND receiver_
 	if err != nil { return 0, err }
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_pull_request(author_username, pull_request_id, title, receiver_namespace, receiver_name, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_requst_timestep)
+INSERT INTO %s_pull_request(author_username, pull_request_id, title, receiver_namespace, receiver_name, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 `, pfx), username, newId, title, receiverNamespace, receiverName, receiverBranch, providerNamespace, providerName, providerBranch, new(string), new(time.Time), model.PULL_REQUEST_OPEN, time.Now())
 	if err != nil { return 0, err }

@@ -290,6 +290,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	// and triggered an error already. of course we should remove
 	// "deleted" user regularly from the dbto prevent possible sabotage.
 	userNsPath := path.Join(dbif.config.GitRoot, name)
+	if !db.IsSubDir(dbif.config.GitRoot, userNsPath) {
+		return nil, errors.New("Invalid user namespace path")
+	}
 	err = os.RemoveAll(userNsPath)
 	if err != nil && !os.IsNotExist(err) { tx.Rollback(); return nil, err }
 	err = os.MkdirAll(userNsPath, os.ModeDir|0755)

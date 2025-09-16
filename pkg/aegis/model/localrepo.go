@@ -40,7 +40,9 @@ func InitLocalRepository(lr LocalRepository) error {
 func CreateLocalForkOf(origin LocalRepository, newNs string, newName string, newP string) (LocalRepository, error) {
 	switch GetAegisType(origin) {
 	case REPO_TYPE_GIT:
-		return origin.(*gitlib.LocalGitRepository).LocalForkTo(fmt.Sprintf("%s/%s", newNs, newName), newP), nil
+		err := origin.(*gitlib.LocalGitRepository).LocalForkTo(fmt.Sprintf("%s/%s", newNs, newName), newP)
+		if err != nil { return nil, err }
+		return CreateLocalRepository(REPO_TYPE_GIT, newNs, newName, newP)
 	default:
 		return nil, ErrNotSupported
 	}

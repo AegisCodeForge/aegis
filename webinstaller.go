@@ -156,7 +156,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			ctx.reportRedirect("/step3", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
-		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("session-database-number")), 10, 64)
+		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("session-database-number")), 10, 32)
 		if err != nil {
 			ctx.reportRedirect("/step3", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
@@ -186,7 +186,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			ctx.reportRedirect("/step4", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
-		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("mailer-smtp-port")), 10, 64)
+		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("mailer-smtp-port")), 10, 32)
 		if err != nil {
 			ctx.reportRedirect("/step4", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
@@ -292,7 +292,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}
 		ctx.Config.DepotName = strings.TrimSpace(r.Form.Get("depot-name"))
 		ctx.Config.BindAddress = strings.TrimSpace(r.Form.Get("bind-address"))
-		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("bind-port")), 10, 64)
+		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("bind-port")), 10, 32)
 		if err != nil {
 			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
@@ -404,8 +404,8 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Somehow failed to retrieve user after registering: %s\n", err.Error())
 				return false
 			}
-			uid, _ := strconv.ParseInt(gitUser.Uid, 10, 64)
-			gid, _ := strconv.ParseInt(gitUser.Gid, 10, 64)
+			uid, _ := strconv.Atoi(gitUser.Uid)
+			gid, _ := strconv.Atoi(gitUser.Gid)
 			fmt.Fprint(w,"<p>Chown-ing git user home directory...</p>")
 			err = os.Chown(homePath, int(uid), int(gid))
 			if err != nil {
@@ -457,14 +457,14 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
 				return false
 			}
-			err = os.Chown(aegisPath, int(uid), int(gid))
+			err = os.Chown(aegisPath, uid, gid)
 			if err != nil {
 				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
 				return false
 			}
 			err = os.MkdirAll(ctx.Config.GitRoot, os.ModeDir|0755)
 			if errors.Is(err, os.ErrExist) {
-				err = os.Chown(ctx.Config.GitRoot, int(uid), int(gid))
+				err = os.Chown(ctx.Config.GitRoot, uid, gid)
 				if err != nil {
 					fmt.Fprintf(w, "<p>Failed to chown git root: %s\n</p>", err.Error())
 					return false
@@ -602,10 +602,8 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			var uid int
 			var gid int
 			if gitUser != nil {
-				uid64, _ := strconv.ParseInt(gitUser.Uid, 10, 64)
-				gid64, _ := strconv.ParseInt(gitUser.Gid, 10, 64)
-				uid = int(uid64)
-				gid = int(gid64)
+				uid, _ = strconv.Atoi(gitUser.Uid)
+				gid, _ = strconv.Atoi(gitUser.Gid)
 			}
 			if ctx.Config.Database.Type == "sqlite" {
 				if gitUser == nil {
