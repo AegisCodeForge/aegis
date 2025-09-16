@@ -41,7 +41,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 			if err != nil { p = 1 }
 			ps, err := strconv.ParseInt(sStr, 10, 64)
 			if err != nil { ps = 30 }
-			f, err := strconv.ParseInt(fStr, 10, 64)
+			f, err := strconv.ParseInt(fStr, 10, 32)
 			if err != nil { f = 0 }
 			count, err := rc.DatabaseInterface.CountPullRequest(q, s.Namespace, s.Name, int(f))
 			if err != nil {

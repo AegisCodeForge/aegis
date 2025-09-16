@@ -143,7 +143,7 @@ func bindSnippetController(ctx *RouterContext) {
 			}
 			visibility := r.Form.Get("status")
 			description := r.Form.Get("description")
-			s, err := strconv.Atoi(visibility)
+			s, err := strconv.ParseInt(visibility, 10, 8)
 			if err != nil {
 				rc.ReportNormalError("Invalid request", w, r)
 				return

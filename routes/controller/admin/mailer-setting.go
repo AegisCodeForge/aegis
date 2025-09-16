@@ -38,7 +38,7 @@ func bindAdminMailerSettingController(ctx *RouterContext) {
 				return
 			}
 			if r.Form.Get("action") == "Test Mailer" {
-				port, err := strconv.ParseInt(r.Form.Get("port"), 10, 64)
+				port, err := strconv.ParseInt(r.Form.Get("port"), 10, 32)
 				if err != nil {
 				rc.ReportNormalError("Invalid request", w, r)
 					return

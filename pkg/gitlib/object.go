@@ -46,7 +46,7 @@ func (got GitObjectType) String() string {
 type RawGitObject struct {
 	objId string
 	objType GitObjectType
-	objSize int
+	objSize int64
 	reader io.ReadCloser
 	// we need to have this because directly accessible objects and
 	// packed objects both use the same RawGitObject datatype in our
@@ -69,7 +69,7 @@ type RawGitObject struct {
 
 type GitObjectHeader struct {
 	Type GitObjectType
-	Size int
+	Size int64
 }
 
 func EncodeAsDirectObject(gobj GitObject) ([]byte, error) {
@@ -115,7 +115,7 @@ func parseDirectlyAccessibleObjectHeader(s io.Reader) (GitObjectHeader, error) {
 	case "commit": typenum = COMMIT
 	default: return GitObjectHeader{}, errors.New("Invalid object type in header")
 	}
-	return GitObjectHeader{Type: typenum, Size: int(size)}, nil
+	return GitObjectHeader{Type: typenum, Size: size}, nil
 }
 
 func (gr LocalGitRepository) openRawDirectlyAccessibleObject(oid string) (RawGitObject, error) {
@@ -306,7 +306,7 @@ func (gr LocalGitRepository) resolveObject(obj GitObject) (GitObject, error) {
 	resrgo := RawGitObject{
 		objId: obj.ObjectId(),
 		objType: baseObj.Type(),
-		objSize: len(res),
+		objSize: int64(len(res)),
 		reader: br,
 		packIndex: packIndex,
 	}

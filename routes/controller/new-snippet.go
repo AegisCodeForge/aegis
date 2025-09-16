@@ -34,7 +34,7 @@ func bindNewSnippetController(ctx *RouterContext) {
 			name := r.Form.Get("name")
 			filename := r.Form.Get("filename")
 			statusStr := r.Form.Get("status")
-			status, err := strconv.Atoi(statusStr)
+			status, err := strconv.ParseInt(statusStr, 10, 8)
 			if err != nil {
 				rc.ReportNormalError("Invalid request", w, r)
 				return

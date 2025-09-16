@@ -132,7 +132,7 @@ func parsePackedObjectHeaderAtOffset(pf *os.File, offset int64) (GitObjectHeader
 	}
 	return GitObjectHeader{
 		Type: typenum,
-		Size: int(size),
+		Size: size,
 	}, nil
 }
 

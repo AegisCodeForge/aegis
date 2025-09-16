@@ -30,7 +30,7 @@ func bindIssueController(ctx *RouterContext) {
 			if err != nil { p64 = 1 }
 			s, err := strconv.ParseInt(sStr, 10, 64)
 			if err != nil { s = 30 }
-			f, err := strconv.ParseInt(fStr, 10, 64)
+			f, err := strconv.ParseInt(fStr, 10, 32)
 			if err != nil { f = 0 }
 			count, err := rc.DatabaseInterface.CountIssue(q, nsName, repoName, int(f))
 			if err != nil {
