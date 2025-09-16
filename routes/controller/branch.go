@@ -3,6 +3,7 @@ package controller
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"mime"
 	"net/http"
 	"os/exec"
@@ -22,6 +23,103 @@ func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName str
 		repo.Namespace, repo.Name, branchName,
 	)
 	responseWithTreeZip(repo, obj, filename, w)
+}
+
+func addFileToRepoString(
+	repo *model.Repository,
+	branchName string, p string,
+	authorName string, authorEmail string,
+	commitName string, commitEmail string,
+	commitMessage string,
+	content string,
+) (string, error) {
+	cmd := exec.Command("git", "fast-import", "--date-format=now", "--quiet")
+	cmd.Dir = repo.LocalPath
+	stdoutBuff := new(bytes.Buffer)
+	cmd.Stdout = stdoutBuff
+	stderrBuf := new(bytes.Buffer)
+	cmd.Stderr = stderrBuf
+	stdinPipe, err := cmd.StdinPipe()
+	if err != nil { return "", err }
+	payload := fmt.Sprintf(`commit refs/heads/%s
+mark :1
+author %s <%s> now
+committer %s <%s> now
+data %d
+%s
+from refs/heads/%s^0
+M 100644 inline %s
+data %d
+%s
+get-mark :1`,
+		branchName, authorName, authorEmail,
+		commitName, commitEmail,
+		len(commitMessage), commitMessage,
+		branchName,
+		p,
+		len(content), content,
+	)
+	err = cmd.Start()
+	if err != nil { return "", err }
+	_, err = stdinPipe.Write([]byte(payload))
+	if err != nil { return "", err }
+	err = stdinPipe.Close()
+	if err != nil { return "", err }
+	err = cmd.Wait()
+	if err != nil { return "", err }
+	return stdoutBuff.String(), nil
+}
+
+func addFileToRepoReader(
+	repo *model.Repository,
+	branchName string, p string,
+	authorName string, authorEmail string,
+	commitName string, commitEmail string,
+	commitMessage string,
+	content io.Reader, contentSize int64,
+) (string, error) {
+	cmd := exec.Command("git", "fast-import", "--date-format=now", "--quiet")
+	cmd.Dir = repo.LocalPath
+	stdoutBuff := new(bytes.Buffer)
+	cmd.Stdout = stdoutBuff
+	stderrBuf := new(bytes.Buffer)
+	cmd.Stderr = stderrBuf
+	stdinPipe, err := cmd.StdinPipe()
+	fmt.Println("written1", err)
+	if err != nil { return "", err }
+	payload := fmt.Sprintf(`commit refs/heads/%s
+mark :1
+author %s <%s> now
+committer %s <%s> now
+data %d
+%s
+from refs/heads/%s^0
+M 100644 inline %s
+data %d
+`,
+		branchName, authorName, authorEmail,
+		commitName, commitEmail,
+		len(commitMessage), commitMessage,
+		branchName,
+		p,
+		contentSize,
+	)
+	err = cmd.Start()
+	fmt.Println("written1", err)
+	if err != nil { return "", err }
+	_, err = stdinPipe.Write([]byte(payload))
+	if err != nil { return "", err }
+	f, err := io.Copy(stdinPipe, content)
+	fmt.Println("written", f, err)
+	if err != nil { return "", err }
+	_, err = stdinPipe.Write([]byte(`
+get-mark :1`))
+	if err != nil { return "", err }
+	err = stdinPipe.Close()
+	if err != nil { return "", err }
+	err = cmd.Wait()
+	if err != nil { return "", err }
+	return stdoutBuff.String(), nil
 }
 
 func bindBranchController(ctx *RouterContext) {
@@ -117,6 +215,7 @@ func bindBranchController(ctx *RouterContext) {
 			}
 
 			isTargetBlob := target.Type() == gitlib.BLOB
+			isTargetTree := target.Type() == gitlib.TREE
 
 			// if it's a query for snapshot of a tree we directly output
 			// the tree object as a .zip file
@@ -194,6 +293,19 @@ func bindBranchController(ctx *RouterContext) {
 					return
 				}
 			}
+			isNewFileRequest := r.URL.Query().Has("new-file")
+			if isNewFileRequest && isTargetTree {
+				LogTemplateError(rc.LoadTemplate("new-file").Execute(w, &templates.NewFileTemplateModel{
+					Config: rc.Config,
+					Repository: repo,
+					RepoHeaderInfo: *repoHeaderInfo,
+					PermaLink: permaLink,
+					TargetFilePath: treePath,
+					CommitInfo: commitInfo,
+					LoginInfo: rc.LoginInfo,
+				}))
+				return
+			}
 			
 			isEditRequest := r.URL.Query().Has("edit")
 			if isEditRequest && isTargetBlob {
@@ -212,11 +324,19 @@ func bindBranchController(ctx *RouterContext) {
 						LoginInfo: rc.LoginInfo,
 					}))
 				} else {
-					// TODO: upload.
+					LogTemplateError(rc.LoadTemplate("upload-file").Execute(w, &templates.UploadFileTemplateModel{
+						Config: rc.Config,
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						PermaLink: permaLink,
+						FullTreePath: treePath,
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: rc.LoginInfo,
+					}))
 				}
 				return
 			}
-			
 			
 			switch target.Type() {
 			case gitlib.TREE:
@@ -347,11 +467,6 @@ func bindBranchController(ctx *RouterContext) {
 				FoundAt(w, fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, r.PathValue("branchName"), r.PathValue("treePath")))
 				return
 			}
-			err = r.ParseForm()
-			if err != nil {
-				rc.ReportNormalError("Invalid request", w, r)
-				return
-			}
 			if repo.Owner != rc.LoginInfo.UserName {
 				rc.ReportRedirect(
 					fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, r.PathValue("branchName"), r.PathValue("treePath")),
@@ -361,46 +476,49 @@ func bindBranchController(ctx *RouterContext) {
 					w, r,
 				)
 			}
-			commitMessage := r.Form.Get("commit-message")
-			content := r.Form.Get("content")
-			branchName := r.PathValue("branchName")
-			treePath := r.PathValue("treePath")
-			payload := fmt.Sprintf(`commit refs/heads/%s
-mark :1
-author %s <%s> now
-committer %s <%s> now
-data %d
-%s
-from refs/heads/%s^0
-M 100644 inline %s
-data %d
-%s
-get-mark :1`,
-				branchName,
-				rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail,
-				rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail,
-				len(commitMessage),
-				commitMessage,
-				branchName,
-				treePath,
-				len(content),
-				content,
-			)
-			cmd := exec.Command("git", "fast-import", "--date-format=now", "--quiet")
-			stdoutBuf := new(bytes.Buffer)
-			stderrBuf := new(bytes.Buffer)
-			cmd.Dir = repo.LocalPath
-			cmd.Stdout = stdoutBuf
-			cmd.Stderr = stderrBuf
-			cmd.Stdin = bytes.NewReader([]byte(payload))
-			err = cmd.Run()
-			if err != nil {
-				rc.ReportInternalError(fmt.Sprintf("Failed to fast-import commit: %s; %s", err.Error(), stderrBuf.String()), w, r)
-				return
+			// we have to handle the upload-file case carefully since the
+			// file could be big and i do not wish to read a big file into
+			// the memory.
+			action := strings.TrimSpace(r.Form.Get("action"))
+			if len(action) <= 0 {
+				r.ParseMultipartForm(32*1024*1024)
+				action = strings.TrimSpace(r.MultipartForm.Value["action"][0])
 			}
-			commitId := strings.TrimSpace(stdoutBuf.String())
+			branchName := r.PathValue("branchName")
+			commitMessage := r.Form.Get("commit-message")
+			var commitId string
+			var treePath string
+			switch action {
+			case "edit":
+				treePath = r.PathValue("treePath")
+				content := r.Form.Get("content")
+				commitId, err = addFileToRepoString(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, content)
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
+					return
+				}
+			case "new":
+				treePath = strings.TrimSpace(r.Form.Get("new-file-path"))
+				if len(r.Form.Get("use-upload-file")) > 0 {
+					f, e, err := r.FormFile("file-upload")
+					commitId, err = addFileToRepoReader(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, f, e.Size)
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
+						return
+					}
+				} else {
+					content := r.Form.Get("content")
+					commitId, err = addFileToRepoString(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, content)
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
+						return
+					}
+				}
+			}
+			commitId = strings.TrimSpace(commitId)
 			cmd2 := exec.Command("git", "update-ref", fmt.Sprintf("refs/heads/%s", branchName), commitId)
 			cmd2.Dir = repo.LocalPath
+			stderrBuf := new(bytes.Buffer)
 			stderrBuf.Reset()
 			cmd2.Stderr = stderrBuf
 			err = cmd2.Run()
@@ -408,7 +526,7 @@ get-mark :1`,
 				rc.ReportInternalError(fmt.Sprintf("Failed to update ref: %s; %s", err.Error(), stderrBuf.String()), w, r)
 				return
 			}
-			rc.ReportRedirect(fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, branchName, treePath), 5, "Updated", "Your edit has been saved to the repository.", w, r)
+			rc.ReportRedirect(fmt.Sprintf("/repo/%s/branch/%s/%s", rfn, branchName, r.PathValue("treePath")), 5, "Updated", "Your edit has been saved to the repository.", w, r)
 		},
 	))
 }

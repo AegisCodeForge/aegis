@@ -29,7 +29,12 @@
 	  <div class="tree main-side">
 		<div class="main-side-top">
 		  {{template "_tree-path" .TreePath}}
-		  <div class="file-nav"><a href="{{.PermaLink}}">Permalink</a></div>
+		  <div class="file-nav">
+			{{if and .LoginInfo.IsOwner (eq .RepoHeaderInfo.TypeStr "branch")}}
+			<a href="{{getRepoPath .Repository.Namespace .Repository.Name}}/{{.RepoHeaderInfo.TypeStr}}/{{.RepoHeaderInfo.NodeName}}?new-file">New/Upload</a>
+			{{end}}
+			<a href="{{.PermaLink}}">Permalink</a>
+		  </div>
 		</div> 
 		{{template "_tree-file-list" .TreeFileList}}
 	  </div>
