@@ -124,7 +124,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 				LoginInfo: rc.LoginInfo,
 				PullRequest: pr,
 				PullRequestEventList: preList,
-				PageNum: int(pn),
+				PageNum: pn,
 			}))
 		},
 	))

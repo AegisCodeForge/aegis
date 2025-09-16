@@ -794,6 +794,9 @@ DELETE FROM %s_namespace WHERE ns_name = ?
 
 func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name string, repoType uint8, owner string) (*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
+	if !model.ValidNamespaceName(ns) || !model.ValidRepositoryName(name) {
+		return nil, errors.New("Invalid name")
+	}
 	fullName := ns + ":" + name
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }

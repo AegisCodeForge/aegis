@@ -13,6 +13,6 @@ type RepositorySinglePullRequestTemplateModel struct {
 	ErrorMsg string
 	PullRequest *model.PullRequest
 	PullRequestEventList []*model.PullRequestEvent
-	PageNum int
+	PageNum int64
 }
 
