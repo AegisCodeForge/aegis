@@ -850,15 +850,15 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?)
 	}
 	originP := path.Join(dbif.config.GitRoot, originNs, originName)
 	targetP := path.Join(dbif.config.GitRoot, targetNs, targetName)
+	if !db.IsSubDir(dbif.config.GitRoot, targetP) {
+		return nil, errors.New("Invalid location for fork")
+	}
 	err = os.RemoveAll(targetP)
 	if err != nil { return nil, err }
 	originRepo, err := model.CreateLocalRepository(model.REPO_TYPE_GIT, originNs, originName, originP)
 	if err != nil { return nil, err }
 	targetRepo, err := model.CreateLocalForkOf(originRepo, targetNs, targetName, targetP)
 	if err != nil { return nil, err }
-	if !db.IsSubDir(dbif.config.GitRoot, targetP) {
-		return nil, errors.New("Invalid location for fork")
-	}
 	if err = tx.Commit(); err != nil { return nil, err }
 	r, err := model.NewRepository(targetNs, targetName, targetRepo)
 	r.Type = model.GetAegisType(targetRepo)
