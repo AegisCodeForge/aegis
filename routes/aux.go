@@ -128,7 +128,7 @@ func GenerateRepoHeader(typeStr string, nodeName string) *templates.RepoHeaderTe
 	return repoHeaderInfo
 }
 
-func GeneratePageInfo(r *http.Request, size int) (*templates.PageInfoModel, error) {
+func GeneratePageInfo(r *http.Request, size int64) (*templates.PageInfoModel, error) {
 	// set up a base pageInfo obj.  the TotalPage is left empty since
 	// it depends on the result of actual query. a default of p=1 and
 	// s=50 is set for the resulting value.  one shall change the
@@ -141,11 +141,11 @@ func GeneratePageInfo(r *http.Request, size int) (*templates.PageInfoModel, erro
 	if len(p) <= 0 { p = "1" }
 	s := r.URL.Query().Get("s")
 	if len(s) <= 0 { s = "50" }
-	pageNum, err := strconv.Atoi(p)
+	pageNum, err := strconv.ParseInt(p, 10, 64)
 	if err != nil { return nil, err }
-	pageSize, err := strconv.Atoi(s)
+	pageSize, err := strconv.ParseInt(s, 10, 64)
 	if err != nil { return nil, err }
-	totalPage := 0
+	var totalPage int64 = 0
 	if size == 0 {
 		totalPage = 1
 	} else if size > 0 {

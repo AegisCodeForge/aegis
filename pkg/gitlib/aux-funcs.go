@@ -3,8 +3,6 @@ package gitlib
 import (
 	"io"
 	"os"
-	"path/filepath"
-	"strings"
 )
 
 func intToHex16(i int) string {
@@ -109,12 +107,6 @@ func readUntil(f io.Reader, c byte) ([]byte, error) {
 		res = append(res, bytebuf[0])
 	}
 	return res, nil
-}
-
-func isSubDir(root string, target string) bool {
-	s, err := filepath.Rel(root, target)
-	if err != nil { return false }
-	return !strings.HasPrefix(s, "..")
 }
 
 

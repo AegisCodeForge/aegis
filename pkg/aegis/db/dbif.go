@@ -26,10 +26,10 @@ type AegisDatabaseInterface interface {
 	GetRepositoryByName(nsName string, repoName string) (*model.Repository, error)
 	GetAllNamespace() (map[string]*model.Namespace, error)
 	GetAllVisibleNamespace(username string) (map[string]*model.Namespace, error)
-	GetAllVisibleNamespacePaginated(username string, pageNum int, pageSize int) (map[string]*model.Namespace, error)
-	SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error)
-	GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error)
-	SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error)
+	GetAllVisibleNamespacePaginated(username string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error)
+	SearchAllVisibleNamespacePaginated(username string, query string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error)
+	GetAllVisibleRepositoryPaginated(username string, pageNum int64, pageSize int64) ([]*model.Repository, error)
+	SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int64, pageSize int64) ([]*model.Repository, error)
 	GetAllNamespaceByOwner(name string) (map[string]*model.Namespace, error)
 	GetAllRepositoryFromNamespace(name string) (map[string]*model.Repository, error)
 	GetAllVisibleRepositoryFromNamespace(username string, ns string) ([]*model.Repository, error)
@@ -61,9 +61,9 @@ type AegisDatabaseInterface interface {
 	// we'll reconsider this when the appropriate time comes.
 	// MoveRepository(oldNs string, oldName string, newNs string, newName string) error
 
-	GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error)
-	GetAllNamespaces(pageNum int, pageSize int) (map[string]*model.Namespace, error)
-	GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error)
+	GetAllUsers(pageNum int64, pageSize int64) ([]*model.AegisUser, error)
+	GetAllNamespaces(pageNum int64, pageSize int64) (map[string]*model.Namespace, error)
+	GetAllRepositories(pageNum int64, pageSize int64) ([]*model.Repository, error)
 
 	CountAllUser() (int64, error)
 	CountAllNamespace() (int64, error)
@@ -74,15 +74,15 @@ type AegisDatabaseInterface interface {
 
 	// search user name & title containing the string `k`, case
 	// insensitive.
-	SearchForUser(k string, pageNum int, pageSize int) ([]*model.AegisUser, error)
+	SearchForUser(k string, pageNum int64, pageSize int64) ([]*model.AegisUser, error)
 
 	// search namespce name & title containing the string `k`, case
 	// insensitive.
-	SearchForNamespace(k string, pageNum int, pageSize int) (map[string]*model.Namespace, error)
+	SearchForNamespace(k string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error)
 
 	// search repo namespace name & repository name & title containing
 	// the string `k`, case insensitive.
-	SearchForRepository(k string, pageNum int, pageSize int) ([]*model.Repository, error)
+	SearchForRepository(k string, pageNum int64, pageSize int64) ([]*model.Repository, error)
 
 	// set ACL as specified.  implementer should remove permissions of
 	// `targetUserName` when `acl` is nil,
@@ -99,20 +99,20 @@ type AegisDatabaseInterface interface {
 	CountAllRepositoryIssue(ns string, name string) (int, error)
 	// filterType: 0 - all, 1 - open, 2 - closed, 3 - solved, 4 - discarded
 	// when query = "" it looks for all issue.
-	CountIssue(query string, namespace string, name string, filterType int) (int, error)
-	SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.Issue, error)
+	CountIssue(query string, namespace string, name string, filterType int) (int64, error)
+	SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int64, pageSize int64) ([]*model.Issue, error)
 	// returns the issue_id of the new issue.
 	NewRepositoryIssue(ns string, name string, author string, title string, content string) (int64, error)
 	HardDeleteRepositoryIssue(ns string, name string, issueId int) error
-	SetIssuePriority(ns string, name string, id int, priority int) error
+	SetIssuePriority(ns string, name string, id int64, priority int) error
 	GetAllIssueEvent(ns string, name string, issueId int) ([]*model.IssueEvent, error)
-	NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error
+	NewRepositoryIssueEvent(ns string, name string, issueId int64, eType int, author string, content string) error
 	HardDeleteRepositoryIssueEvent(eventAbsId int64) error
 
 	// return all namespace that `viewingUser` is a member of
 	GetAllBelongingNamespace(viewingUser string, user string) ([]*model.Namespace, error)
 	// return all repository that `viewingUser` is a member of
-	GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int, pageSize int) ([]*model.Repository, error)
+	GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int64, pageSize int64) ([]*model.Repository, error)
 	CountAllBelongingRepository(viewingUser string, user string, query string) (int64, error)
 
 	// implementers can choose to return nil or empty slice if there
@@ -120,13 +120,13 @@ type AegisDatabaseInterface interface {
 	// check for both.
 	GetForkRepositoryOfUser(username string, originNamespace string, originName string) ([]*model.Repository, error)
 
-	GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error)
+	GetAllPullRequestPaginated(namespace string, name string, pageNum int64, pageSize int64) ([]*model.PullRequest, error)
 	NewPullRequest(username string, title string, receiverNamespace string, receiverName string, receiverBranch string, providerNamespace string, providerName string, providerBranch string) (int64, error)
 	GetPullRequest(namespace string, name string, id int64) (*model.PullRequest, error)
 	GetPullRequestByAbsId(absId int64) (*model.PullRequest, error)
 	CheckPullRequestMergeConflict(absId int64) (*gitlib.MergeCheckResult, error)
 	DeletePullRequest(absId int64) error
-	GetAllPullRequestEventPaginated(absId int64, pageNum int, pageSize int) ([]*model.PullRequestEvent, error)
+	GetAllPullRequestEventPaginated(absId int64, pageNum int64, pageSize int64) ([]*model.PullRequestEvent, error)
 	CheckAndMergePullRequest(absId int64, username string) error
 	CommentOnPullRequest(absId int64, author string, content string) (*model.PullRequestEvent, error)
 	CommentOnPullRequestCode(absId int64, comment *model.PullRequestCommentOnCode) (*model.PullRequestEvent, error)
@@ -134,8 +134,8 @@ type AegisDatabaseInterface interface {
 	ReopenPullRequest(absid int64, author string) error
 	// filterType: 0 - all, 1 - open, 2 - closed, 3 - merged, 4 - discarded
 	// when query = "" it looks for all pull request.
-	CountPullRequest(query string, namespace string, name string, filterType int) (int, error)
-	SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.PullRequest, error)
+	CountPullRequest(query string, namespace string, name string, filterType int) (int64, error)
+	SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int64, pageSize int64) ([]*model.PullRequest, error)
 
 	GetAllRegisteredEmailOfUser(username string) ([]struct{Email string;Verified bool}, error)
 	AddEmail(username string, email string) error
@@ -146,14 +146,14 @@ type AegisDatabaseInterface interface {
 	ResolveMultipleEmailToUsername(emailList map[string]string) (map[string]string, error)
 
 	InsertRegistrationRequest(username string, email string, passwordHash string, reason string) error
-	GetRegistrationRequestPaginated(pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
-	GetRequestOfUsernamePaginated(username string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
+	GetRegistrationRequestPaginated(pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error)
+	GetRequestOfUsernamePaginated(username string, pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error)
 	
 	// NOTE: implementer should perform the RegisterUser action in this method as well. (but not the RegisterNamespace!...)
 	ApproveRegistrationRequest(absid int64) error
 	DisapproveRegistrationRequest(absid int64) error
 	CountRegistrationRequest(query string) (int64, error)
-	SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error)
+	SearchRegistrationRequestPaginated(query string, pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error)
 	GetRegistrationRequestByAbsId(absid int64) (*model.RegistrationRequest, error)
 
 	AddRepositoryLabel(ns string, name string, lbl string) error
@@ -164,13 +164,13 @@ type AegisDatabaseInterface interface {
 	// logically similar w/ searching by keywords, which means that all
 	// the logic like acl controlled visibility applies.
 	CountRepositoryWithLabel(username string, label string) (int64, error)
-	GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error)
+	GetRepositoryWithLabelPaginated(username string, label string, pageNum int64, pageSize int64) ([]*model.Repository, error)
 
 	// NOTE: implementers should return "empty" (i.e. without actual data) model only.
 	NewSnippet(username string, name string, status uint8) (*model.Snippet, error)
 	GetAllSnippet(username string) ([]*model.Snippet, error)
 	CountAllVisibleSnippet(username string, viewingUser string, query string) (int64, error)
-	GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int, pageSize int) ([]*model.Snippet, error)
+	GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int64, pageSize int64) ([]*model.Snippet, error)
 	DeleteSnippet(username string, name string) error
 	SaveSnippetInfo(m *model.Snippet) error
 	GetSnippet(username string, name string) (*model.Snippet, error)

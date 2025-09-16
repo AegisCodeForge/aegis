@@ -35,15 +35,15 @@ func bindLabelController(ctx *RouterContext) {
 			}
 			totalPage := cnt / s
 			if totalPage <= 0 { totalPage = 1 }
-			repoList, err := rc.DatabaseInterface.GetRepositoryWithLabelPaginated(rc.LoginInfo.UserName, label, int(p-1), int(s))
+			repoList, err := rc.DatabaseInterface.GetRepositoryWithLabelPaginated(rc.LoginInfo.UserName, label, p-1, s)
 			LogTemplateError(rc.LoadTemplate("label").Execute(w, &templates.LabelModel{
 				Config: rc.Config,
 				RepositoryList: repoList,
 				LoginInfo: rc.LoginInfo,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(p),
-					PageSize: int(s),
-					TotalPage: int(totalPage),
+					PageNum: p,
+					PageSize: s,
+					TotalPage: totalPage,
 				},
 				Label: label,
 			}))

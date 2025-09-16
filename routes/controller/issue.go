@@ -37,17 +37,17 @@ func bindIssueController(ctx *RouterContext) {
 				rc.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			pageCount := int(count) / int(s)
-			if (int(count) % int(s)) > 0 { pageCount += 1 }
-			p := int(p64)
+			pageCount := count / s
+			if (count % s) > 0 { pageCount += 1 }
+			p := p64
 			if p < 1 { p = 1 }
 			if p > pageCount { p = pageCount }
 			pageInfo := &templates.PageInfoModel{
-				PageNum: int(p),
-				PageSize: int(s),
+				PageNum: p,
+				PageSize: s,
 				TotalPage: pageCount,
 			}
-			issueList, err := rc.DatabaseInterface.SearchIssuePaginated(q, nsName, repoName, int(f), int(p-1), int(s))
+			issueList, err := rc.DatabaseInterface.SearchIssuePaginated(q, nsName, repoName, int(f), p-1, s)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
 				return
@@ -175,7 +175,7 @@ func bindIssueController(ctx *RouterContext) {
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			rfn := r.PathValue("repoName")
 			nsName, repoName, ns, repo, err := rc.ResolveRepositoryFullName(rfn)
-			iid, err := strconv.Atoi(r.PathValue("id"))
+			iid, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 			if err != nil {
 				rc.ReportNormalError(err.Error(), w, r)
 				return

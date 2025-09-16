@@ -953,7 +953,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllUsers(pageNum int64, pageSize int64) ([]*model.AegisUser, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash
@@ -984,7 +984,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllNamespaces(pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT ns_name, ns_title, ns_description, ns_email, ns_owner, ns_reg_datetime, ns_status, ns_acl
@@ -1019,7 +1019,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllRepositories(pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_owner, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook
@@ -1133,7 +1133,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllRepositories() (int64, error) 
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchForUser(k string, pageNum int, pageSize int) ([]*model.AegisUser, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchForUser(k string, pageNum int64, pageSize int64) ([]*model.AegisUser, error) {
 	pfx := dbif.config.Database.TablePrefix
 	pattern := db.ToSqlSearchPattern(k)
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
@@ -1166,7 +1166,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchForNamespace(k string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	pattern := strings.ReplaceAll(k, "\\", "\\\\")
 	pattern = strings.ReplaceAll(pattern, "%", "\\%")
@@ -1206,7 +1206,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchForRepository(k string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	pattern := strings.ReplaceAll(k, "\\", "\\\\")
 	pattern = strings.ReplaceAll(pattern, "%", "\\%")
@@ -1373,7 +1373,7 @@ WHERE ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespacePaginated(username string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleNamespacePaginated(username string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	privateSelectClause := ""
 	if len(username) > 0 {
@@ -1422,7 +1422,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	var rs *sql.Rows
 	var stmt *sql.Stmt
@@ -1503,7 +1503,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositories(username s
 	return dbif.CountAllVisibleRepositoriesSearchResult(username, "")
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	var rs *sql.Rows
 	var stmt *sql.Stmt
@@ -1581,7 +1581,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	var r *sql.Rows
 	var err error
@@ -1934,7 +1934,7 @@ DELETE FROM %s_issue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SetIssuePriority(namespace string, name string, id int, priority int) error {
+func (dbif *SqliteAegisDatabaseInterface) SetIssuePriority(namespace string, name string, id int64, priority int) error {
 	pfx := dbif.config.Database.TablePrefix
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
@@ -1990,7 +1990,7 @@ WHERE issue_abs_id = ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error {
+func (dbif *SqliteAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, name string, issueId int64, eType int, author string, content string) error {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, issue_status FROM %s_issue WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
@@ -2106,7 +2106,7 @@ WHERE (%s) AND (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	// the fact that go does not have if-expr is killing me.
 	// NOTE:
 	// + if viewingUser is empty, it means the viewing user is a guest,
@@ -2350,7 +2350,7 @@ WHERE repo_owner = ? AND repo_fork_origin_namespace = ? AND repo_fork_origin_nam
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllPullRequestPaginated(namespace string, name string, pageNum int64, pageSize int64) ([]*model.PullRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, pull_request_id, username, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
@@ -2396,7 +2396,7 @@ ORDER BY pull_request_id ASC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) CountIssue(query string, namespace string, name string, filterType int) (int, error) {
+func (dbif *SqliteAegisDatabaseInterface) CountIssue(query string, namespace string, name string, filterType int) (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	statusClause := ""
 	switch filterType {
@@ -2426,7 +2426,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountIssue(query string, namespace str
 SELECT COUNT(*) FROM %s_issue %s
 `, pfx, condition))
 	if err != nil { return 0, err }
-	var cnt int
+	var cnt int64
 	var r *sql.Row
 	if queryClause == "" {
 		r = stmt1.QueryRow()
@@ -2440,7 +2440,7 @@ SELECT COUNT(*) FROM %s_issue %s
 	return cnt, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.Issue, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int64, pageSize int64) ([]*model.Issue, error) {
 	pfx := dbif.config.Database.TablePrefix
 	statusClause := ""
 	switch filterType {
@@ -2665,7 +2665,7 @@ DELETE FROM %spull_request WHERE rowid = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllPullRequestEventPaginated(absId int64, pageNum int, pageSize int) ([]*model.PullRequestEvent, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllPullRequestEventPaginated(absId int64, pageNum int64, pageSize int64) ([]*model.PullRequestEvent, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT event_type, event_timestamp, event_author, event_content
@@ -2875,7 +2875,7 @@ WHERE rowid = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) CountPullRequest(query string, namespace string, name string, filterType int) (int, error) {
+func (dbif *SqliteAegisDatabaseInterface) CountPullRequest(query string, namespace string, name string, filterType int) (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	statusClause := ""
 	switch filterType {
@@ -2898,13 +2898,13 @@ WHERE receiver_namespace = ? AND receiver_name = ? %s %s
 		r = stmt.QueryRow(namespace, name, pat, "\\")
 	}
 	if r.Err() != nil { return 0, r.Err() }
-	var res int
+	var res int64
 	err = r.Scan(&res)
 	if err != nil { return 0, err }
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.PullRequest, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int64, pageSize int64) ([]*model.PullRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	statusClause := ""
 	switch filterType {
@@ -3172,7 +3172,7 @@ DELETE FROM %s_user_reg_request WHERE username = ?
 	return nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT username, email, password_hash, reason, timestamp
@@ -3201,7 +3201,7 @@ ORDER BY timestamp DESC LIMIT ? OFFSET ?
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetRequestOfUsernamePaginated(username string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetRequestOfUsernamePaginated(username string, pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT rowid, email, password_hash, reason, timestamp
@@ -3257,7 +3257,7 @@ SELECT COUNT(*) FROM %s_user_reg_request WHERE username LIKE ? ESCAPE ?
 	return cnt, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+func (dbif *SqliteAegisDatabaseInterface) SearchRegistrationRequestPaginated(query string, pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	var r *sql.Rows
 	query = strings.TrimSpace(query)
@@ -3419,7 +3419,7 @@ AND (
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetRepositoryWithLabelPaginated(username string, label string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	var r *sql.Rows
 	var err error
@@ -3604,7 +3604,7 @@ WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user 
 	return res, nil
 }
 
-func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int, pageSize int) ([]*model.Snippet, error) {
+func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int64, pageSize int64) ([]*model.Snippet, error) {
 	pfx := dbif.config.Database.TablePrefix
 	var r *sql.Rows
 	var err error

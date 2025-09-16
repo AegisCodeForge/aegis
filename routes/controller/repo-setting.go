@@ -237,7 +237,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			} else {
 				userList = repo.AccessControlList.ACL
 			}
-			totalMemberCount := len(userList)
+			totalMemberCount := int64(len(userList))
 			pageInfo, err := GeneratePageInfo(r, totalMemberCount)
 			k := auxfuncs.SortedKeys(userList)
 			

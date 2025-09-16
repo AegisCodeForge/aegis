@@ -32,9 +32,9 @@ func bindAdminUserListController(ctx *RouterContext) {
 			if pageNum <= 1 { pageNum = 1 }
 			var userList []*model.AegisUser
 			if len(q) > 0 {
-				userList, err = rc.DatabaseInterface.SearchForUser(q, int(pageNum-1), int(pageSize))
+				userList, err = rc.DatabaseInterface.SearchForUser(q, pageNum-1, pageSize)
 			} else {
-				userList, err = rc.DatabaseInterface.GetAllUsers(int(pageNum-1), int(pageSize))
+				userList, err = rc.DatabaseInterface.GetAllUsers(pageNum-1, pageSize)
 			}
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed to load users: %s", err), w, r)
@@ -46,9 +46,9 @@ func bindAdminUserListController(ctx *RouterContext) {
 				ErrorMsg: "",
 				UserList: userList,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(pageNum),
-					PageSize: int(pageSize),
-					TotalPage: int(totalPage),
+					PageNum: pageNum,
+					PageSize: pageSize,
+					TotalPage: totalPage,
 				},
 			}))
 		},

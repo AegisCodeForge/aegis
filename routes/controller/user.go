@@ -53,7 +53,7 @@ func bindUserController(ctx *RouterContext) {
 			}
 			totalPage := count / s
 			if totalPage <= 0 { totalPage = 1 }
-			repoList, err := rc.DatabaseInterface.GetAllBelongingRepository(viewingUser, un, q, int(p-1), int(s))
+			repoList, err := rc.DatabaseInterface.GetAllBelongingRepository(viewingUser, un, q, p-1, s)
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed to get all belonging repository: %s", err.Error()), w, r)
 				return
@@ -65,9 +65,9 @@ func bindUserController(ctx *RouterContext) {
 				LoginInfo: rc.LoginInfo,
 				BelongingNamespaceList: nsList,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(p),
-					PageSize: int(s),
-					TotalPage: int(totalPage),
+					PageNum: p,
+					PageSize: s,
+					TotalPage: totalPage,
 				},
 				Query: q,
 			}))
@@ -109,7 +109,7 @@ func bindUserController(ctx *RouterContext) {
 			}
 			totalPage := count / s
 			if totalPage <= 0 { totalPage = 1 }
-			snippetList, err := rc.DatabaseInterface.GetAllVisibleSnippetPaginated(username, viewingUser, q, int(p-1), int(s))
+			snippetList, err := rc.DatabaseInterface.GetAllVisibleSnippetPaginated(username, viewingUser, q, p-1, s)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
 				return
@@ -121,9 +121,9 @@ func bindUserController(ctx *RouterContext) {
 				LoginInfo: rc.LoginInfo,
 				BelongingNamespaceList: nsList,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(p),
-					PageSize: int(s),
-					TotalPage: int(totalPage),
+					PageNum: p,
+					PageSize: s,
+					TotalPage: totalPage,
 				},
 				Query: q,
 			}))

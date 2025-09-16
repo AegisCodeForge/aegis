@@ -24,17 +24,17 @@ func bindAdminNamespaceListController(ctx *RouterContext) {
 			s := r.URL.Query().Get("s")
 			if len(s) <= 0 { s = "50" }
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
-			pageNum, err := strconv.ParseInt(p, 10, 32)
-			pageSize, err := strconv.ParseInt(s, 10, 32)
+			pageNum, err := strconv.ParseInt(p, 10, 64)
+			pageSize, err := strconv.ParseInt(s, 10, 64)
 			totalPage := i / pageSize
 			if i % pageSize != 0 { totalPage += 1 }
 			if pageNum > totalPage { pageNum = totalPage }
 			if pageNum <= 1 { pageNum = 1 }
 			var namespaceList map[string]*model.Namespace
 			if len(q) > 0 {
-				namespaceList, err = rc.DatabaseInterface.SearchForNamespace(q, int(pageNum-1), int(pageSize))
+				namespaceList, err = rc.DatabaseInterface.SearchForNamespace(q, pageNum-1, pageSize)
 			} else {
-				namespaceList, err = rc.DatabaseInterface.GetAllNamespaces(int(pageNum-1), int(pageSize))
+				namespaceList, err = rc.DatabaseInterface.GetAllNamespaces(pageNum-1, pageSize)
 			}
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed to load namespace list: %s", err), w, r)
@@ -47,9 +47,9 @@ func bindAdminNamespaceListController(ctx *RouterContext) {
 				NamespaceList: namespaceList,
 				Query: q,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(pageNum),
-					PageSize: int(pageSize),
-					TotalPage: int(totalPage),
+					PageNum: pageNum,
+					PageSize: pageSize,
+					TotalPage: totalPage,
 				},
 			}))
 			

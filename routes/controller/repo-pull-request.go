@@ -37,28 +37,27 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 			pStr := strings.TrimSpace(r.URL.Query().Get("p"))
 			sStr := strings.TrimSpace(r.URL.Query().Get("s"))
 			fStr := strings.TrimSpace(r.URL.Query().Get("f"))
-			p64, err := strconv.ParseInt(pStr, 10, 64)
-			if err != nil { p64 = 1 }
+			p, err := strconv.ParseInt(pStr, 10, 64)
+			if err != nil { p = 1 }
 			ps, err := strconv.ParseInt(sStr, 10, 64)
 			if err != nil { ps = 30 }
-			f, err := strconv.ParseInt(fStr, 10, 32)
+			f, err := strconv.ParseInt(fStr, 10, 64)
 			if err != nil { f = 0 }
 			count, err := rc.DatabaseInterface.CountPullRequest(q, s.Namespace, s.Name, int(f))
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed to count pull request: %s", err.Error()), w, r)
 				return
 			}
-			pageCount := int(count) / int(ps)
-			if (int(count) % int(ps)) > 0 { pageCount += 1 }
-			p := int(p64)
+			pageCount := count / ps
+			if (count % ps) > 0 { pageCount += 1 }
 			if p < 1 { p = 1 }
 			if p > pageCount { p = pageCount }
 			pageInfo := &templates.PageInfoModel{
-				PageNum: int(p),
-				PageSize: int(ps),
+				PageNum: p,
+				PageSize: ps,
 				TotalPage: pageCount,
 			}
-			prList, err := rc.DatabaseInterface.SearchPullRequestPaginated(q, s.Namespace, s.Name, int(f), int(p-1), int(ps))
+			prList, err := rc.DatabaseInterface.SearchPullRequestPaginated(q, s.Namespace, s.Name, int(f), p-1, ps)
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed to search for pull request: %s", err.Error()), w, r)
 				return
@@ -113,9 +112,9 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 				return
 			}
 			pnstr := r.URL.Query().Get("p")
-			pn, err := strconv.ParseInt(pnstr, 10, 32)
+			pn, err := strconv.ParseInt(pnstr, 10, 64)
 			if err != nil { pn = 0 }
-			preList, err := rc.DatabaseInterface.GetAllPullRequestEventPaginated(pr.PRAbsId, int(pn), 30)
+			preList, err := rc.DatabaseInterface.GetAllPullRequestEventPaginated(pr.PRAbsId, pn, 30)
 			LogTemplateError(rc.LoadTemplate("pull-request/single-pull-request").Execute(w, &templates.RepositorySinglePullRequestTemplateModel{
 				Config: rc.Config,
 				Repository: s,

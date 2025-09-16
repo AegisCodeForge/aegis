@@ -3,8 +3,8 @@
 package templates
 
 type PageInfoModel struct {
-	PageNum int
-	PageSize int
-	TotalPage int
+	PageNum int64
+	PageSize int64
+	TotalPage int64
 }
 

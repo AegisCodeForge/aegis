@@ -24,9 +24,9 @@ func bindAdminRegistrationRequestController(ctx *RouterContext) {
 			s := r.URL.Query().Get("s")
 			if len(s) <= 0 { s = "50" }
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
-			pageNum, err := strconv.ParseInt(p, 10, 32)
+			pageNum, err := strconv.ParseInt(p, 10, 64)
 			if err != nil { rc.ReportNormalError("Invalid request", w, r); return }
-			pageSize, err := strconv.ParseInt(s, 10, 32)
+			pageSize, err := strconv.ParseInt(s, 10, 64)
 			if err != nil { rc.ReportNormalError("Invalid request", w, r); return }
 			i, err := rc.DatabaseInterface.CountRegistrationRequest(q)
 			totalPage := i / pageSize
@@ -35,9 +35,9 @@ func bindAdminRegistrationRequestController(ctx *RouterContext) {
 			if pageNum <= 1 { pageNum = 1 }
 			var regreqList []*model.RegistrationRequest
 			if len(q) > 0 {
-				regreqList, err = rc.DatabaseInterface.SearchRegistrationRequestPaginated(q, int(pageNum-1), int(pageSize))
+				regreqList, err = rc.DatabaseInterface.SearchRegistrationRequestPaginated(q, pageNum-1, pageSize)
 			} else {
-				regreqList, err = rc.DatabaseInterface.GetRegistrationRequestPaginated(int(pageNum-1), int(pageSize))
+				regreqList, err = rc.DatabaseInterface.GetRegistrationRequestPaginated(pageNum-1, pageSize)
 			}
 			LogTemplateError(rc.LoadTemplate("admin/registration-request").Execute(w, &templates.AdminRegistrationRequestTemplateModel{
 				Config: rc.Config,
@@ -45,9 +45,9 @@ func bindAdminRegistrationRequestController(ctx *RouterContext) {
 				ErrorMsg: "",
 				RequestList: regreqList,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(pageNum),
-					PageSize: int(pageSize),
-					TotalPage: int(totalPage),
+					PageNum: pageNum,
+					PageSize: pageSize,
+					TotalPage: totalPage,
 				},
 				Query: q,
 			}))

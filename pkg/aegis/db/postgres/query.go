@@ -359,7 +359,7 @@ WHERE ns_owner = $1 OR ns_acl->'ACL' ? $2
 	return  res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleNamespacePaginated(username string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleNamespacePaginated(username string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
@@ -404,7 +404,7 @@ ORDER BY ns_absid ASC LIMIT $1 OFFSET $2
 	return  res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchAllVisibleNamespacePaginated(username string, query string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
@@ -468,7 +468,7 @@ ORDER BY ns_absid ASC LIMIT $1 OFFSET $2
 	
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleRepositoryPaginated(username string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
@@ -523,7 +523,7 @@ ORDER BY repo_absid ASC LIMIT $1 OFFSET $2
 	return  res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchAllVisibleRepositoryPaginated(username string, query string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
@@ -1035,7 +1035,7 @@ WHERE repo_namespace = $1 AND repo_name = $2
 	return nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllUsers(pageNum int, pageSize int) ([]*model.AegisUser, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllUsers(pageNum int64, pageSize int64) ([]*model.AegisUser, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -1066,7 +1066,7 @@ ORDER BY user_id ASC LIMIT $1 OFFSET $2
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllNamespaces(pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllNamespaces(pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -1102,7 +1102,7 @@ ORDER BY ns_absid ASC LIMIT $1 OFFSET $2
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllRepositories(pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllRepositories(pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -1243,7 +1243,7 @@ WHERE repo_status = 1 or repo_status = 4
 	return r, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchForUser(k string, pageNum int, pageSize int) ([]*model.AegisUser, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchForUser(k string, pageNum int64, pageSize int64) ([]*model.AegisUser, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	pattern := db.ToSqlSearchPattern(k)
@@ -1276,7 +1276,7 @@ ORDER BY user_id ASC LIMIT $3 OFFSET $4
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchForNamespace(k string, pageNum int, pageSize int) (map[string]*model.Namespace, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchForNamespace(k string, pageNum int64, pageSize int64) (map[string]*model.Namespace, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	pattern := db.ToSqlSearchPattern(k)
@@ -1311,7 +1311,7 @@ ORDER BY ns_absid ASC LIMIT $3 OFFSET $4
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchForRepository(k string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchForRepository(k string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	pattern := db.ToSqlSearchPattern(k)
@@ -1613,7 +1613,7 @@ WHERE repo_namespace = $1 AND repo_name = $2
 
 // filterType: 0 - all, 1 - open, 2 - closed, 3 - solved, 4 - discarded
 // when query = "" it looks for all issue.
-func (dbif *PostgresAegisDatabaseInterface) CountIssue(query string, namespace string, name string, filterType int) (int, error) {
+func (dbif *PostgresAegisDatabaseInterface) CountIssue(query string, namespace string, name string, filterType int) (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	statusClause := ""
@@ -1639,14 +1639,14 @@ WHERE repo_namespace = $1 AND repo_name = $2
 AND %s
 `, pfx, statusClause), namespace, name)
 	}
-	var res int
+	var res int64
 	err := stmt.Scan(&res)
 	if err == pgx.ErrNoRows { return 0, db.ErrEntityNotFound }
 	if err != nil { return 0, err }
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.Issue, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchIssuePaginated(query string, namespace string, name string, filterType int, pageNum int64, pageSize int64) ([]*model.Issue, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	statusClause := ""
@@ -1739,7 +1739,7 @@ DELETE FROM %s_issue WHERE repo_namespace = $1 AND repo_name = $2 AND issue_id =
 	return nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SetIssuePriority(namespace string, name string, id int, priority int) error {
+func (dbif *PostgresAegisDatabaseInterface) SetIssuePriority(namespace string, name string, id int64, priority int) error {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	tx, err := dbif.pool.Begin(ctx)
@@ -1787,7 +1787,7 @@ FROM %s_issue_event WHERE issue_absid = $1
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, name string, issueId int, eType int, author string, content string) error {
+func (dbif *PostgresAegisDatabaseInterface) NewRepositoryIssueEvent(ns string, name string, issueId int64, eType int, author string, content string) error {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt1 := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
@@ -1889,7 +1889,7 @@ FROM %s_namespace WHERE (ns_status = 1) AND (ns_owner = $1 OR ns_acl->'acl' ? $1
 	return  res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllBelongingRepository(viewingUser string, user string, query string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
@@ -2082,7 +2082,7 @@ WHERE repo_owner = $1 AND repo_fork_origin_namespace = $2 AND repo_fork_origin_n
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllPullRequestPaginated(namespace string, name string, pageNum int, pageSize int) ([]*model.PullRequest, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllPullRequestPaginated(namespace string, name string, pageNum int64, pageSize int64) ([]*model.PullRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -2276,7 +2276,7 @@ DELETE FROM %s_pull_request WHERE pull_request_absid = $1
 	return nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllPullRequestEventPaginated(absId int64, pageNum int, pageSize int) ([]*model.PullRequestEvent, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllPullRequestEventPaginated(absId int64, pageNum int64, pageSize int64) ([]*model.PullRequestEvent, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -2471,7 +2471,7 @@ WHERE pull_request_absid = $2
 	return nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) CountPullRequest(query string, namespace string, name string, filterType int) (int, error) {
+func (dbif *PostgresAegisDatabaseInterface) CountPullRequest(query string, namespace string, name string, filterType int) (int64, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	statusClause := ""
@@ -2493,13 +2493,13 @@ SELECT COUNT(*) FROM %s_pull_request
 WHERE receiver_namespace = $1 AND receiver_name = $2 %s
 `, pfx, statusClause), namespace, name)
 	}
-	var res int
+	var res int64
 	err := stmt.Scan(&res)
 	if err != nil { return 0, err }
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int, pageSize int) ([]*model.PullRequest, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchPullRequestPaginated(query string, namespace string, name string, filterType int, pageNum int64, pageSize int64) ([]*model.PullRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	statusClause := ""
@@ -2747,7 +2747,7 @@ DELETE FROM %s_user_reg_request WHERE username = $1
 	return nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetRegistrationRequestPaginated(pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -2776,7 +2776,7 @@ ORDER BY timestamp DESC LIMIT $1 OFFSET $2
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetRequestOfUsernamePaginated(username string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetRequestOfUsernamePaginated(username string, pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
@@ -2827,7 +2827,7 @@ SELECT COUNT(*) FROM %s_user_reg_request WHERE username LIKE $1 ESCAPE $2
 	return cnt, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) SearchRegistrationRequestPaginated(query string, pageNum int, pageSize int) ([]*model.RegistrationRequest, error) {
+func (dbif *PostgresAegisDatabaseInterface) SearchRegistrationRequestPaginated(query string, pageNum int64, pageSize int64) ([]*model.RegistrationRequest, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows
@@ -2971,7 +2971,7 @@ AND (
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetRepositoryWithLabelPaginated(username string, label string, pageNum int, pageSize int) ([]*model.Repository, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetRepositoryWithLabelPaginated(username string, label string, pageNum int64, pageSize int64) ([]*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var r pgx.Rows
@@ -3137,7 +3137,7 @@ WHERE username = $1 AND (status = 1 OR status = 2 OR (status = 4 AND shared_user
 	return res, nil
 }
 
-func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int, pageSize int) ([]*model.Snippet, error) {
+func (dbif *PostgresAegisDatabaseInterface) GetAllVisibleSnippetPaginated(username string, viewingUser string, query string, pageNum int64, pageSize int64) ([]*model.Snippet, error) {
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	var stmt pgx.Rows

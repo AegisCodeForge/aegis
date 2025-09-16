@@ -49,9 +49,9 @@ func bindAdminReceiptListController(ctx *RouterContext) {
 				ReceiptList: receiptList,
 				Query: q,
 				PageInfo: &templates.PageInfoModel{
-					PageNum: int(pageNum),
-					PageSize: int(pageSize),
-					TotalPage: int(totalPage),
+					PageNum: pageNum,
+					PageSize: pageSize,
+					TotalPage: totalPage,
 				},
 			}))
 		},

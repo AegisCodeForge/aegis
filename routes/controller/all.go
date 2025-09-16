@@ -23,7 +23,7 @@ func bindAllController(ctx *routes.RouterContext) {
 				var err error
 				q := strings.TrimSpace(r.URL.Query().Get("q"))
 				var nsl map[string]*model.Namespace
-				var nslCount int
+				var nslCount int64
 				var pageInfo *templates.PageInfoModel
 				if ctx.Config.PlainMode {
 					if len(q) > 0 {
@@ -35,7 +35,7 @@ func bindAllController(ctx *routes.RouterContext) {
 						ctx.ReportInternalError(err.Error(), w, r)
 						return
 					}
-					nslCount = len(nsl)
+					nslCount = int64(len(nsl))
 					pageInfo, err = routes.GeneratePageInfo(r, nslCount)
 					if err != nil {
 						ctx.ReportInternalError(err.Error(), w, r)
@@ -45,10 +45,10 @@ func bindAllController(ctx *routes.RouterContext) {
 					var nslCountv int64
 					if len(q) > 0 {
 						nslCountv, err = ctx.DatabaseInterface.CountAllVisibleNamespaceSearchResult(ctx.LoginInfo.UserName, q)
-						nslCount = int(nslCountv)
+						nslCount = nslCountv
 					} else {
 						nslCountv, err = ctx.DatabaseInterface.CountAllVisibleNamespace(ctx.LoginInfo.UserName)
-						nslCount = int(nslCountv)
+						nslCount = nslCountv
 					}
 					if err != nil {
 						ctx.ReportInternalError(err.Error(), w, r)
@@ -88,7 +88,7 @@ func bindAllController(ctx *routes.RouterContext) {
 			var err error
 			q := strings.TrimSpace(r.URL.Query().Get("q"))
 			var repol []*model.Repository
-			var repolCount int
+			var repolCount int64
 			var pageInfo *templates.PageInfoModel
 			if ctx.Config.PlainMode {
 				if len(q) > 0 {
@@ -100,7 +100,7 @@ func bindAllController(ctx *routes.RouterContext) {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
-				repolCount = len(repol)
+				repolCount = int64(len(repol))
 				pageInfo, err = routes.GeneratePageInfo(r, repolCount)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
@@ -114,25 +114,24 @@ func bindAllController(ctx *routes.RouterContext) {
 					return 0
 				})
 			} else {
-				var repolCountv int64
+				var repolCount int64
 				if ctx.LoginInfo.IsAdmin {
 					if len(q) > 0 {
-						repolCountv, err = ctx.DatabaseInterface.CountAllRepositoriesSearchResult(q)
+						repolCount, err = ctx.DatabaseInterface.CountAllRepositoriesSearchResult(q)
 					} else {
-						repolCountv, err = ctx.DatabaseInterface.CountAllRepositories()
+						repolCount, err = ctx.DatabaseInterface.CountAllRepositories()
 					}
 				} else {
 					if len(q) > 0 {
-						repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositoriesSearchResult(ctx.LoginInfo.UserName, q)
+						repolCount, err = ctx.DatabaseInterface.CountAllVisibleRepositoriesSearchResult(ctx.LoginInfo.UserName, q)
 					} else {
-						repolCountv, err = ctx.DatabaseInterface.CountAllVisibleRepositories(ctx.LoginInfo.UserName)
+						repolCount, err = ctx.DatabaseInterface.CountAllVisibleRepositories(ctx.LoginInfo.UserName)
 					}
 				}
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return
 				}
-				repolCount = int(repolCountv)
 				pageInfo, err = routes.GeneratePageInfo(r, repolCount)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
