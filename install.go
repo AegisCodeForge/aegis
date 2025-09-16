@@ -429,9 +429,11 @@ func InstallAegis(ctx routes.RouterContext) {
 		if err != nil {
 			log.Panicf("Failed to register user: %s\n", err.Error())
 		}
-		fmt.Println("Admin user info:")
-		fmt.Printf("Username: %s\n", userName)
-		fmt.Printf("Password: %s\n", userPassword)
+		fmt.Println(`Admin user setup complete. Please use the reset-admin command to change the password:
+
+    aegis -config [config-path] reset-admin
+
+`)
 	}
 
 	fmt.Println("Setting up static assets used by the web UI...")
