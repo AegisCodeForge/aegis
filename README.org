@@ -37,6 +37,7 @@ This process would show you the password for the admin user, which is randomly g
 Currently Aegis only supports the following systems for its components; support for other systems are planned:
 
 + Main database:
+  + PostgreSQL
   + SQLite3
 + Receipt system (see [[./docs/receipt.org]]):
   + SQLite3
