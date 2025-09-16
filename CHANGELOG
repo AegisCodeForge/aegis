@@ -1,5 +1,16 @@
 Copyright 2025 Zetian Lin
 
+2025-09-16 Zetian Lin <bctnry@sdf.org>
+
+	* v0.1.3
+	+ feat: git blame by @bctnry in https://github.com/AegisCodeForge/aegis/pull/88
+	+ feat: 2fa w/ email by @bctnry in https://github.com/AegisCodeForge/aegis/pull/89
+	+ feat: snippets by @bctnry in https://github.com/AegisCodeForge/aegis/pull/91
+	+ feat: basic webhook by @bctnry in https://github.com/AegisCodeForge/aegis/pull/92
+	+ feat: basic file editing ui by @bctnry in https://github.com/AegisCodeForge/aegis/pull/96
+	+ feat: new/upload/edit ui by @bctnry in https://github.com/AegisCodeForge/aegis/pull/98
+	+ many bug fixes and vuln fixes
+
 2025-09-03 Zetian Lin <bctnry@sdf.org>
 
 	* v0.1.2
