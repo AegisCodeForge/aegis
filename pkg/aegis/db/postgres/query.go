@@ -837,6 +837,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `, pfx), name, name, new(string), new(string), ownerUsername, t, model.NewACL(), model.NAMESPACE_NORMAL_PUBLIC)
 	if err != nil { return nil, err }
 	nsPath := path.Join(dbif.config.GitRoot, name)
+	if !db.IsSubDir(dbif.config.GitRoot, nsPath) {
+		return nil, db.ErrInvalidLocation
+	}
 	err = os.RemoveAll(nsPath)
 	if err != nil { return nil, err }
 	err = os.Mkdir(nsPath, os.ModeDir|0755)
@@ -3046,6 +3049,9 @@ VALUES ($1, $2, $3, $4, $5, $6)
 `, pfx), name, username, new(string), t, status, "{}")
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.SnippetRoot, username, name)
+	if !db.IsSubDir(dbif.config.SnippetRoot, p) {
+		return nil, db.ErrInvalidLocation
+	}
 	err = os.RemoveAll(p)
 	if err != nil { return nil, err }
 	err = os.MkdirAll(p, os.ModeDir|0755)

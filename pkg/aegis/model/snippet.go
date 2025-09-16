@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -81,6 +83,9 @@ func (s *Snippet) SyncFile(basePath string, p string) error {
 	source, ok := s.FileList[p]
 	if !ok { return nil }
 	targetPath := path.Join(basePath, s.BelongingUser, s.Name, p)
+	p, err := filepath.Rel(basePath, targetPath)
+	if err != nil { return errors.New("Invalid location") }
+	if strings.HasPrefix(p, "..") { return errors.New("Invalid location") }
 	f, err := os.OpenFile(targetPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil { return err }
 	f.WriteString(source)

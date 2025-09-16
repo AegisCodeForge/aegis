@@ -291,7 +291,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	// "deleted" user regularly from the dbto prevent possible sabotage.
 	userNsPath := path.Join(dbif.config.GitRoot, name)
 	if !db.IsSubDir(dbif.config.GitRoot, userNsPath) {
-		return nil, errors.New("Invalid user namespace path")
+		return nil, db.ErrInvalidLocation
 	}
 	err = os.RemoveAll(userNsPath)
 	if err != nil && !os.IsNotExist(err) { tx.Rollback(); return nil, err }
@@ -484,6 +484,9 @@ VALUES (?,?,?,?,?,?,?,?)
 		return nil, err
 	}
 	nsPath := path.Join(dbif.config.GitRoot, name)
+	if !db.IsSubDir(dbif.config.GitRoot, nsPath) {
+		return nil, db.ErrInvalidLocation
+	}
 	err = os.RemoveAll(nsPath)
 	if err != nil { return nil, err }
 	err = os.Mkdir(nsPath, os.ModeDir|0755)
@@ -795,7 +798,7 @@ DELETE FROM %s_namespace WHERE ns_name = ?
 func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name string, repoType uint8, owner string) (*model.Repository, error) {
 	pfx := dbif.config.Database.TablePrefix
 	if !model.ValidNamespaceName(ns) || !model.ValidRepositoryName(name) {
-		return nil, errors.New("Invalid name")
+		return nil, db.ErrInvalidLocation
 	}
 	fullName := ns + ":" + name
 	tx, err := dbif.connection.Begin()
@@ -810,6 +813,9 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?)
 	_, err = stmt1.Exec(repoType, fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string), new(string), webhookobj.String())
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.GitRoot, ns, name)
+	if !db.IsSubDir(dbif.config.GitRoot, p) {
+		return nil, db.ErrInvalidLocation
+	}
 	err = os.RemoveAll(p)
 	if err != nil { return nil, err }
 	if err = os.MkdirAll(p, os.ModeDir|0755); err != nil {
@@ -854,7 +860,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?)
 	originP := path.Join(dbif.config.GitRoot, originNs, originName)
 	targetP := path.Join(dbif.config.GitRoot, targetNs, targetName)
 	if !db.IsSubDir(dbif.config.GitRoot, targetP) {
-		return nil, errors.New("Invalid location for fork")
+		return nil, db.ErrInvalidLocation
 	}
 	err = os.RemoveAll(targetP)
 	if err != nil { return nil, err }
@@ -3499,6 +3505,9 @@ VALUES (?,?,?,?,?,?,?)
 	_, err = stmt.Exec(fmt.Sprintf("%s:%s", username, name), name, username, new(string), t.Unix(), status, new(map[string]bool))
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.SnippetRoot, username, name)
+	if !db.IsSubDir(dbif.config.SnippetRoot, p) {
+		return nil, db.ErrInvalidLocation
+	}
 	os.RemoveAll(p)
 	err = os.MkdirAll(p, fs.ModeDir|0755)
 	if err != nil { return nil, err }
