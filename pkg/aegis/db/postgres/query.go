@@ -973,6 +973,9 @@ VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	if err = os.MkdirAll(targetP, os.ModeDir|0775); err != nil { return nil, err }
 	originLr, err := model.CreateLocalRepository(model.REPO_TYPE_GIT, originNs, originName, originP)
 	if err != nil { return nil, err }
+	if !db.IsSubDir(dbif.config.GitRoot, targetP) {
+		return nil, errors.New("Invalid location for fork")
+	}
 	targetLr, err := model.CreateLocalForkOf(originLr, targetNs, targetName, targetP)
 	if err = tx.Commit(ctx); err != nil { return nil, err }
 	r, err := model.NewRepository(targetNs, targetName, targetLr)
