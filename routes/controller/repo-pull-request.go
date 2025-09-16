@@ -41,7 +41,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 			if err != nil { p64 = 1 }
 			ps, err := strconv.ParseInt(sStr, 10, 64)
 			if err != nil { ps = 30 }
-			f, err := strconv.ParseInt(fStr, 10, 64)
+			f, err := strconv.ParseInt(fStr, 10, 32)
 			if err != nil { f = 0 }
 			count, err := rc.DatabaseInterface.CountPullRequest(q, s.Namespace, s.Name, int(f))
 			if err != nil {
@@ -113,7 +113,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 				return
 			}
 			pnstr := r.URL.Query().Get("p")
-			pn, err := strconv.ParseInt(pnstr, 10, 64)
+			pn, err := strconv.ParseInt(pnstr, 10, 32)
 			if err != nil { pn = 0 }
 			preList, err := rc.DatabaseInterface.GetAllPullRequestEventPaginated(pr.PRAbsId, int(pn), 30)
 			LogTemplateError(rc.LoadTemplate("pull-request/single-pull-request").Execute(w, &templates.RepositorySinglePullRequestTemplateModel{
