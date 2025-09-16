@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis/db"
+	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -242,7 +243,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 			}
 			err = s.Repository.(*gitlib.LocalGitRepository).SyncAllBranchList()
 			if err != nil {
-				rc.ReportInternalError(err.Error(), w, r)
+				rc.ReportInternalError(fmt.Sprintf("Failed to sync all branch list: %s", err), w, r)
 				return
 			}
 			receiverBranch := strings.TrimSpace(r.URL.Query().Get("recv-br"))
@@ -254,6 +255,10 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 				}
 			}
 			providerRepositoryName := strings.TrimSpace(r.URL.Query().Get("repo"))
+			if !model.ValidRepositoryName(providerRepositoryName) {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
 			if len(providerRepositoryName) <= 0 {
 				fr, err := rc.DatabaseInterface.GetForkRepositoryOfUser(rc.LoginInfo.UserName, s.Namespace, s.Name)
 				if err != nil {
@@ -267,7 +272,6 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 					ProviderRepository: fr,
 				}))
 			} else {
-				
 				_, _, _, provider, err := rc.ResolveRepositoryFullName(providerRepositoryName)
 				if err == ErrNotFound {
 					rc.ReportNotFound(provider.FullName(), "Repository", "Depot", w, r)
@@ -337,3 +341,4 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 		},
 	))
 }
+

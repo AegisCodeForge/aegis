@@ -79,11 +79,6 @@ func bindRepositoryForkController(ctx *RouterContext) {
 				rc.ReportInternalError(err.Error(), w, r)
 				return
 			}
-			err = r.ParseForm()
-			if err != nil {
-				rc.ReportNormalError("Invalid request", w, r)
-				return
-			}
 			namespace := r.Form.Get("namespace")
 			name := r.Form.Get("name")
 			if !model.ValidStrictRepositoryName(name){

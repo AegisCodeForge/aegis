@@ -419,7 +419,6 @@ func InstallAegis(ctx routes.RouterContext) {
 			err = dbif.HardDeleteUserByName("admin")
 			if err != nil { log.Panic(err) }
 		}
-		userName := "admin"
 		userPassword := mkpass()
 		r, err := bcrypt.GenerateFromPassword([]byte(userPassword), bcrypt.DefaultCost)
 		if err != nil {
@@ -429,7 +428,7 @@ func InstallAegis(ctx routes.RouterContext) {
 		if err != nil {
 			log.Panicf("Failed to register user: %s\n", err.Error())
 		}
-		fmt.Println(`Admin user setup complete. Please use the reset-admin command to change the password:
+		fmt.Print(`Admin user setup complete. Please use the reset-admin command to change the password:
 
     aegis -config [config-path] reset-admin
 

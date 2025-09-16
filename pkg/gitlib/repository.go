@@ -109,6 +109,15 @@ func (gr LocalGitRepository) readConfig() (ini.INI, error) {
 	return ini.ParseINI(f)
 }
 
+func (gr LocalGitRepository) containsRemote(s string) (bool, error) {
+	cfg, err := gr.readConfig()
+	if err != nil { return false, err }
+	d, ok := cfg.GetSectionList("remote")
+	if !ok { return false, nil }
+	_, ok = d[s]
+	return ok, nil
+}
+
 func (gr LocalGitRepository) readDescription() (string, error) {
 	descriptionFilePath := path.Join(gr.GitDirectoryPath, "description")
 	f, err := os.Open(descriptionFilePath)
@@ -136,7 +145,16 @@ func (gr LocalGitRepository) LocalForkTo(targetName string, targetAbsDir string)
 	if err != nil {
 		return errors.New(err.Error() + ": " + stderrBuf.String())
 	}
-	cmd2 := exec.Command("git", "remote", "add", targetName, targetAbsDir)
+	var cmd2 *exec.Cmd
+	containsRemote, err := gr.containsRemote(targetName)
+	if err != nil {
+		return errors.New(err.Error() + ": " + stderrBuf.String())
+	}
+	if !containsRemote {
+		cmd2 = exec.Command("git", "remote", "add", targetName, targetAbsDir)
+	} else {
+		cmd2 = exec.Command("git", "remote", "set-url", targetName, targetAbsDir)
+	}
 	stderrBuf.Reset()
 	cmd2.Stderr = stderrBuf
 	cmd2.Dir = gr.GitDirectoryPath
