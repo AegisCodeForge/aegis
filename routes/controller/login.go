@@ -15,26 +15,24 @@ import (
 
 
 func bindLoginController(ctx *RouterContext) {
-	http.HandleFunc("GET /login", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
-			FoundAt(w, "/maintenance-notice")
-			return
-		}
-		loginInfo, err := GenerateLoginInfoModel(ctx, r)
-		if err != nil {
-			loginInfo.LoggedIn = false
-			loginInfo.UserName = ""
-		}
-		if loginInfo.LoggedIn { FoundAt(w, "/") }
-		LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
- 		}))
-	}))
+	http.HandleFunc("GET /login", UseMiddleware(
+		[]Middleware{Logged, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+				FoundAt(w, "/maintenance-notice")
+				return
+			}
+			if rc.LoginInfo == nil || rc.LoginInfo.LoggedIn { FoundAt(w, "/") }
+			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
+				Config: ctx.Config,
+				LoginInfo: rc.LoginInfo,
+			}))
+		},
+	))
 
 	http.HandleFunc("POST /login", UseMiddleware(
 		[]Middleware{
-			Logged, RateLimit,
+			Logged, RateLimit, ValidPOSTRequestRequired, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			if rc.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
@@ -185,7 +183,7 @@ If this isn't you, we advise you to change your password on %s and other platfor
 	))
 
 	http.HandleFunc("POST /login/confirm", UseMiddleware(
-		[]Middleware{Logged, RateLimit, ErrorGuard}, ctx,
+		[]Middleware{Logged, RateLimit, ValidPOSTRequestRequired, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			err := r.ParseForm()
 			if err != nil {

@@ -131,17 +131,14 @@ func bindSnippetController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("POST /snippet/{username}/{name}/setting", UseMiddleware(
-		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, ValidPOSTRequestRequired,
+			LoginRequired, GlobalVisibility, ErrorGuard,
+		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			username := r.PathValue("username")
 			name := r.PathValue("name")
 			if rc.LoginInfo.UserName != username && !rc.LoginInfo.IsAdmin {
 				rc.ReportRedirect(fmt.Sprintf("/snippet/%s/%s", username, name), 5, "Not Enough Privilege", "You don't have the permission required to perform this action.", w, r)
-				return
-			}
-			err := r.ParseForm()
-			if err != nil {
-				rc.ReportNormalError("Invalid request", w, r)
 				return
 			}
 			visibility := r.Form.Get("status")

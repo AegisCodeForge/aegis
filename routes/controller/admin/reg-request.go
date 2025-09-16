@@ -8,17 +8,17 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/aegis/receipt"
-	"github.com/bctnry/aegis/routes"
+	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
 
 // /admin/reg-request?p={pagenum}&s={pagesize}
-func bindAdminRegistrationRequestController(ctx *routes.RouterContext) {
-	http.HandleFunc("GET /admin/reg-request", routes.UseMiddleware(
-		[]routes.Middleware{
-			routes.Logged, routes.LoginRequired, routes.AdminRequired, routes.ErrorGuard,
+func bindAdminRegistrationRequestController(ctx *RouterContext) {
+	http.HandleFunc("GET /admin/reg-request", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, AdminRequired, ErrorGuard,
 		}, ctx,
-		func(rc *routes.RouterContext, w http.ResponseWriter, r *http.Request) {
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			p := r.URL.Query().Get("p")
 			if len(p) <= 0 { p = "1" }
 			s := r.URL.Query().Get("s")
@@ -35,11 +35,11 @@ func bindAdminRegistrationRequestController(ctx *routes.RouterContext) {
 			if pageNum <= 1 { pageNum = 1 }
 			var regreqList []*model.RegistrationRequest
 			if len(q) > 0 {
-				regreqList, err = ctx.DatabaseInterface.SearchRegistrationRequestPaginated(q, int(pageNum-1), int(pageSize))
+				regreqList, err = rc.DatabaseInterface.SearchRegistrationRequestPaginated(q, int(pageNum-1), int(pageSize))
 			} else {
-				regreqList, err = ctx.DatabaseInterface.GetRegistrationRequestPaginated(int(pageNum-1), int(pageSize))
+				regreqList, err = rc.DatabaseInterface.GetRegistrationRequestPaginated(int(pageNum-1), int(pageSize))
 			}
-			routes.LogTemplateError(rc.LoadTemplate("admin/registration-request").Execute(w, &templates.AdminRegistrationRequestTemplateModel{
+			LogTemplateError(rc.LoadTemplate("admin/registration-request").Execute(w, &templates.AdminRegistrationRequestTemplateModel{
 				Config: rc.Config,
 				LoginInfo: rc.LoginInfo,
 				ErrorMsg: "",
@@ -54,11 +54,11 @@ func bindAdminRegistrationRequestController(ctx *routes.RouterContext) {
 		},
 	))
 
-	http.HandleFunc("GET /admin/reg-request/{absid}/approve", routes.UseMiddleware(
-		[]routes.Middleware{
-			routes.Logged, routes.LoginRequired, routes.AdminRequired, routes.ErrorGuard,
+	http.HandleFunc("GET /admin/reg-request/{absid}/approve", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, AdminRequired, ErrorGuard,
 		}, ctx,
-		func(rc *routes.RouterContext, w http.ResponseWriter, r *http.Request) {
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			absidStr := r.PathValue("absid")
 			absid, err := strconv.ParseInt(absidStr, 10, 64)
 			if err != nil {
@@ -75,14 +75,14 @@ func bindAdminRegistrationRequestController(ctx *routes.RouterContext) {
 				rc.ReportInternalError(fmt.Sprintf("Failed to approve registration request: %s.", err), w, r)
 				return
 			}
-			if ctx.Config.EmailConfirmationRequired {
+			if rc.Config.EmailConfirmationRequired {
 				email := regreq.Email
 				command := make([]string, 4)
 				command[0] = receipt.CONFIRM_REGISTRATION
 				command[1] = regreq.Username
 				command[2] = email
 				command[3] = regreq.PasswordHash
-				rid, err := ctx.ReceiptSystem.IssueReceipt(24*60, command)
+				rid, err := rc.ReceiptSystem.IssueReceipt(24*60, command)
 				if err != nil {
 					rc.ReportInternalError(err.Error(), w, r)
 					return
@@ -100,15 +100,15 @@ following link to confirm your registration:
 We wish you all the best in your future endeavours.
 
 %s
-`, ctx.Config.DepotName, rc.Config.ProperHTTPHostName(), rid, rc.Config.DepotName)
+`, rc.Config.DepotName, rc.Config.ProperHTTPHostName(), rid, rc.Config.DepotName)
 				err = rc.Mailer.SendPlainTextMail(email, title, body)
 				// NOTE: the call to the registration wouldn't occur in this case
 				// until the receipt link is visited.
 			} else {
-				if ctx.Config.UseNamespace {
-					_, err = ctx.DatabaseInterface.RegisterNamespace(regreq.Username, regreq.Username)
+				if rc.Config.UseNamespace {
+					_, err = rc.DatabaseInterface.RegisterNamespace(regreq.Username, regreq.Username)
 					if err != nil {
-						ctx.ReportInternalError(
+						rc.ReportInternalError(
 							fmt.Sprintf("Failed at registering namespace %s. Please contact site admin for this issue.", err.Error()),
 							w, r,
 						)
@@ -121,11 +121,11 @@ We wish you all the best in your future endeavours.
 		},
 	))
 	
-	http.HandleFunc("GET /admin/reg-request/{absid}/disapprove", routes.UseMiddleware(
-		[]routes.Middleware{
-			routes.Logged, routes.LoginRequired, routes.AdminRequired, routes.ErrorGuard,
+	http.HandleFunc("GET /admin/reg-request/{absid}/disapprove", UseMiddleware(
+		[]Middleware{
+			Logged, LoginRequired, AdminRequired, ErrorGuard,
 		}, ctx,
-		func(rc *routes.RouterContext, w http.ResponseWriter, r *http.Request) {
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			
 			absidStr := r.PathValue("absid")
 			absid, err := strconv.ParseInt(absidStr, 10, 64)

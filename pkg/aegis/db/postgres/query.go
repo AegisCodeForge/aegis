@@ -2508,19 +2508,19 @@ func (dbif *PostgresAegisDatabaseInterface) SearchPullRequestPaginated(query str
 	if len(query) >= 0 {
 		pat := db.ToSqlSearchPattern(query)
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT pull_request_absid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+SELECT pull_request_absid, author_username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
 FROM %s_pull_request
-WHERE receiver_namespace = ? AND receiver_name = ? %s AND title LIKE $3 ESCAPE $4
-ORDER BY pull_request_timestamp DESC LIMIT $1 OFFSET $2
-`, pfx, statusClause), pageSize, pageNum*pageSize, pat, "\\")
+WHERE receiver_namespace = $1 AND receiver_name = $2 %s AND title LIKE $3 ESCAPE $4
+ORDER BY pull_request_timestamp DESC LIMIT $5 OFFSET $6
+`, pfx, statusClause), namespace, name, pat, "\\", pageSize, pageNum*pageNum)
 		if err != nil { return nil, err }
 	} else {
 		stmt, err = dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT pull_request_absid, username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
+SELECT pull_request_absid, author_username, pull_request_id, title, receiver_branch, provider_namespace, provider_name, provider_branch, merge_conflict_check_result, merge_conflict_check_timestamp, pull_request_status, pull_request_timestamp
 FROM %s_pull_request
-WHERE receiver_namespace = ? AND receiver_name = ? %s
-ORDER BY pull_request_timestamp DESC LIMIT $1 OFFSET $2
-`, pfx, statusClause), pageSize, pageNum*pageSize)
+WHERE receiver_namespace = $1 AND receiver_name = $2 %s
+ORDER BY pull_request_timestamp DESC LIMIT $3 OFFSET $4
+`, pfx, statusClause), namespace, name, pageSize, pageNum*pageSize)
 		if err != nil { return nil, err }
 	}
 	res := make([]*model.PullRequest, 0)

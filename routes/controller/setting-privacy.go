@@ -28,16 +28,13 @@ func bindSettingPrivacyController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("POST /setting/privacy", UseMiddleware(
-		[]Middleware{Logged, LoginRequired, ErrorGuard}, ctx,
+		[]Middleware{Logged, ValidPOSTRequestRequired,
+			LoginRequired, ErrorGuard,
+		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			user, err := rc.DatabaseInterface.GetUserByName(rc.LoginInfo.UserName)
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed while retrieving user: %s\n", err), w, r)
-				return
-			}
-			err = r.ParseForm()
-			if err != nil {
-				rc.ReportNormalError("Invalid request", w, r)
 				return
 			}
 			switch r.Form.Get("section") {

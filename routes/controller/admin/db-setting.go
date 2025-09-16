@@ -4,57 +4,49 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bctnry/aegis/routes"
+	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
 )
 
-func bindAdminDatabaseSettingController(ctx *routes.RouterContext) {
-	http.HandleFunc("GET /admin/db-setting", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-		if err != nil { routes.FoundAt(w, "/") }
-		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
-		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
-		routes.LogTemplateError(ctx.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			ErrorMsg: "",
-		}))
-	}))
-	http.HandleFunc("POST /admin/db-setting", routes.WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, err := routes.GenerateLoginInfoModel(ctx, r)
-		if err != nil { routes.FoundAt(w, "/") }
-		if !loginInfo.LoggedIn { routes.FoundAt(w, "/") }
-		if !loginInfo.IsAdmin { routes.FoundAt(w, "/") }
-		err = r.ParseForm()
-		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: fmt.Sprintf("Error while parsing request: %s. Please contact site owner for this...", err.Error()),
+func bindAdminDatabaseSettingController(ctx *RouterContext) {
+	http.HandleFunc("GET /admin/db-setting", UseMiddleware(
+		[]Middleware{Logged, LoginRequired, AdminRequired, GlobalVisibility, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			LogTemplateError(rc.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{
+				Config: rc.Config,
+				LoginInfo: rc.LoginInfo,
+				ErrorMsg: "",
 			}))
-			return
-		}
-		ctx.Config.Database.Type = r.Form.Get("type")
-		ctx.Config.Database.Path = r.Form.Get("path")
-		ctx.Config.Database.URL = r.Form.Get("url")
-		ctx.Config.Database.DatabaseName = r.Form.Get("name")
-		ctx.Config.Database.UserName = r.Form.Get("user")
-		ctx.Config.Database.Password = r.Form.Get("password")
-		ctx.Config.Database.TablePrefix = r.Form.Get("table-prefix")
-		err = ctx.Config.Sync()
-		if err != nil {
-			routes.LogTemplateError(ctx.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{
-				Config: ctx.Config,
-				LoginInfo: loginInfo,
-				ErrorMsg: fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()),
-			}))
-			return
-		}
-		routes.LogTemplateError(ctx.LoadTemplate("admin/db-setting").Execute(w, &templates.AdminConfigTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			ErrorMsg: fmt.Sprintf("Updated."),
-		}))
-	}))
+		},
+	))
+	
+	http.HandleFunc("POST /admin/db-setting", UseMiddleware(
+		[]Middleware{Logged, ValidPOSTRequestRequired,
+			LoginRequired, AdminRequired,
+			GlobalVisibility, ErrorGuard,
+		}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			err := r.ParseForm()
+			if err != nil {
+				rc.ReportNormalError("Invalid request", w, r)
+				return
+			}
+			rc.Config.LockForSync()
+			defer rc.Config.Unlock()
+			rc.Config.Database.Type = r.Form.Get("type")
+			rc.Config.Database.Path = r.Form.Get("path")
+			rc.Config.Database.URL = r.Form.Get("url")
+			rc.Config.Database.DatabaseName = r.Form.Get("name")
+			rc.Config.Database.UserName = r.Form.Get("user")
+			rc.Config.Database.Password = r.Form.Get("password")
+			rc.Config.Database.TablePrefix = r.Form.Get("table-prefix")
+			err = rc.Config.Sync()
+			if err != nil {
+				rc.ReportInternalError(fmt.Sprintf("Error while saving config: %s", err), w, r)
+				return
+			}
+			rc.ReportRedirect("/admin/db-setting", 3, "Setting Updated", "Your setting for main database has been updated.", w, r)
+		},
+	))
 }
 

@@ -25,7 +25,7 @@
 	  <div class="file main-side" >
 		<div class="main-side-top">
 		  {{if .TreePath}}{{template "_tree-path" .TreePath}}{{end}}
-		  <div class="file-nav"><a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
+		  <div class="file-nav">{{if eq .LoginInfo.UserName .Repository.Owner}}<a href="?edit">Replace</a> {{end}}<a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
 		</div>
 		<img class="file-image" src="?raw" />
 	  </div>

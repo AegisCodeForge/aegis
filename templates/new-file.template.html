@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
 	<link rel="stylesheet" href="/static/style.css">
-	<title>Edit file at {{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.Repository.Name}} :: {{.Config.DepotName}}</title>
+	<title>Creating new file at {{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.Repository.Name}} :: {{.Config.DepotName}}</title>
   </head>
   <body>
 	<header>
@@ -22,16 +22,22 @@
 	  <div class="file-tree left-side">
 	  </div>
 	  <div class="file main-side">
-		<div class="main-side-top">
-		  <span style="flex-grow: 2"><b>Editing file</b> {{.FullTreePath}}  </span>
-		  <div class="file-nav">{{if eq .LoginInfo.UserName .Repository.Owner}}<a href="?">Source</a> {{end}}<a href="?blame">Blame</a> <a href="?raw">Raw</a> <a href="{{.PermaLink}}">Permalink</a></div>
-		</div>
-
-		<form class="edit-file-form" action="" method="POST">
-		  <input type="hidden" name="action" value="edit"/>
+		<form class="edit-file-form" action="" method="POST" enctype="multipart/form-data">
+		  <input type="hidden" name="action" value="new"/>
+		  <div class="field">
+			<label class="field-label" for="new-file-path" value="{{.TargetFilePath}}">New file path:</label>
+			<input name="new-file-path" id="new-file-path"/>
+		  </div>
+		  <div class="field">
+			<label for="use-uploaded-file">Use uploaded file instead:</label> <input type="checkbox" name="use-upload-file" />
+		  </div>
+		  <div class="field">
+			<label class="field-label" for="file-upload">Upload file:</label>
+			<input type="file" name="file-upload" />
+		  </div>
 		  <div class="field">
 			<label class="field-label" for="content">Content:</label>
-			<textarea style="height:30rem" name="content" id="content">{{.FileContent}}</textarea>
+			<textarea style="height:30rem" name="content" id="content"></textarea>
 		  </div>
 		  <div class="field">
 			<label class="field-label" for="commit-message">Commit Message:</label>

@@ -9,13 +9,15 @@ import (
 
 
 func bindPrivateNoticeController(ctx *RouterContext) {
-	http.HandleFunc("GET /private-notice", WithLog(func(w http.ResponseWriter, r *http.Request) {
-		loginInfo, _ := GenerateLoginInfoModel(ctx, r)
-		LogTemplateError(ctx.LoadTemplate("private-notice").Execute(w, &templates.PrivateNoticeTemplateModel{
-			Config: ctx.Config,
-			LoginInfo: loginInfo,
-			Message: ctx.Config.PrivateNoticeMessage,
-		}))
-	}))
+	http.HandleFunc("GET /private-notice", UseMiddleware(
+		[]Middleware{Logged, UseLoginInfo, ErrorGuard}, ctx,
+		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			LogTemplateError(rc.LoadTemplate("private-notice").Execute(w, &templates.PrivateNoticeTemplateModel{
+				Config: rc.Config,
+				LoginInfo: rc.LoginInfo,
+				Message: rc.Config.PrivateNoticeMessage,
+			}))
+		},
+	))
 }
 
