@@ -856,6 +856,9 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?)
 	if err != nil { return nil, err }
 	targetRepo, err := model.CreateLocalForkOf(originRepo, targetNs, targetName, targetP)
 	if err != nil { return nil, err }
+	if !db.IsSubDir(dbif.config.GitRoot, targetP) {
+		return nil, errors.New("Invalid location for fork")
+	}
 	if err = tx.Commit(); err != nil { return nil, err }
 	r, err := model.NewRepository(targetNs, targetName, targetRepo)
 	r.Type = model.GetAegisType(targetRepo)
