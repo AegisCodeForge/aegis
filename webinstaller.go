@@ -383,7 +383,6 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to create home directory for user %s: %s</p>", ctx.Config.GitUser, homePath)
 				return false
 			}
-			ctx.Config.FilePath = path.Join(homePath, fmt.Sprintf("aegis-config-%d.json", time.Now().Unix()))
 			useraddPath, err := whereIs("useradd")
 			if err != nil {
 				fmt.Fprintf(w, "<p>Failed to find command \"useradd\": %s</p>", err.Error())
@@ -399,11 +398,16 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to run useradd: %s</p>", err.Error())
 				return false
 			}
+			return true
+		}() { goto leave }
+
+		if !func()bool{
 			gitUser, err := user.Lookup(ctx.Config.GitUser)
 			if err != nil {
 				fmt.Fprintf(w, "<p>Somehow failed to retrieve user after registering: %s\n", err.Error())
 				return false
 			}
+			homePath := gitUser.HomeDir
 			uid, _ := strconv.Atoi(gitUser.Uid)
 			gid, _ := strconv.Atoi(gitUser.Gid)
 			fmt.Fprint(w,"<p>Chown-ing git user home directory...</p>")
@@ -474,6 +478,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to chown git root: %s\n</p>", err.Error())
 				return false
 			}
+			ctx.Config.FilePath = path.Join(homePath, fmt.Sprintf("aegis-config-%d.json", time.Now().Unix()))
 			fmt.Fprint(w, "<p>Git user setup done.</p>")
 			ctx.Config.RecalculateProperPath()
 			err = ctx.Config.Sync()
@@ -605,11 +610,13 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				uid, _ = strconv.Atoi(gitUser.Uid)
 				gid, _ = strconv.Atoi(gitUser.Gid)
 			}
+			fmt.Println("fp", ctx.Config.FilePath)
 			if ctx.Config.Database.Type == "sqlite" {
 				if gitUser == nil {
 					fmt.Fprint(w, "<p class=\"warning\">Failed to fild Git user's uid & gid when chowning sqlite database. You need to perform this action on your own after this installation process...")
 				} else {
 					err := os.Chown(ctx.Config.ProperDatabasePath(), uid, gid)
+					fmt.Println("prop", ctx.Config.ProperDatabasePath())
 					if err != nil {
 						fmt.Fprintf(w, "<p class=\"warning\">Failed to chown sqlite database: %s. You need to perform this action on your own after this installation process...", err.Error())
 					}

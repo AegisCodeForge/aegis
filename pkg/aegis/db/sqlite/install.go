@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS %s_issue_event (
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %spull_request (
+CREATE TABLE IF NOT EXISTS %s_pull_request (
     username TEXT,
     pull_request_id INT,
     title TEXT,
@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS %spull_request (
 	if err != nil { return err }
 	
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE TABLE IF NOT EXISTS %spull_request_event (
+CREATE TABLE IF NOT EXISTS %s_pull_request_event (
     pull_request_abs_id INTEGER,
 	-- 1 - normal comment.
 	-- 2 - comment on code.
@@ -179,7 +179,7 @@ CREATE TABLE IF NOT EXISTS %spull_request_event (
 	if err != nil { return err }
 
 	_, err = tx.Exec(fmt.Sprintf(`
-CREATE INDEX IF NOT EXISTS idx_%spull_request_event_pull_request_abs_id
+CREATE INDEX IF NOT EXISTS idx_%s_pull_request_event_pull_request_abs_id
 ON %spull_request_event (pull_request_abs_id);
 `, pfx, pfx))
 	if err != nil { return err }

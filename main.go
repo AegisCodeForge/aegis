@@ -180,7 +180,6 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create mailer interface: %s\n", err.Error())
 			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
-			os.Exit(1)
 		}
 		context.Mailer = ml
 
@@ -188,7 +187,6 @@ func main() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create confirm code manager: %s\n", err.Error())
 			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
-			os.Exit(1)
 		}
 		context.ConfirmCodeManager = ccm
 

@@ -21,7 +21,6 @@ var requiredTableList = []string{
 	"user",
 	"namespace",
 	"repository",
-	"repo_redirect",
 	"issue",
 	"issue_event",
 	"pull_request",
