@@ -4,6 +4,7 @@ fork is largely (not fully) an aegis-side construct instead of a fully git-side 
 
 + repo A is registered as repo B's fork in database;
 + repo B has a remote pointing to repo A
++ repo A has a remote pointing to repo B
 
 the current way of creating a fork is to:
 
@@ -14,6 +15,8 @@ the current way of creating a fork is to:
 this is config-ed under the =config= file of the git dir, which means theoretically you can perform this action by directly editing the =config= file atomically instead of spawning =git=, but without fully understanding what we actually need to do it's better to just spawn =git= for now.
 
 users are allowed to have multiple fork of the same repository in namespaces they have addRepository privilege of.
+
+for git repositories, the remote name, used in merge, is of the form =[namespace]/[name]= (i.e. the full name for remote branch would be =[namespace]/[name]/[branch]=.) this is different from the "canonical" full name, which is =[namespace]:[name]=. the remote is set up duing the call to =model.CreateLocalForkOf=, which is responsible to dispatch basing on the type of the repo and create & setup forks accordingly.
 
 ** merge
 

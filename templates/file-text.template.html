@@ -9,6 +9,11 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  {{template "_repo-header" .}}
+	  {{if .ComparisonInfo}}
+	  {{if eq .LoginInfo.UserName .Repository.Owner}}
+	  {{template "_comparison-info" .ComparisonInfo}}
+	  {{end}}
+	  {{end}}
 	</header>
 	
 	<div class="node-description">

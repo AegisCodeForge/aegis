@@ -165,6 +165,153 @@ func (gr LocalGitRepository) LocalForkTo(targetName string, targetAbsDir string)
 	return nil
 }
 
+func (gr LocalGitRepository) GetAllRemote() ([]string, error) {
+	cfg, err := gr.readConfig()
+	if err != nil { return nil, err }
+	l, b := cfg.GetSectionList("remote")
+	if !b { return []string{}, nil }
+	res := make([]string, 0)
+	for k := range l {
+		res = append(res, k)
+	}
+	return res, nil
+}
+
+func (gr LocalGitRepository) HasRemote(s string) (bool, error) {
+	cfg, err := gr.readConfig()
+	if err != nil { return false, err }
+	l, b := cfg.GetSectionList("remote")
+	if !b { return false, nil }
+	_, ok := l[s]
+	return ok, nil
+}
+
+type BranchComparisonInfo struct {
+	BaseId string
+	ARevList []string
+	BRevList []string
+}
+
+// NOTE: localBranch should *NOT* be full name.
+func (gr LocalGitRepository) CompareBranchWithRemote(localBranch string, remoteName string) (*BranchComparisonInfo, error) {
+	hasRemote, err := gr.HasRemote(remoteName)
+	if err != nil { return nil, err }
+	if !hasRemote { return nil, nil }
+	cmd1 := exec.Command("git", "fetch", remoteName)
+	cmd1.Dir = gr.GitDirectoryPath
+	stderrBuf := new(bytes.Buffer)
+	cmd1.Stderr = stderrBuf
+	err = cmd1.Run()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to git-fetch: %s; %s", err, stderrBuf.String())
+	}
+	cmd2 := exec.Command("git", "merge-base", fmt.Sprintf("refs/heads/%s", localBranch), fmt.Sprintf("%s/%s", remoteName, localBranch))
+	cmd2.Dir = gr.GitDirectoryPath
+	stdoutBuf := new(bytes.Buffer)
+	cmd2.Stdout = stdoutBuf
+	stderrBuf.Reset()
+	cmd2.Stderr = stderrBuf
+	err = cmd2.Run()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to git-merge-base: %s; %s", err, stderrBuf.String())
+	}
+	baseId := strings.TrimSpace(stdoutBuf.String())
+	cmd3 := exec.Command("git", "rev-list", fmt.Sprintf("%s..refs/heads/%s", baseId, localBranch))
+	cmd3.Dir = gr.GitDirectoryPath
+	stdoutBuf.Reset()
+	cmd3.Stdout = stdoutBuf
+	stderrBuf.Reset()
+	cmd3.Stderr = stderrBuf
+	err = cmd3.Run()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to git-rev-list: %s; %s", err, stderrBuf.String())
+	}
+	ares := strings.TrimSpace(stdoutBuf.String())
+	var alist []string
+	if ares == "" {
+		alist = make([]string, 0)
+	} else {
+		alist = strings.Split(ares, "\n")
+	}
+	cmd4 := exec.Command("git", "rev-list", fmt.Sprintf("%s..%s/%s", baseId, remoteName,localBranch))
+	cmd4.Dir = gr.GitDirectoryPath
+	stdoutBuf.Reset()
+	cmd4.Stdout = stdoutBuf
+	stderrBuf.Reset()
+	cmd4.Stderr = stderrBuf
+	err = cmd4.Run()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to git-rev-list: %s; %s", err, stderrBuf.String())
+	}
+	bres := strings.TrimSpace(stdoutBuf.String())
+	var blist []string
+	if bres == "" {
+		blist = make([]string, 0)
+	} else {
+		blist = strings.Split(bres, "\n")
+	}
+	return &BranchComparisonInfo{
+		BaseId: baseId,
+		ARevList: alist,
+		BRevList: blist,
+	}, nil
+}
+
+func (gr LocalGitRepository) CheckIfCanFastForward(branch string, remoteName string) (bool, error) {
+	hasRemote, err := gr.HasRemote(remoteName)
+	if err != nil { return false, err }
+	if !hasRemote { return false, nil }
+	cmd1 := exec.Command("git", "fetch", remoteName)
+	cmd1.Dir = gr.GitDirectoryPath
+	stderrBuf := new(bytes.Buffer)
+	cmd1.Stderr = stderrBuf
+	err = cmd1.Run()
+	if err != nil {
+		return false, fmt.Errorf("Failed to git-fetch: %s; %s", err, stderrBuf.String())
+	}
+	cmd2 := exec.Command("git", "merge-base", fmt.Sprintf("refs/heads/%s", branch), fmt.Sprintf("%s/%s", remoteName, branch))
+	cmd2.Dir = gr.GitDirectoryPath
+	stdoutBuf := new(bytes.Buffer)
+	cmd2.Stdout = stdoutBuf
+	stderrBuf.Reset()
+	cmd2.Stderr = stderrBuf
+	err = cmd2.Run()
+	if err != nil {
+		return false, fmt.Errorf("Failed to git-merge-base: %s; %s", err, stderrBuf.String())
+	}
+	base := strings.TrimSpace(stdoutBuf.String())
+	localRefPath := path.Join(gr.GitDirectoryPath, "refs", "heads", branch)
+	f1, err := os.ReadFile(localRefPath)
+	if err != nil {
+		return false, errors.New(fmt.Sprintf("Failed to read local branch ref: %s", err))
+	}
+	return base == strings.TrimSpace(string(f1)), nil
+}
+
+func (gr LocalGitRepository) FetchRemote(branch string, remote string) error {
+	cmd1 := exec.Command("git", "fetch", remote)
+	cmd1.Dir = gr.GitDirectoryPath
+	stderrBuf := new(bytes.Buffer)
+	cmd1.Stderr = stderrBuf
+	err := cmd1.Run()
+	if err != nil {
+		return fmt.Errorf("Failed to git-fetch: %s; %s", err, stderrBuf.String())
+	}
+	return nil
+}
+
+func (gr LocalGitRepository) UpdateRef(branch string, targetId string) error {
+	cmd := exec.Command("git", "update-ref", fmt.Sprintf("refs/heads/%s", branch), targetId)
+	cmd.Dir = gr.GitDirectoryPath
+	stderrBuf := new(bytes.Buffer)
+	cmd.Stderr = stderrBuf
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Failed to update-ref: %s; %s", err, stderrBuf.String())
+	}
+	return nil
+}
+
 // two places to check:
 //     refs/heads/*,  packed-refs
 func (gr LocalGitRepository) GetAllBranchList() (map[string]*Branch, error) {

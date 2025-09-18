@@ -11,7 +11,8 @@ type TreeTemplateModel struct {
 	TreeFileList *TreeFileListTemplateModel
 	ParentTreeFileList *TreeFileListTemplateModel
 	PermaLink string
-
+	
+	ComparisonInfo *gitlib.BranchComparisonInfo
 	TreePath *TreePathTemplateModel
 	CommitInfo *CommitInfoTemplateModel
 	TagInfo *TagInfoTemplateModel

@@ -2,8 +2,6 @@
 
 package templates
 
-//go:build ignore
-
 import "github.com/bctnry/aegis/pkg/gitlib"
 
 type TagInfoTemplateModel struct {

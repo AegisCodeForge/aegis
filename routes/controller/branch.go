@@ -256,43 +256,6 @@ func bindBranchController(ctx *RouterContext) {
 			}
 			permaLink := fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, treePath)
 			
-			isBlameRequest := r.URL.Query().Has("blame")
-			if isBlameRequest && isTargetBlob {
-				mime := mime.TypeByExtension(path.Ext(treePath))
-				if len(mime) <= 0 { mime = "application/octet-stream" }
-				if !strings.HasPrefix(mime, "image/") {
-					dirPath := path.Dir(treePath) + "/"
-					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
-					if err != nil {
-						rc.ReportInternalError(err.Error(), w, r)
-						return
-					}
-					blame, err := rr.Blame(cobj, treePath)
-					if err != nil {
-						rc.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
-						return
-					}
-					LogTemplateError(rc.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
-						Repository: repo,
-						RepoHeaderInfo: *repoHeaderInfo,
-						TreeFileList: &templates.TreeFileListTemplateModel{
-							ShouldHaveParentLink: len(treePath) > 0,
-							RepoPath: fmt.Sprintf("/repo/%s", rfn),
-							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
-							TreePath: dirPath,
-							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
-						},
-						TreePath: treePathModelValue,
-						PermaLink: permaLink,
-						Blame: blame,
-						CommitInfo: commitInfo,
-						TagInfo: nil,
-						LoginInfo: rc.LoginInfo,
-						Config: rc.Config,
-					}))
-					return
-				}
-			}
 			isNewFileRequest := r.URL.Query().Has("new-file")
 			if isNewFileRequest && isTargetTree {
 				LogTemplateError(rc.LoadTemplate("new-file").Execute(w, &templates.NewFileTemplateModel{
@@ -336,6 +299,71 @@ func bindBranchController(ctx *RouterContext) {
 					}))
 				}
 				return
+			}
+
+			var upstream model.LocalRepository
+			var compareInfo *gitlib.BranchComparisonInfo = nil
+			if len(repo.ForkOriginName) > 0 || len(repo.ForkOriginNamespace) > 0 {
+				upstreamPath := path.Join(rc.Config.GitRoot, repo.ForkOriginNamespace, repo.ForkOriginName)
+				upstream, _ = model.CreateLocalRepository(model.REPO_TYPE_GIT, repo.ForkOriginNamespace, repo.ForkOriginName, upstreamPath)
+				remoteName := fmt.Sprintf("%s/%s", repo.Namespace, repo.Name)
+				compareInfo, err = upstream.(*gitlib.LocalGitRepository).CompareBranchWithRemote(branchName, remoteName)
+			}
+			
+			isFastForwardRequest := r.URL.Query().Has("ff")
+			if isFastForwardRequest && compareInfo != nil && rc.LoginInfo.IsOwner {
+				if len(compareInfo.ARevList) > 0 && len(compareInfo.BRevList) <= 0 {
+					err = rr.FetchRemote(branchName, "origin")
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to sync repository: %s", err), w, r)
+						return
+					}
+					err = rr.UpdateRef(branchName, compareInfo.ARevList[0])
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to sync repository: %s", err), w, r)
+						return
+					}
+					rc.ReportRedirect(fmt.Sprintf("/repo/%s/branch/%s", rfn, branchName), 3, "Repository Synced", "The repository has been successfully fast-forwarded with its upstream.", w, r)
+					return
+				}
+			}
+			
+			isBlameRequest := r.URL.Query().Has("blame")
+			if isBlameRequest && isTargetBlob {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				if !strings.HasPrefix(mime, "image/") {
+					dirPath := path.Dir(treePath) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						rc.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					blame, err := rr.Blame(cobj, treePath)
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
+						return
+					}
+					LogTemplateError(rc.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						TreeFileList: &templates.TreeFileListTemplateModel{
+							ShouldHaveParentLink: len(treePath) > 0,
+							RepoPath: fmt.Sprintf("/repo/%s", rfn),
+							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "branch", branchName),
+							TreePath: dirPath,
+							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+						},
+						TreePath: treePathModelValue,
+						PermaLink: permaLink,
+						Blame: blame,
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: rc.LoginInfo,
+						Config: rc.Config,
+					}))
+					return
+				}
 			}
 			
 			switch target.Type() {
@@ -382,6 +410,7 @@ func bindBranchController(ctx *RouterContext) {
 						TreePath: treePath,
 						FileList: target.(*gitlib.TreeObject).ObjectList,
 					},
+					ComparisonInfo: compareInfo,
 					ParentTreeFileList: parentTreeFileList,
 					PermaLink: permaLink,
 					TreePath: treePathModelValue,
@@ -428,6 +457,7 @@ func bindBranchController(ctx *RouterContext) {
 						TreePath: dirPath,
 						FileList: dirObj.(*gitlib.TreeObject).ObjectList,
 					},
+					ComparisonInfo: compareInfo,
 					AllowBlame: !strings.HasPrefix(mime, "image/"),
 					TreePath: treePathModelValue,
 					CommitInfo: commitInfo,

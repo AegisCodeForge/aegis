@@ -844,11 +844,11 @@ func (dbif *SqliteAegisDatabaseInterface) SetUpCloneRepository(originNs string, 
 	defer tx.Rollback()
 	webhookobj := new(model.WebHookConfig)
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %s_repository(repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
-VALUES (?,?,?,?,?,?,?,?,?,?,?)
+INSERT INTO %s_repository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt1.Exec(targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName, new(string), webhookobj.String())
+	_, err = stmt1.Exec(model.REPO_TYPE_GIT, targetFullName, targetNs, targetName, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, originNs, originName, new(string), webhookobj.String())
 	if err != nil {
 		// TODO: find a better way to do this...
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
