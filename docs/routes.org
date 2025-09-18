@@ -2,26 +2,32 @@
 
 (very early draft; subject to change)
 
-+ ={hostname}/s/{namespace}=: The front page of the namespace.
-  + ={hostname}/s/{namespace}/setting=: Namespace settings. (change info)
-  + ={hostname}/s/{namespace}/delete=: Delete namespace.
-  + ={hostname}/s/{namespace}/member=: Namespace settings. (change member)
-+ ={hostname}/repo/{reponame}=: The front page of the repository.
++ =/s/{namespace}=: The front page of the namespace.
+  + =/s/{namespace}/setting=: Namespace settings. (change info)
+  + =/s/{namespace}/delete=: Delete namespace.
+  + =/s/{namespace}/member=: Namespace settings. (change member)
++ =/repo/{reponame}=: The front page of the repository.
   + =reponame= has the format of ={namespace}:{name}= if namespaces are used.
-+ ={hostname}/repo/{reponame}/branch/{branchName}=:
-+ ={hostname}/repo/{reponame}/branch/{branchName}/{treePath}=: Files / directories under a specific branch.
-+ ={hostname}/repo/{reponame}/branch/{branchName}/{treePath}?raw=: The raw data of the underlying blob or tree object.
-+ ={hostname}/repo/{reponame}/commit/{commitId}/{treePath}?raw=:
-+ ={hostname}/repo/{reponame}/tree/{treeId}=: The tree with the id =treeId=. No associated commit or tag info, just the tree.
-+ ={hostname}/repo/{reponame}/blob/{blobId}=: The blob with the id =treeId=. No associated commit or tag info, just the blob.
-+ ={hostname}/repo/{reponame}/tag/{tagId}=: The tag with the id =tagId=, together with the info one can extract from the tagged object (e.g. if the tag tags a tree object, then a list of items that can be read from that tree obj is displayed; if the tag tags a blob object, the content of that blob is displayed; etc..)
-+ ={hostname}/repo/{reponame}/history/branch:{branchName}=: the history of branch =branchName=.
-+ ={hostname}/repo/{reponame}/history/commit:{commitId}=: the history of commit =commitId=.
-+ ={hostname}/repo/{reponame}/issue=: issue tracker.
-  + ={hostname}/repo/{reponame}/issue/new=: new issue
-  + ={hostname}/repo/{reponame}/issue/{issueId}=: each issue
-+ ={hostname}/repo/{reponame}/fork=: fork repository.
-+ ={hostname}/u/{username}=: User page.
-+ ={hostname}/new/namespace=: New namespace page.
-+ ={hostname}/new/repo=: New repository page.
-  + ={hostname}/new/repo?ns={namespace}=: New repository page (with pre-set namespace)
++ =/repo/{reponame}/branch/{branchName}=:
++ =/repo/{reponame}/branch/{branchName}/{treePath}=: Files / directories under a specific branch.
++ =/repo/{reponame}/branch/{branchName}/{treePath}?raw=: The raw data of the underlying blob or tree object.
++ =/repo/{reponame}/commit/{commitId}/{treePath}?raw=:
++ =/repo/{reponame}/tree/{treeId}=: The tree with the id =treeId=. No associated commit or tag info, just the tree.
++ =/repo/{reponame}/blob/{blobId}=: The blob with the id =treeId=. No associated commit or tag info, just the blob.
++ =/repo/{reponame}/tag/{tagId}=: The tag with the id =tagId=, together with the info one can extract from the tagged object (e.g. if the tag tags a tree object, then a list of items that can be read from that tree obj is displayed; if the tag tags a blob object, the content of that blob is displayed; etc..)
++ =/repo/{reponame}/history/branch:{branchName}=: the history of branch =branchName=.
++ =/repo/{reponame}/history/commit:{commitId}=: the history of commit =commitId=.
++ =/repo/{reponame}/issue=: issue tracker.
+  + =/repo/{reponame}/issue/new=: new issue
+  + =/repo/{reponame}/issue/{issueId}=: each issue
++ =/repo/{reponame}/fork=: fork repository.
++ =/u/{username}=: User page.
++ =/new/namespace=: New namespace page.
++ =/new/repo=: New repository page.
+  + =/new/repo?ns={namespace}=: New repository page (with pre-set namespace)
++ =/all/namespace=: The list of all namespace.
++ =/all/repo=: The list of all repository.
++ =/shutdown-notice=: Notice page for shutdown mode (see [[./global-visibility.org]])
++ =/maintenance-notice=: Notice page for maintenance mode (see [[./global-visibility.org]])
+
+  

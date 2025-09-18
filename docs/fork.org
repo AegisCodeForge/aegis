@@ -1,0 +1,48 @@
+* fork
+
+fork is largely (not fully) an aegis-side construct instead of a fully git-side one. a repo (repo A) is fully the fork of another repo (repo B) when the following condition satisfies:
+
++ repo A is registered as repo B's fork in database;
++ repo B has a remote pointing to repo A
+
+the current way of creating a fork is to:
+
++ clone repo A to location B;
++ have repo A set up a new remote pointing to location B
+  + (the new cloned repo already have a remote pointing to repo A, which is the "origin" remote.).
+
+this is config-ed under the =config= file of the git dir, which means theoretically you can perform this action by directly editing the =config= file atomically instead of spawning =git=, but without fully understanding what we actually need to do it's better to just spawn =git= for now.
+
+users are allowed to have multiple fork of the same repository in namespaces they have addRepository privilege of.
+
+** merge
+
+see [[./pull-request.org]]
+
+** sync
+
+first we must =git-fetch=:
+
+#+begin_src sh
+git fetch [remote]
+#+end_src
+
+=git-merge-base= is used to check if one can be fast-forwarded to another:
+
+#+begin_src sh
+    git merge-base [commit-a] [commit-b]
+#+end_src
+
+this outputs the id of the base commit where both commits start to diverge on stdout. one can check if one is another's ancestor by simply comparing it with =[commit-a]= and/or =[commit-b]=. local branch needs to be full name (i.e. =refs/heads/[branch name]=. in our use case it would be:
+
+#+begin_src sh
+git merge-base refs/heads/[branch-a] [remote-b]/[branch-b]
+#+end_src
+
+after confirming that we indeed can fast forward we simply =git-update-ref=:
+
+#+begin_src sh
+  git update-ref refs/heads/[branch-a] [remote-b]/[branch-b]
+#+end_src
+
+  

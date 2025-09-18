@@ -1,0 +1,41 @@
+* installation
+
+as of now (v0.1.3) there are two ways of installation:
+
++ through the web installer (recommended), which is done by running this command:
+  #+begin_src bash
+    aegis -init
+  #+end_src
+  and choose =y= when being prompted for whether to choose to launch the web installer.
++ through the manual installer, which is done by completing the following process:
+  1. run the following command:
+       #+begin_src bash
+         aegis -init -config [target-config-file]
+       #+end_src
+     this would create a skeleton config file at =[target-config-file]=.
+  2. fill in the required values in =[target-config-file]=.
+  3. run the following command to setup the required things:
+     #+begin_src bash
+     aegis -config [target-config-file]
+     #+end_src
+
+after the installation process, you can start aegis by running:
+
+#+begin_src bash
+  aegis -config [target-config-file]
+#+end_src
+
+it's recommended to do the following things immediately:
+
++ run =aegis -config [config] reset-admin= to reset the admin account's password
++ create an =admin= namespace, since this isn't created automatically.
+
+** sanity check
+
+the following thing should be true:
+
++ the aegis executable is inside the git user's =git-shell-commands= folder.
++ the git user is running the aegis executable.
++ if using sqlite, all sqlite database files should be accessible by the git user.
+
+

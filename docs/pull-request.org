@@ -1,19 +1,5 @@
 * notes on pull-request
 
-** fork
-
-the current way of creating a fork is to:
-
-+ clone repo A to location B;
-+ have repo A set up a new remote pointing to location B
-  + (the new cloned repo already have a remote pointing to repo A, which is the "origin" remote.).
-
-this is config-ed under the =config= file of the git dir, which means theoretically you can perform this action by directly editing the =config= file atomically instead of spawning =git=, but without fully understanding what we actually need to do it's better to just spawn =git= for now.
-
-users are allowed to have multiple fork of the same repository in namespaces they have addRepository privilege of.
-
-** pull request
-
 a pull request is purely an "external" construct that only exists in the eyes of the surrounding tools (in this case, Aegis itself). something like this is to be used:
 
 #+begin_src sql
