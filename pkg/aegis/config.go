@@ -367,7 +367,7 @@ func CreateConfigFile(p string) error {
 			Password: "",
 			TablePrefix: "aegis_receipt_",
 		},
-		MaxRequestInSecond: 0,
+		MaxRequestInSecond: 500,
 		ConfirmCodeManager: AegisConfirmCodeManagerConfig{
 			Type: "in-memory",
 			DefaultTimeoutMinute: 5,

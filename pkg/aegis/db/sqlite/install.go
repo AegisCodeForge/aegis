@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS %s_pull_request_event (
 
 	_, err = tx.Exec(fmt.Sprintf(`
 CREATE INDEX IF NOT EXISTS idx_%s_pull_request_event_pull_request_abs_id
-ON %spull_request_event (pull_request_abs_id);
+ON %s_pull_request_event (pull_request_abs_id);
 `, pfx, pfx))
 	if err != nil { return err }
 

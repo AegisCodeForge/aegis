@@ -280,7 +280,7 @@ INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, u
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt.Exec(name, name, email, new(string), new(string), passwordHash, t, status, `{"email":{"enable":true}}`)
+	_, err = stmt.Exec(name, name, email, new(string), new(string), passwordHash, t, status, `{"email":{"enable":false}}`)
 	if err != nil { tx.Rollback(); return nil, err }
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return nil, err }
@@ -807,7 +807,7 @@ func (dbif *SqliteAegisDatabaseInterface) CreateRepository(ns string, name strin
 	webhookobj := new(model.WebHookConfig)
 	stmt1, err := tx.Prepare(fmt.Sprintf(`
 INSERT INTO %s_repository(repo_type, repo_fullname, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_owner, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook)
-VALUES (?,?,?,?,?,?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
 	_, err = stmt1.Exec(repoType, fullName, ns, name, new(string), new(string), model.REPO_NORMAL_PUBLIC, owner, new(string), new(string), new(string), webhookobj.String())
@@ -1855,7 +1855,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 func (dbif *SqliteAegisDatabaseInterface) GetRepositoryIssue(ns string, name string, iid int) (*model.Issue, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT rowid, issue_timestamp, issue_author, issue_title, issue_content, issue_status
+SELECT rowid, issue_timestamp, issue_author, issue_title, issue_content, issue_status, issue_priority
 FROM %s_issue
 WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 `, pfx))
@@ -1864,9 +1864,9 @@ WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 	r := stmt.QueryRow(ns, name, iid)
 	if r.Err() != nil { return nil, r.Err() }
 	var absid, timestamp int64
-	var status int
+	var status, priority int
 	var author, title, content string
-	err = r.Scan(&absid, &timestamp, &author, &title, &content, &status)
+	err = r.Scan(&absid, &timestamp, &author, &title, &content, &status, &priority)
 	if err != nil { return nil, err }
 	return &model.Issue{
 		IssueAbsId: absid,
@@ -1878,6 +1878,7 @@ WHERE repo_namespace = ? AND repo_name = ? AND issue_id = ?
 		IssueTime: timestamp,
 		IssueContent: content,
 		IssueStatus: status,
+		IssuePriority: priority,
 	}, nil
 }
 
@@ -1915,11 +1916,11 @@ SELECT COUNT(*) FROM %s_issue WHERE repo_namespace = ? AND repo_name = ?
 	if err != nil { return 0, err }
 	defer tx.Rollback()
 	stmt2, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %s_issue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status)
-VALUES (?,?,?,?,?,?,?,?)
+INSERT INTO %s_issue(repo_namespace, repo_name, issue_id, issue_timestamp, issue_author, issue_title, issue_content, issue_status, issue_priority)
+VALUES (?,?,?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return 0, err }
-	_, err = stmt2.Exec(ns, name, res, time.Now().Unix(), author, title, content, model.ISSUE_OPENED)
+	_, err = stmt2.Exec(ns, name, res, time.Now().Unix(), author, title, content, model.ISSUE_OPENED, 0)
 	if err != nil { return 0, err }
 	err = tx.Commit()
 	if err != nil { return 0, err }

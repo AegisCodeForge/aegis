@@ -86,12 +86,16 @@ func bindLoginController(ctx *RouterContext) {
 				}))
 				return
 			}
-			
+
 			if u.TFAConfig.Email.Enable {
 				confirmCode := newConfirmCode()
 				tempKey, err := bcrypt.GenerateFromPassword([]byte(u.PasswordHash+confirmCode), bcrypt.DefaultCost)
 				if err != nil {
 					rc.ReportInternalError(fmt.Sprintf("Failed to process generated confirmation code: %s.", err), w, r)
+					return
+				}
+				if rc.ConfirmCodeManager == nil {
+					rc.ReportInternalError("Confirm code manager not initialized. Please contact site owner to fix this problem... ", w, r)
 					return
 				}
 				rc.ConfirmCodeManager.Register(un, confirmCode, 10 * time.Minute)

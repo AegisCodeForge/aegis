@@ -33,7 +33,7 @@ func UseMiddleware(w []Middleware, ctx *RouterContext, f HandlerFunc) http.Handl
 
 var Logged Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
-		log.Printf(" %s %s\n", r.Method, r.URL.Path)
+		log.Printf(" %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path)
 		f(ctx, w, r)
 	}
 }
