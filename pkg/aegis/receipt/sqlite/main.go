@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"fmt"
 	"net/url"
 	"strings"
 	"time"
@@ -41,10 +42,11 @@ func (rsif *AegisSqliteReceiptSystemInterface) Dispose() error {
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) IsReceiptSystemUsable() (bool, error) {
+	pfx := rsif.config.ReceiptSystem.TablePrefix
 	stmt, err := rsif.connection.Prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = ?")
 	if err != nil { return false, err }
 	for _, item := range requiredTableList {
-		r := stmt.QueryRow(item)
+		r := stmt.QueryRow(fmt.Sprintf("%s_%s", pfx, item))
 		if r.Err() != nil { return false, r.Err() }
 		var a string
 		err := r.Scan(&a)
@@ -56,16 +58,17 @@ func (rsif *AegisSqliteReceiptSystemInterface) IsReceiptSystemUsable() (bool, er
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) Install() error {
+	pfx := rsif.config.ReceiptSystem.TablePrefix
 	tx, err := rsif.connection.Begin()
 	if err != nil { return err }
 	defer tx.Rollback()
-	stmt, err := tx.Prepare(`
-CREATE TABLE IF NOT EXISTS receipt (
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %s_receipt (
     id TEXT UNIQUE,
     command TEXT,
     issue_time INT,
     timeout_minute INT
-)`)
+)`, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec()
 	if err != nil { return err }
@@ -75,11 +78,12 @@ CREATE TABLE IF NOT EXISTS receipt (
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) RetrieveReceipt(rid string) (*receipt.Receipt, error) {
-	stmt, err := rsif.connection.Prepare(`
+	pfx := rsif.config.ReceiptSystem.TablePrefix
+	stmt, err := rsif.connection.Prepare(fmt.Sprintf(`
 SELECT command, issue_time, timeout_minute
-FROM receipt
+FROM %s_receipt
 WHERE id = ?
-`)
+`, pfx))
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	r := stmt.QueryRow(rid)
@@ -97,13 +101,14 @@ WHERE id = ?
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) IssueReceipt(timeoutMinute int64, command []string) (string, error) {
+	pfx := rsif.config.ReceiptSystem.TablePrefix
 	tx, err := rsif.connection.Begin()
 	if err != nil { return "", err }
 	defer tx.Rollback()
-	stmt, err := tx.Prepare(`
-INSERT INTO receipt(id, command, issue_time, timeout_minute)
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %s_receipt(id, command, issue_time, timeout_minute)
 VALUES (?,?,?,?)
-`)
+`, pfx))
 	if err != nil { return "", err }
 	rid := receipt.NewReceiptId()
 	_, err = stmt.Exec(rid, receipt.SerializeReceiptCommand(command), time.Now().Unix(), timeoutMinute)
@@ -114,10 +119,11 @@ VALUES (?,?,?,?)
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) CancelReceipt(rid string) error {
+	pfx := rsif.config.ReceiptSystem.TablePrefix
 	tx, err := rsif.connection.Begin()
 	if err != nil { return err }
 	defer tx.Rollback()
-	stmt, err := tx.Prepare(`DELETE FROM receipt WHERE id = ?`)
+	stmt, err := tx.Prepare(fmt.Sprintf(`DELETE FROM %s_receipt WHERE id = ?`, pfx))
 	if err != nil { return err }
 	_, err = stmt.Exec(rid)
 	if err != nil { return err }
@@ -127,11 +133,12 @@ func (rsif *AegisSqliteReceiptSystemInterface) CancelReceipt(rid string) error {
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) GetAllReceipt(pageNum int, pageSize int) ([]*receipt.Receipt, error) {
-	stmt, err := rsif.connection.Prepare(`
+	pfx := rsif.config.ReceiptSystem.TablePrefix
+	stmt, err := rsif.connection.Prepare(fmt.Sprintf(`
 SELECT id, command, issue_time, timeout_minute
-FROM receipt
+FROM %s_receipt
 ORDER BY rowid ASC
-LIMIT ? OFFSET ?`)
+LIMIT ? OFFSET ?`, pfx))
 	if err != nil { return nil, err }
 	defer stmt.Close()
 	r, err := stmt.Query(pageSize, pageNum * pageSize)
@@ -154,15 +161,16 @@ LIMIT ? OFFSET ?`)
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) SearchReceipt(q string, pageNum int, pageSize int) ([]*receipt.Receipt, error) {
+	pfx := rsif.config.ReceiptSystem.TablePrefix
 	pattern := strings.ReplaceAll(q, "\\", "\\\\")
 	pattern = strings.ReplaceAll(pattern, "%", "\\%")
 	pattern = strings.ReplaceAll(pattern, "_", "\\_")
 	pattern = "%" + pattern + "%"
-	stmt, err := rsif.connection.Prepare(`
+	stmt, err := rsif.connection.Prepare(fmt.Sprintf(`
 SELECT id, command, issue_time, timeout_minute
-FROM receipt
+FROM %s_receipt
 WHERE id LIKE ? ESCAPE ? OR command LIKE ? ESCAPE ?
-ORDER BY rowid ASC LIMIT ? OFFSET ?`)
+ORDER BY rowid ASC LIMIT ? OFFSET ?`, pfx))
 	if err != nil { return nil, nil }
 	defer stmt.Close()
 	r, err := stmt.Query(pattern, "\\", pattern, "\\", pageSize, pageNum * pageSize)
@@ -184,14 +192,15 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?`)
 }
 
 func (rsif *AegisSqliteReceiptSystemInterface) EditReceipt(id string, robj *receipt.Receipt) error {
+	pfx := rsif.config.ReceiptSystem.TablePrefix
 	tx, err := rsif.connection.Begin()
 	if err != nil { return err }
 	defer tx.Rollback()
-	stmt, err := tx.Prepare(`
-UPDATE receipt
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %s_receipt
 SET command = ?, issue_time = ?, timeout_minute = ?
 WHERE id = ?
-`)
+`, pfx))
 	if err != nil { return err }
 	defer stmt.Close()
 	_, err = stmt.Exec(receipt.SerializeReceiptCommand(robj.Command), robj.IssueTime, robj.TimeoutMinute, robj.Id)

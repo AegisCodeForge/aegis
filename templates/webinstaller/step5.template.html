@@ -26,6 +26,7 @@
 			  <td>
 				<select name="receipt-system-type" id="receipt-system-type">
 				  <option value="sqlite" {{if eq .Config.ReceiptSystem.Type "sqlite"}}selected{{end}}>SQLite</option>
+				  <option value="postgres" {{if eq .Config.ReceiptSystem.Type "postgres"}}selected{{end}}>PostgreSQL</option>
 				</select>
 			  </td>
 			</tr>
