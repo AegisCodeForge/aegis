@@ -30,6 +30,7 @@
 				  <option value="keydb" {{if eq .Config.Session.Type "keydb"}}selected{{end}}>KeyDB</option>
 				  <option value="valkey" {{if eq .Config.Session.Type "valkey"}}selected{{end}}>ValKey</option>
 				  <option value="memcached" {{if eq .Config.Session.Type "memcached"}}selected{{end}}>Memcached</option>
+				  <option value="in_memory" {{if eq .Config.Session.Type "in_memory"}}selected{{end}}>In-Memory</option>
 				</select>
 			  </td>
 			</tr>
@@ -41,13 +42,13 @@
 			</tr>
 			
 			<tr><td class="field-sub-label"><label for="session-table-prefix">session.tablePrefix</label><br />
-				(Used as table prefix when session type is SQLite and key prefix when session type is Redis/KeyDB/ValKey/Memcached.)
+				(Used as table prefix when session type is SQLite and key prefix when session type is Redis/KeyDB/ValKey/Memcached/In-Memory.)
 			  </td>
 			  <td><input name="session-table-prefix" id="session-table-prefix" value="{{htmlEscape .Config.Session.TablePrefix}}" /></td>
 			</tr>
 			
 			<tr><td class="field-sub-label"><label for="session-host">session.host</label><br />
-			  (Valid only when session type is not SQLite. For Redis/KeyDB/ValKey/Memchached, this should be in the format of "host:port".)</td>
+			  (Valid only when session type is not In-Memory or SQLite. For Redis/KeyDB/ValKey/Memchached, this should be in the format of "host:port".)</td>
 			  <td><input name="session-host" id="session-host" value="{{htmlEscape .Config.Session.Host}}" /></td>
 			</tr>
 			

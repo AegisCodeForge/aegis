@@ -75,3 +75,10 @@ func (tc *TCache) Get(key string) (string, bool) {
 	return v.value, true
 }
 
+func (tc *TCache) Delete(key string) {
+	tm := tc.val[key].timer
+	tm.t.Stop()
+	tc.timerPool.Put(tm)
+	delete(tc.val, key)
+}
+
