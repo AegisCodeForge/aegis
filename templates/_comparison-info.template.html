@@ -1,0 +1,13 @@
+{{define "_comparison-info"}}
+<div class="comparison-info">
+  <p><b>Fork Notice:</b>
+	{{if gt (len .BRevList) 0}}
+	This repository is {{len .BRevList}} commits beyond {{if gt (len .ARevList) 0}} and {{len .ARevList}} commits behind {{end}}upstream.
+	{{else if gt (len .ARevList) 0}}
+	This repository is {{len .ARevList}} commits behind upstream. <a href="?ff">Sync now.</a>
+	{{else}}
+	This repository is in sync with upstream.
+	{{end}}</p>
+</div>
+{{end}}
+
