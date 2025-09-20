@@ -3,11 +3,10 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 )
 
@@ -17,10 +16,16 @@ import (
 
 func main() {
 	versionBytes, _ := os.ReadFile("VERSION")
-	cmd := exec.Command("git", "rev-list", "HEAD", "-1")
-	stdoutBuf := new(bytes.Buffer)
-	cmd.Stdout = stdoutBuf
-	cmd.Run()
+	versionStr := strings.TrimSpace(string(versionBytes))
+	countBytes, _ := os.ReadFile("COUNT")
+	countStr := strings.Split(string(countBytes), ",")
+	var newCountStr string
+	if versionStr != strings.TrimSpace(countStr[0]) {
+		newCountStr = fmt.Sprintf("%s,%d", versionStr, 0)
+	} else {
+		c, _ := strconv.Atoi(countStr[1])
+		newCountStr = fmt.Sprintf("%s,%d", versionStr, c+1)
+	}
 	p := path.Join("templates", "_footer.template.html")
 	f, _ := os.OpenFile(p, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if f != nil {
@@ -29,7 +34,11 @@ func main() {
 <div class="footer-message">
     Powered by <a href="https://github.com/bctnry/aegis">Aegis</a>, version %s (%s)
 </div>
-{{end}}`, string(versionBytes), strings.TrimSpace(stdoutBuf.String())))
+{{end}}`, string(versionBytes), newCountStr))
+		f.Close()
 	}
+	f2, _ := os.OpenFile("COUNT", os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
+	f2.WriteString(newCountStr)
+	f2.Close()
 }
 
