@@ -162,5 +162,13 @@ NOTE THAT this is only a general guide of how the tables would be implemented. t
   	snippet_shared_user TEXT,
   	FOREIGN KEY (username) REFERENCES aegis_user(user_name)
   )
+
+  CREATE TABLE IF NOT EXISTS aegis_webhook_log (
+      uuid TEXT UNIQUE,
+  	repo_namespace TEXT,
+  	repo_name TEXT,
+  	commit_id TEXT,
+  	webhook_result TEXT,
+  )
 #+end_src
 

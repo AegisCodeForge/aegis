@@ -49,6 +49,16 @@ var ValidPOSTRequestRequired Middleware = func(f HandlerFunc) HandlerFunc {
 	}
 }
 
+var JSONRequestRequired Middleware = func(f HandlerFunc) HandlerFunc {
+	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Content-Type") != "application/json" {
+			ctx.ReportNormalError("Invalid request", w, r)
+			return
+		}
+		f(ctx, w, r)
+	}
+}
+
 var UseLoginInfo Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
 		if !ctx.Config.PlainMode {

@@ -48,6 +48,7 @@ var requiredTableList = []string{
 	"issue_event",
 	"pull_request",
 	"pull_request_event",
+	"webhook_log",
 }
 
 func (dbif *PostgresAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {

@@ -36,8 +36,8 @@ Authorization: Bearer webhook-jwt-{token}
 
   #+begin_src json
   {
-      "timestamp": "{timestamp}",
-      "nonce": "{nonce; in integer}"
+      "iss": "{timestamp}",
+      "nonce": "{nonce; in integer}",
   }
   #+end_src json
 + Signature: signature signed with the pre-configured secret.
@@ -50,6 +50,9 @@ Data structure are similar to GitHub webhooks:
 
 #+begin_src json
   {
+  	"id": "{uuid of this webhook request}"
+  	"result_report": "{result report url; see below}"
+  	"result_report_id": "{result report uuid; see below}"
   	"ref": "{updated reference}",
   	"before": "{before commit id}",
   	"after": "{after commit id}",
@@ -110,6 +113,35 @@ aegis web-hooks send "$repo_full_name" "$refname" "$newrev_type" "$oldrev" "$new
   + =tag=: tag.
 + =$oldrev=: the id of commit before update
 + =$newrev=: the id of commit after update
+
+** Result report
+
+This provides a way for the external side to report the result of the webhook. The result report endpoint currently (2025.9.20) supports JSON only. The request header should also contain the same format of JWT.
+
+#+begin_example
+Authorization: Bearer webhook-jwt-{token}
+Content-Type: application/json
+#+end_example
+
+The payload part of the JWT, however, is different. The webhook request would send, alongside with other info, a special "result report id"; this should be included in the ~jti~ claim of the payload and used to generate the signature. Aegis will not accept the same result report id more than once.
+
+#+begin_src json
+  {
+  	"iss": "{timestamp}",
+  	"jti": "{result report id}"
+  }
+#+end_src
+
+The request body should be like the following:
+
+#+begin_src json
+  {
+  	"ver": 0,
+  	"id": "{webhook request uuid}",
+  	"status": "{status code in integer; 1 - success, 2 - failed}",
+  	"message": "{accompanying message; string}"
+  }
+#+end_src
 
 ** Git hook template
 

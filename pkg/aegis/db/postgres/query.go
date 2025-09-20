@@ -3268,3 +3268,56 @@ WHERE username = $1 AND name = $2
 }
 
 
+func (dbif *PostgresAegisDatabaseInterface) RegisterWebhookRequest(uuid string, reportUuid string, repoNs string, repoName string, commitId string) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	d := new(model.WebhookResult)
+	d.Status = model.WEBHOOK_RESULT_UNDEFINED
+	d.ReportUUID = reportUuid
+	d.UUID = uuid
+	d.RepoNamespace = repoNs
+	d.RepoName = repoName
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+INSERT INTO %s_webhook_log(uuid, repo_namespace, repo_name, commit_id, webhook_result)
+VALUES ($1,$2,$3,$4,$5)
+`, pfx), uuid, repoNs, repoName, commitId, d)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) UpdateWebhookResult(uuid string, result *model.WebhookResult) error {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	tx, err := dbif.pool.Begin(ctx)
+	if err != nil { return err }
+	defer tx.Rollback(ctx)
+	if result.Timestamp == 0 { result.Timestamp = time.Now().Unix() }
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+UPDATE %s_webhook_log SET webhook_result = $1 WHERE uuid = $2
+`, pfx), result, uuid)
+	if err != nil { return err }
+	err = tx.Commit(ctx)
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *PostgresAegisDatabaseInterface) GetWebhookResultByUUID(uuid string) (*model.WebhookResult, error) {
+	pfx := dbif.config.Database.TablePrefix
+	ctx := context.Background()
+	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
+SELECT webhook_result
+FROM %s_webhook_log
+WHERE uuid = $1
+`, pfx), uuid)
+	var webhookRes *model.WebhookResult
+	err := stmt.Scan(&webhookRes)
+	if err != nil { return nil, err }
+	return webhookRes, nil
+}
+
+

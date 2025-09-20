@@ -171,6 +171,17 @@ CREATE TABLE IF NOT EXISTS %s_snippet (
 )`, pfx, pfx))
 	err = tx.Commit(ctx)
 	if err != nil { return err }
+
+	_, err = tx.Exec(ctx, fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %s_webhook_log (
+    uuid VARCHAR(48) UNIQUE,
+	repo_namespace VARCHAR(64),
+	repo_name VARCHAR(64),
+	commit_id VARCHAR(96),
+    webhook_result JSONB
+)`, pfx))
+	if err != nil { return err }
+
 	return nil
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type WebHookEntityInfo struct{
@@ -54,6 +55,9 @@ type WebHookRepositoryInfo struct {
 }
 
 type WebHookPayload struct {
+	Id string `json:"id"`
+	ResultReport string `json:"result_report"`
+	ResultReportId string `json:"result_report_id"`
 	Reference string `json:"ref"`
 	BeforeCommitId string `json:"before"`
 	AfterCommitId string `json:"after"`
@@ -116,8 +120,10 @@ func HandleWebHook(ctx *routes.RouterContext, repoFullName string, refFullName s
 		printGitError(fmt.Sprintf("Failed to get repository: %s", err))
 		return
 	}
+	reqUuid := uuid.New()
+	reportUuid := uuid.New()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
-		"timestamp": time.Now().Unix(),
+		"iss": time.Now().Unix(),
 		"nonce": nonce.Int64(),
 	})
 	tokenStr, err := token.SignedString([]byte(repo.WebHookConfig.Secret))
@@ -174,7 +180,16 @@ func HandleWebHook(ctx *routes.RouterContext, repoFullName string, refFullName s
 		printGitError(fmt.Sprintf("Failed to get user: %s", err))
 		return
 	}
+	
+	err = ctx.DatabaseInterface.RegisterWebhookRequest(reqUuid.String(), reportUuid.String(), repo.Namespace, repo.Name, newRev)
+	if err != nil {
+		printGitError(fmt.Sprintf("Failed to register webhook in database: %s", err))
+		return
+	}
 	payload := WebHookPayload{
+		Id: reqUuid.String(),
+		ResultReport: fmt.Sprintf("%s/%s", ctx.Config.ProperHTTPHostName(), "webhook-result-report"),
+		ResultReportId: reportUuid.String(),
 		Reference: refFullName,
 		BeforeCommitId: oldRev,
 		AfterCommitId: newRev,
@@ -212,7 +227,7 @@ func HandleWebHook(ctx *routes.RouterContext, repoFullName string, refFullName s
 		printGitError(fmt.Sprintf("Unsupported webhook payload type: %s", repo.WebHookConfig.PayloadType))
 		return
 	}
-	req.Header.Add("Authentication", fmt.Sprintf("webhook-jwt-%s", tokenStr))
+	req.Header.Add("Authentication", fmt.Sprintf("Bearer webhook-jwt-%s", tokenStr))
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

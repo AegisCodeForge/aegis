@@ -215,6 +215,16 @@ CREATE TABLE IF NOT EXISTS %s_snippet (
     FOREIGN KEY (username) REFERENCES %s_user(user_name)
 )`, pfx, pfx))
 	if err != nil { return err }
+
+	_, err = tx.Exec(fmt.Sprintf(`
+CREATE TABLE IF NOT EXISTS %s_webhook_log (
+    uuid TEXT UNIQUE,
+	repo_namespace TEXT,
+	repo_name TEXT,
+	commit_id TEXT,
+    webhook_result TEXT
+)`, pfx))
+	if err != nil { return err }
 	
 	tx.Commit()
 	return nil
