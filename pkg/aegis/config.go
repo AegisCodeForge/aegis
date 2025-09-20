@@ -275,8 +275,9 @@ type AegisConfirmCodeManagerConfig struct {
 	DefaultTimeoutMinute int `json:"defaultTimeoutMinute"`
 }
 
-// proper http host name. (no trailing slash.)
+// proper http host name. no trailing slash.
 func (cfg *AegisConfig) ProperHTTPHostName() string {
+	// proper http host name. no trailing slash.
 	return cfg.properHttpHostName
 }
 

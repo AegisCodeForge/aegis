@@ -3764,3 +3764,64 @@ WHERE username = ? AND name = ?
 	}, nil
 }
 
+func (dbif *SqliteAegisDatabaseInterface) RegisterWebhookRequest(uuid string, reportUuid string, repoNs string, repoName string, commitId string) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	d := new(model.WebhookResult)
+	d.Status = model.WEBHOOK_RESULT_UNDEFINED
+	d.ReportUUID = reportUuid
+	d.UUID = uuid
+	d.RepoNamespace = repoNs
+	d.RepoName = repoName
+	s, err := json.Marshal(d)
+	if err != nil { return err }
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+INSERT INTO %s_webhook_log(uuid, repo_namespace, repo_name, commit_id, webhook_result)
+VALUES (?,?,?,?,?)
+`, pfx))
+	if err != nil { return err }
+	_, err = stmt.Exec(uuid, repoNs, repoName, commitId, string(s))
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) UpdateWebhookResult(uuid string, result *model.WebhookResult) error {
+	pfx := dbif.config.Database.TablePrefix
+	tx, err := dbif.connection.Begin()
+	if err != nil { return err }
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(fmt.Sprintf(`
+UPDATE %s_webhook_log SET webhook_result = ? WHERE uuid = ?
+`, pfx))
+	if err != nil { return err }
+	s, err := json.Marshal(result)
+	if err != nil { return err }
+	_, err = stmt.Exec(string(s), uuid)
+	if err != nil { return err }
+	err = tx.Commit()
+	if err != nil { return err }
+	return nil
+}
+
+func (dbif *SqliteAegisDatabaseInterface) GetWebhookResultByUUID(uuid string) (*model.WebhookResult, error) {
+	pfx := dbif.config.Database.TablePrefix
+	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
+SELECT webhook_result FROM %s_webhook_log
+WHERE uuid = ?
+`, pfx))
+	if err != nil { return nil, err }
+	r := stmt.QueryRow(uuid)
+	if r.Err() != nil { return nil, r.Err() }
+	var webhookResultStr string
+	err = r.Scan(&webhookResultStr)
+	if err != nil { return nil, err }
+	webhookResult := new(model.WebhookResult)
+	err = json.Unmarshal([]byte(webhookResultStr), &webhookResult)
+	if err != nil { return nil, err }
+	return webhookResult, nil
+}
+

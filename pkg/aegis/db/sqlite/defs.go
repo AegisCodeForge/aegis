@@ -26,6 +26,7 @@ var requiredTableList = []string{
 	"pull_request",
 	"pull_request_event",
 	"snippet",
+	"webhook_log",
 }
 
 func (dbif *SqliteAegisDatabaseInterface) IsDatabaseUsable() (bool, error) {

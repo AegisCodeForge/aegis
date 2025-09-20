@@ -174,7 +174,10 @@ type AegisDatabaseInterface interface {
 	DeleteSnippet(username string, name string) error
 	SaveSnippetInfo(m *model.Snippet) error
 	GetSnippet(username string, name string) (*model.Snippet, error)
-	
+
+	RegisterWebhookRequest(uuid string, reportUuid string, repoNs string, repoName string, commitId string) error
+	UpdateWebhookResult(uuid string, result *model.WebhookResult) error
+	GetWebhookResultByUUID(uuid string) (*model.WebhookResult, error)
 }
 
 
