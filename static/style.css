@@ -1,3 +1,8 @@
+:root {
+	--foreground-color: white;
+	--background-color: #1f1f1f;;
+}
+
 * {
 	box-sizing: border-box;
 	scrollbar-color: var(--foreground-color) var(--background-color);
@@ -5,8 +10,6 @@
 }
 
 :root {
-	--foreground-color: white;
-	--background-color: #1f1f1f;;
 	--white-shade-degree-0: #ffffff1f;
 	--white-shade-degree-1: #ffffff3f;
 	--white-shade-degree-2: #ffffff7f;

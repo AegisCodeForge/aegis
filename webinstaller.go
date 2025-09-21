@@ -443,28 +443,32 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s</p>", err.Error())
 				return false
 			}
-			f, err := os.Open(s)
-			if err != nil {
-				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s</p>", err.Error())
-				return false
-			}
-			defer f.Close()
 			aegisPath := path.Join(homePath, "git-shell-commands", "aegis")
-			fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0754)
-			if err != nil {
-				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
-				return false
-			}
-			defer fout.Close()
-			_, err = io.Copy(fout, f)
-			if err != nil {
-				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
-				return false
-			}
-			err = os.Chown(aegisPath, uid, gid)
-			if err != nil {
-				fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
-				return false
+			if aegisPath == s {
+				fmt.Fprint(w, "<p>Seems like executable already exists. Not copying...</p>\n")
+			} else {
+				f, err := os.Open(s)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s</p>", err.Error())
+					return false
+				}
+				defer f.Close()
+				fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0754)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
+					return false
+				}
+				defer fout.Close()
+				_, err = io.Copy(fout, f)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
+					return false
+				}
+				err = os.Chown(aegisPath, uid, gid)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to copy Aegis executable: %s\n</p>", err.Error())
+					return false
+				}
 			}
 			err = os.MkdirAll(ctx.Config.GitRoot, os.ModeDir|0755)
 			if errors.Is(err, os.ErrExist) {
@@ -610,13 +614,11 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				uid, _ = strconv.Atoi(gitUser.Uid)
 				gid, _ = strconv.Atoi(gitUser.Gid)
 			}
-			fmt.Println("fp", ctx.Config.FilePath)
 			if ctx.Config.Database.Type == "sqlite" {
 				if gitUser == nil {
 					fmt.Fprint(w, "<p class=\"warning\">Failed to fild Git user's uid & gid when chowning sqlite database. You need to perform this action on your own after this installation process...")
 				} else {
 					err := os.Chown(ctx.Config.ProperDatabasePath(), uid, gid)
-					fmt.Println("prop", ctx.Config.ProperDatabasePath())
 					if err != nil {
 						fmt.Fprintf(w, "<p class=\"warning\">Failed to chown sqlite database: %s. You need to perform this action on your own after this installation process...", err.Error())
 					}

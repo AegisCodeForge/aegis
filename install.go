@@ -262,13 +262,14 @@ func gitUserCheck(ctx routes.RouterContext) bool {
 		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
+	aegisPath := path.Join(homeDir, "git-shell-commands", "aegis")
+	if aegisPath == s { return true }
 	f, err := os.Open(s)
 	if err != nil {
 		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())
 		gitUserSetupCheckPrompt(); return false
 	}
 	defer f.Close()
-	aegisPath := path.Join(homeDir, "git-shell-commands", "aegis")
 	fout, err := os.OpenFile(aegisPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0754)
 	if err != nil {
 		fmt.Printf("Failed to copy Aegis executable: %s\n", err.Error())

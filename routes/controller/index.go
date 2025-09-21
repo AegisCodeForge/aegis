@@ -17,6 +17,9 @@ func bindIndexController(ctx *RouterContext) {
 	http.HandleFunc("GET /", UseMiddleware(
 		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
+			fmt.Println(r.Header.Get("Host"))
+			fmt.Println(r.URL.Path)
+				
 			if strings.HasPrefix(rc.Config.FrontPageType, "static/") {
 				frontPageContentType := rc.Config.FrontPageType[len("static/"):]
 				f := rc.Config.FrontPageContent
