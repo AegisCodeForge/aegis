@@ -436,6 +436,31 @@
 			</tr>
 		  </tbody>
 		</table>
+
+		
+		{{end}}
+	  </div>
+	  
+	  <div class="field">
+		<label class="field-label">Confirm Code Manager</label>
+		{{if .Config.PlainMode}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else}}
+		<p><a href="/step9">Go back and change this setting</a></p>
+		<p class="field-description">Confirm code is used in two-factor authentication; it's the numerical code (often 6 digits) that would be sent to your email if you've enabled two-factor authentication with email.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">confirmCodeManager.type</td>
+			  <td>
+				{{if eq .Config.ConfirmCodeManager.Type "in-memory"}}
+				In-memory (<code>in-memory</code>)
+				{{end}}
+			  </td>
+			</tr>
+			<tr><td class="field-sub-label">confirmCodeManager.defaultTimeoutMinute<br/></td><td>{{.Config.ConfirmCodeManager.DefaultTimeoutMinute}}</td></tr>
+		  </tbody>
+		</table>
 		{{end}}
 	  </div>
 	  

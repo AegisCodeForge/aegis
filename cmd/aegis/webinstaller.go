@@ -44,6 +44,7 @@ type WebInstallerRoutingContext struct {
 	// step 7 - ignored namespaces & repositories
 	// step 8 - web front setup:
 	//          depot name
+	//          rate limiter
 	//          front page config
 	//          (static assets dir default to be $HOME/aegis-static/)
 	//          bind address & port
@@ -52,8 +53,9 @@ type WebInstallerRoutingContext struct {
 	//          allow registration
 	//          email confirmation required
 	//          manual approval
+	// step 9 - confirm code manager setup
 	// plain mode on: 1-6-7-8
-	// plain mode off: 1-2-3-4-5-6-8
+	// plain mode off: 1-2-3-4-5-6-8-9
 	Step int
 	Config *aegis.AegisConfig
 	ConfirmStageReached bool
@@ -327,6 +329,32 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			return
 		}
 		ctx.Config.MaxRequestInSecond = maxr
+		if ctx.Config.PlainMode {
+			foundAt(w, "/confirm")
+		} else {
+			foundAt(w, "/step9")
+		}
+	}))
+
+	http.HandleFunc("GET /step9", withLog(func(w http.ResponseWriter, r *http.Request) {
+		logTemplateError(ctx.loadTemplate("webinstaller/step9").Execute(w, &templates.WebInstallerTemplateModel{
+			Config: ctx.Config,
+		}))
+	}))
+
+	http.HandleFunc("POST /step9", withLog(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			ctx.reportRedirect("/step9", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			return
+		}
+		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("default-timeout-minute")), 10, 32)
+		if err != nil {
+			ctx.reportRedirect("/step9", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			return
+		}
+		ctx.Config.ConfirmCodeManager.Type = strings.TrimSpace(r.Form.Get("type"))
+		ctx.Config.ConfirmCodeManager.DefaultTimeoutMinute = int(i)
 		foundAt(w, "/confirm")
 	}))
 	

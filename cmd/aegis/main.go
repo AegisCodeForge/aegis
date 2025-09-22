@@ -1,7 +1,5 @@
 package main
 
-//go:generate go run devtools/generate-template.go templates
-
 import (
 	gocontext "context"
 	"flag"
