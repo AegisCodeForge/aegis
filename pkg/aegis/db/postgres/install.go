@@ -20,7 +20,7 @@ func (dbif *PostgresAegisDatabaseInterface) InstallTables() error {
 	ctx := context.Background()
 	tx, err := dbif.pool.Begin(ctx)
 	if err != nil { return err }
-	defer tx.Commit(ctx)
+	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %s_user (
     user_id BIGINT GENERATED ALWAYS AS IDENTITY,
@@ -140,8 +140,8 @@ CREATE TABLE IF NOT EXISTS %s_pull_request_event (
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %s_user_email (
     username VARCHAR(64) REFERENCES %s_user(user_name),
-	email VARCHAR(256)
-    verified SMALLINT
+	email VARCHAR(256),
+    email_verified SMALLINT
 )`, pfx, pfx))
 	if err != nil { return err }
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
@@ -153,8 +153,6 @@ CREATE TABLE IF NOT EXISTS %s_user_reg_request (
 	reason VARCHAR(4096),
     timestamp TIMESTAMP
 )`, pfx))
-	err = tx.Commit(ctx)
-	if err != nil { return err }
 	// NOTE: the shared_user field in this table is implemented
 	// as an json kvtable (e.g. {"user1":true,"user2":true})
 	// for query w/ `shared_user ? USERNAME`.
@@ -169,9 +167,6 @@ CREATE TABLE IF NOT EXISTS %s_snippet (
     status SMALLINT,
     shared_user JSONB
 )`, pfx, pfx))
-	err = tx.Commit(ctx)
-	if err != nil { return err }
-
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE IF NOT EXISTS %s_webhook_log (
     uuid VARCHAR(48) UNIQUE,
@@ -180,6 +175,8 @@ CREATE TABLE IF NOT EXISTS %s_webhook_log (
 	commit_id VARCHAR(96),
     webhook_result JSONB
 )`, pfx))
+	if err != nil { return err }
+	err = tx.Commit(ctx)
 	if err != nil { return err }
 
 	return nil

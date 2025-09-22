@@ -73,20 +73,26 @@ func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 	dbif := ctx.DatabaseInterface
 	ssif := ctx.SessionInterface
 	cfg := ctx.Config
-	b, err := dbif.IsDatabaseUsable()
-	if err != nil { return b, err }
-	if !b { return false, errors.New("Database not usable") }
-	_, err = os.ReadDir(cfg.GitRoot)
-	if err != nil {
-		if os.IsNotExist(err) { return false, errors.New("Git root does not exist") }
-		return false, err
+	if dbif != nil {
+		b, err := dbif.IsDatabaseUsable()
+		if err != nil { return b, err }
+		if !b { return false, errors.New("Database not usable") }
+		_, err = os.ReadDir(cfg.GitRoot)
+		if err != nil {
+			if os.IsNotExist(err) { return false, errors.New("Git root does not exist") }
+			return false, err
+		}
 	}
-	b, err = ssif.IsSessionStoreUsable()
-	if err != nil { return b, err }
-	if !b { return false, errors.New("Session store not usable") }
-	b, err = ctx.ReceiptSystem.IsReceiptSystemUsable()
-	if err != nil { return b, err }
-	if !b { return false, errors.New("Receipt system not usable") }
+	if ssif != nil {
+		b, err := ssif.IsSessionStoreUsable()
+		if err != nil { return b, err }
+		if !b { return false, errors.New("Session store not usable") }
+	}
+	if ctx.ReceiptSystem != nil {
+		b, err := ctx.ReceiptSystem.IsReceiptSystemUsable()
+		if err != nil { return b, err }
+		if !b { return false, errors.New("Receipt system not usable") }
+	}
 	gitUserName := strings.TrimSpace(ctx.Config.GitUser)
 	if len(gitUserName) <= 0 {
 		u, _ := user.Current()

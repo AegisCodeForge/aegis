@@ -72,7 +72,23 @@ func main() {
 		os.Exit(0)
 	}
 
+	// NOTE THAT certain activities does not need parts of Aegis
+	// (e.g. "ssh" and "webhooks" does not require a working mailer
+	// or session store). We've decided they should not report
+	// error when we're not able to initialize them in this case.
 	mainCall := argparse.Args()
+	containsCommand := len(mainCall) > 0
+	isWebServer := !containsCommand
+	isSsh := containsCommand && mainCall[0] == "ssh"
+	isWebHooks := containsCommand && mainCall[0] == "web-hooks"
+	isResetAdmin := containsCommand && mainCall[0] == "reset-admin"
+	lastConfigNeeded := containsCommand && (isSsh || isWebHooks)
+	dbifNeeded := isWebServer || (containsCommand && (isSsh || isWebHooks || isResetAdmin))
+	ssifNeeded := isWebServer
+	keyctxNeeded := isWebServer
+	rsifNeeded := isWebServer
+	mailerNeeded := isWebServer
+	ccmNeeded := isWebServer
 
 	config, err := aegis.LoadConfigFile(configPath)
 	noConfig := err != nil
@@ -82,7 +98,7 @@ func main() {
 	// situation where we would absolutely not have the config file path. a
 	// `last-config` file is used as a hack to provide this info. see
 	// `docs/ssh.org` for more info.
-	if noConfig && len(mainCall) > 0 && (mainCall[0] == "ssh" || mainCall[0] == "web-hooks") {
+	if noConfig && lastConfigNeeded {
 		// assumes that we have a clone/push through ssh and assumes the program to be
 		// in the git user's ~/git-shell-commands. go doc said os.Executable may return
 		// symlink path if the program is run through symlink, but in this case we
@@ -146,49 +162,61 @@ func main() {
 
 	// if it's not plain mode we need to setup database.
 	if !config.PlainMode {
-		dbif, err := dbinit.InitializeDatabase(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to load database: %s\n", err.Error())
-			os.Exit(1)
+		if dbifNeeded {
+			dbif, err := dbinit.InitializeDatabase(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to load database: %s\n", err.Error())
+				os.Exit(1)
+			}
+			context.DatabaseInterface = dbif
 		}
-		context.DatabaseInterface = dbif
 
-		ssif, err := ssinit.InitializeDatabase(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to initialize session store: %s\n", err.Error())
-			os.Exit(1)
+		if ssifNeeded {
+			ssif, err := ssinit.InitializeDatabase(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to initialize session store: %s\n", err.Error())
+				os.Exit(1)
+			}
+			context.SessionInterface = ssif
 		}
-		context.SessionInterface = ssif
 
-		keyctx, err := ssh.ToContext(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create key managing context: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
-			os.Exit(1)
+		if keyctxNeeded {
+			keyctx, err := ssh.ToContext(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to create key managing context: %s\n", err.Error())
+				fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
+				os.Exit(1)
+			}
+			context.SSHKeyManagingContext = keyctx
 		}
-		context.SSHKeyManagingContext = keyctx
 
-		rs, err := rsinit.InitializeReceiptSystem(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create receipt system interface: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things like user registration & password resetting wouldn't work properly.\n")
-			os.Exit(1)
+		if rsifNeeded {
+			rs, err := rsinit.InitializeReceiptSystem(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to create receipt system interface: %s\n", err.Error())
+				fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things like user registration & password resetting wouldn't work properly.\n")
+				os.Exit(1)
+			}
+			context.ReceiptSystem = rs
 		}
-		context.ReceiptSystem = rs
 
-		ml, err := mail.InitializeMailer(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create mailer interface: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
+		if mailerNeeded {
+			ml, err := mail.InitializeMailer(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to create mailer interface: %s\n", err.Error())
+				fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
+			}
+			context.Mailer = ml
 		}
-		context.Mailer = ml
 
-		ccm, err := confirm_code.InitializeConfirmCodeManager(config)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create confirm code manager: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
+		if ccmNeeded {
+			ccm, err := confirm_code.InitializeConfirmCodeManager(config)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to create confirm code manager: %s\n", err.Error())
+				fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or things thar depends on sending emails wouldn't work properly.\n")
+			}
+			context.ConfirmCodeManager = ccm
 		}
-		context.ConfirmCodeManager = ccm
 
 		ok, err := aegisReadyCheck(context)
 		if !ok {

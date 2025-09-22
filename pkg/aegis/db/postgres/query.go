@@ -2572,7 +2572,7 @@ func (dbif *PostgresAegisDatabaseInterface) GetAllRegisteredEmailOfUser(username
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT email, verified FROM %s_user_email WHERE username = $1
+SELECT email, email_verified FROM %s_user_email WHERE username = $1
 `, pfx), username)
 	if err != nil { return nil, err }
 	defer stmt.Close()
@@ -2597,7 +2597,7 @@ func (dbif *PostgresAegisDatabaseInterface) AddEmail(username string, email stri
 	if err != nil { return err }
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_user_email(username, email, verified) VALUES ($1, $2, 0)
+INSERT INTO %s_user_email(username, email, email_verified) VALUES ($1, $2, 0)
 `, pfx), username, email)
 	if err != nil { return err }
 	err = tx.Commit(ctx)
@@ -2612,7 +2612,7 @@ func (dbif *PostgresAegisDatabaseInterface) VerifyRegisteredEmail(username strin
 	if err != nil { return err }
 	defer tx.Rollback(ctx)
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-UPDATE %s_user_email SET verified = 1 WHERE username = $1 AND email = $2
+UPDATE %s_user_email SET email_verified = 1 WHERE username = $1 AND email = $2
 `, pfx), username, email)
 	if err != nil { return err }
 	err = tx.Commit(ctx)
@@ -2639,7 +2639,7 @@ func (dbif *PostgresAegisDatabaseInterface) CheckIfEmailVerified(username string
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT verified FROM %s_user_email WHERE username = $1 AND email = $2
+SELECT email_verified FROM %s_user_email WHERE username = $1 AND email = $2
 `, pfx), username, email)
 	var r int
 	err := stmt.Scan(&r)
@@ -2651,7 +2651,7 @@ func (dbif *PostgresAegisDatabaseInterface) ResolveEmailToUsername(email string)
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
 	stmt := dbif.pool.QueryRow(ctx, fmt.Sprintf(`
-SELECT username FROM %s_user_email WHERE email = $1 AND verified = 1
+SELECT username FROM %s_user_email WHERE email = $1 AND email_verified = 1
 `, pfx), email)
 	var r string
 	err := stmt.Scan(&r)
@@ -2671,7 +2671,7 @@ func (dbif *PostgresAegisDatabaseInterface) ResolveMultipleEmailToUsername(email
 		i += 1
 	}
 	stmt, err := dbif.pool.Query(ctx, fmt.Sprintf(`
-SELECT email, username FROM %s_user_email WHERE verified = 1 AND email IN (%s)
+SELECT email, username FROM %s_user_email WHERE email_verified = 1 AND email IN (%s)
 `, pfx, strings.Join(q, ",")), l...)
 	if err != nil { return nil, err }
 	defer stmt.Close()
