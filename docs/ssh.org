@@ -10,7 +10,11 @@ Git supports a shorter version of SSH address if the port is at the typical numb
 
 ** how it works
 
-+ By specifying a =command= argument in the =~/.ssh/authorized_keys= file, one could get the =git= user to run certain command automatically when logging in using certain keys.
+there is at least two ways to achieve this: through ~authorized_keys~ and through ~AuthorizedKeysCommand~.
+
+*** ~authorized_keys~
+
+with the **default config of sshd**, when a client is trying to use their pubkey to auth the git user, the file =~/.ssh/authorized_keys= (of the git user) is consulted. by specifying a =command= argument in the =~/.ssh/authorized_keys= file, one could get the =git= user to run certain command automatically when logging in using certain keys.
 
   #+begin_src
     command="aegis ssh {username1} {keyname1}" {ssh-key-1}
@@ -22,9 +26,18 @@ Git supports a shorter version of SSH address if the port is at the typical numb
   #+end_src
 
   It is still the same Git user that's being logged in, but the result is different because the ssh key is different (which means the command getting executed when logging in can be different if we make it this way.) When clone with SSH, the original command (type of command & the path of the git repo in question) would be stored in envvar =SSH_ORIGINAL_COMMAND=.
-+ At this time, we know the *Aegis* username and the target git repository path, but we don't know where the heck everything else is: we need to know where the Git Root actually is, and just because the gitus executable is in the =~/git-shell-commands= directory it doesn't mean that we can infer Git Root from here (it could be a completely random place like =/opt/whatever-you-like/gitus=). For this reason we need this information stored somewhere, and since we might need to use other information in the future, it's better to just somehow leave a link to the config file that Aegis uses.
-+ And because we made it so that you provide the location of the config file to the Aegis server process when you starts it, a different process cannot get that info unless we have a designated place for the info beforehand.
-+ Thus the following scheme is currently used: when run with a config specified, Aegis will write a file =last-config= directly under the home directory of the specified git user. The content of the file would be the absolute path of the config file.
+  
+(Note that at this time, we know the *Aegis* username and the target git repository path, but we don't know where the heck everything else is: we need to know where the Git Root actually is. Since we are triggering ~aegis~ w/ the git user, we already know the Aegis executable in the =~/git-shell-commands= directory, this doesn't give us any info about the Git Root. For this reason we need this information stored somewhere, and since we might need to use other information in the future, it's better to just somehow leave a link to the config file that Aegis uses; and because we made it so that you provide the location of the config file to the Aegis server process when you starts it, a different process cannot get that info unless we have a designated place for the info beforehand.
+
+Thus the following scheme is currently used: when run with a config specified, Aegis will write a file =last-config= directly under the home directory of the specified git user. The content of the file would be the absolute path of the config file.)
+
+*** ~AuthorizedKeysCommand~
+
+~AuthorizedKeysCommand~ is a configuration option of sshd. it takes absolute path to an executable and executes it when a client request ssh auth. this can be configured to pass certain arguments, including the pubkey the client wish to authenticate with. ~AuthorizedKeysCommand~ should print a result in the same format as ~authorized_keys~ at stdout. it seems unintuitive that the command is able to receive client pubkey before producing the acceptable pubkey list, but clients first send the pubkeys they wish to use first before being accepted or rejected by the remote (see https://www.rfc-editor.org/rfc/rfc4252#section-7 for details).
+
+after obtaining the pubkey, we can reverse query the main database and retrieve its username and **generate** the corresponding suitable ~authorized_keys~ content (or, if we can't find a corresponding username, reject the key by not printing anything). the rest is the same as using ~authorized_keys~ approach.
+
+this requires one to change sshd_config of the server that would be receiving git-clone requests. since ~AuthorizedKeysFile~ has higher priority than ~AuthorizedKeysCommand~, one should remove or disable the keys configured in the ~authorized_keys~ file before enabling ~AuthorizedKeysCommand~.
 
 ** issued command
 
