@@ -38,4 +38,23 @@ the following thing should be true:
 + the git user is running the aegis executable.
 + if using sqlite, all sqlite database files should be accessible by the git user.
 
+** config
+
+among the possible ways of hosting, only running directly and nginx reverse proxy is tested. to setup nginx reverse proxy, have something similar to this enabled in your nginx config:
+
+#+begin_src
+  server {
+      server_name {{server name}};
+      listen 80;
+
+      location / {
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_pass http://127.0.0.1:{{port}}/;
+      }
+  }
+#+end_src
+
+if you want to use https w/ certbot, it's recommended to setup a simple ~server~ block that only serves static page first, proceed to obtain license w/ certbot, /then/ configure the ~server~ block into a reverse proxy as above.
+
 
