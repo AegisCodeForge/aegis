@@ -5,6 +5,7 @@ i couldn't think of a better name so i'll call them receipt. basically it's the 
 two main kinds of actions that would be triggered by a returned receipt would be:
 
 + registration confirmation
++ email confirmation
 + password reset
 
 (this would obviously better be implemented w/ kv-stores where you can set a timer in entries like Redis; using sqlite is just for the ease of business logic development).

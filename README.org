@@ -12,6 +12,8 @@ make all
 
 ** Installation
 
+(for extra details please visit [[./docs/installation.org]])
+
 Run the following command:
 
 #+begin_src sh
@@ -40,12 +42,15 @@ Currently Aegis only supports the following systems for its components; support 
   + PostgreSQL
   + SQLite3
 + Receipt system (see [[./docs/receipt.org]]):
+  + PostgreSQL
   + SQLite3
 + Session store:
+  + In-memory  
   + SQLite
   + Redis & Redis-like (ValKey, KeyDB)
   + Memcached
 + Mailer:
+  + SMTP
   + GMail (through App Password)
 
 
