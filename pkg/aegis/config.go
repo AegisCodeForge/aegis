@@ -156,6 +156,7 @@ type AegisConfig struct {
 	ConfirmCodeManager AegisConfirmCodeManagerConfig `json:"confirmCode"`
 
 	// root directory for storing snippets.
+	EnableSnippet bool `json:"enableSnippet"`
 	SnippetRoot string `json:"snippetRoot"`
 }
 
@@ -373,6 +374,8 @@ func CreateConfigFile(p string) error {
 			Type: "in-memory",
 			DefaultTimeoutMinute: 5,
 		},
+		EnableSnippet: true,
+		SnippetRoot: "",
 	}, "", "    ")
 	if err != nil { return err }
 	f.Write(marshalRes)

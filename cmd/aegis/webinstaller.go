@@ -321,6 +321,12 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		ctx.Config.AllowRegistration = len(strings.TrimSpace(r.Form.Get("allow-registration"))) > 0
 		ctx.Config.EmailConfirmationRequired = len(strings.TrimSpace(r.Form.Get("email-confirmation-required"))) > 0
 		ctx.Config.ManualApproval = len(strings.TrimSpace(r.Form.Get("manual-approval"))) > 0
+		maxr, err := strconv.ParseFloat(strings.TrimSpace(r.Form.Get("max-request-in-second")), 64)
+		if err != nil {
+			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			return
+		}
+		ctx.Config.MaxRequestInSecond = maxr
 		foundAt(w, "/confirm")
 	}))
 	

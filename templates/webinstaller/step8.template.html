@@ -43,6 +43,18 @@
 		</table>
 	  </div>
 	  <div class="field">
+		<label class="field-label">Rate Limit</label>
+		<p class="field-description">This limits the maximum request one could make to certain endpoint. Used to prevent brute force attack (and some DDOS attack) to certain extent. Currently used on the login page.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="max-request-in-second">maxRequestInSecond</label></td>
+			  <td><input name="max-request-in-second" id="max-request-in-second" value="{{.Config.MaxRequestInSecond}}" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <div class="field">
 		<label class="field-label" for="http-host-name">HTTP Host Name</label>
 		<p class="field-description">HTTP host name. Used as the base for composing different URLs throughout the instance. Normally this would be the URL you expect other users to use to gain access to this instance through HTTP.</p>
 		<table>
