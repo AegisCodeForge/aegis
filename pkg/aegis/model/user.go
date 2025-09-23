@@ -9,6 +9,7 @@ const (
 	ADMIN AegisUserStatus = 4
 	SUPER_ADMIN AegisUserStatus = 5
 	BANNED AegisUserStatus = 7
+	NORMAL_USER_NO_NEW_NAMESPACE AegisUserStatus = 8
 )
 
 func ValidUserName(s string) bool {
@@ -43,5 +44,6 @@ type AegisUser2FAConfig struct {
 		Enable bool `json:"enable"`
 	} `json:"email"`
 }
+
 
 

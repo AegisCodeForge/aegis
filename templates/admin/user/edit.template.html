@@ -30,18 +30,18 @@
 		  <input type="hidden" name="username" value="{{.User.Name}}" />
 		  <div class="field">
 			<label class="field-label" for="status">Status:</label>
-			<select class="field-select" name="status" id="status" value="{{.User.Status}}">
-			  <option value="1">Normal User</option>
-			  <option value="2">Approval Needed</option>
-			  <option value="3">Confirmation Needed</option>
+			<select class="field-select" name="status" id="status">
+			  <option value="1" {{if eq .User.Status 1}}selected{{end}}>Normal User</option>
+			  <option value="2" {{if eq .User.Status 2}}selected{{end}}>Approval Needed</option>
+			  <option value="3" {{if eq .User.Status 3}}selected{{end}}>Confirmation Needed</option>
+			  <option value="8" {{if eq .User.Status 8}}selected{{end}}>Normal User (No Namespace Creation)</option>
 			  {{if .LoginInfo.IsAdmin}}
-			  <option value="4">Admin</option>
+			  <option value="4" {{if eq .User.Status 4}}selected{{end}}>Admin</option>
 			  {{end}}
 			  {{if .LoginInfo.IsSuperAdmin}}
-			  <option value="5">Super Admin</option>
+			  <option value="5" {{if eq .User.Status 5}}selected{{end}}>Super Admin</option>
 			  {{end}}
-			  <option value="6">Soft Deleted</option>
-			  <option value="7">Banned</option>
+			  <option value="7" {{if eq .User.Status 7}}selected{{end}}>Banned</option>
 			</select>
 		  </div>
 		  <div class="field"><label class="field-label" for="title">Title:</label> <input name="title" value="{{.User.Title}}"/></div>

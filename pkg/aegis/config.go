@@ -158,6 +158,9 @@ type AegisConfig struct {
 	// root directory for storing snippets.
 	EnableSnippet bool `json:"enableSnippet"`
 	SnippetRoot string `json:"snippetRoot"`
+
+	DefaultNewUserStatus model.AegisUserStatus `json:"defaultNewUserStatus"`
+	DefaultNewUserNamespace string `json:"defaultNewUserNamespace"`
 }
 
 const (
@@ -376,6 +379,8 @@ func CreateConfigFile(p string) error {
 		},
 		EnableSnippet: true,
 		SnippetRoot: "",
+		DefaultNewUserStatus: model.AegisUserStatus(model.NORMAL_USER),
+		DefaultNewUserNamespace: "",
 	}, "", "    ")
 	if err != nil { return err }
 	f.Write(marshalRes)

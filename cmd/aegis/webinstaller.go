@@ -329,6 +329,13 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			return
 		}
 		ctx.Config.MaxRequestInSecond = maxr
+		us, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("default-new-user-status")), 10, 32)
+		if err != nil {
+			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			return
+		}
+		ctx.Config.DefaultNewUserStatus = model.AegisUserStatus(us)
+		ctx.Config.DefaultNewUserNamespace = strings.TrimSpace(r.Form.Get("default-new-user-namespace"))
 		if ctx.Config.PlainMode {
 			foundAt(w, "/confirm")
 		} else {
@@ -636,6 +643,14 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to register user: %s</p>", err.Error())
 				return false
 			}
+			if len(ctx.Config.DefaultNewUserNamespace) > 0 {
+				n := ctx.Config.DefaultNewUserNamespace
+				_, err := dbif.RegisterNamespace(n, "admin")
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to create default namespace: %s</p>", err)
+					return false
+				}
+			}
 			fmt.Fprintf(w, "<p>Admin user set up properly.</p><pre>Username: admin\nPassword: %s</pre><p>Please copy the password above because we don't store the plaintext; but, in the case you forgot, you can always run the following command to reset the admin user's password:</p><pre>aegis -config %s reset-admin</pre>", userPassword, ctx.Config.FilePath)
 			return true
 		}() { goto leave }
@@ -680,7 +695,6 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			}
 			return true
 		}() { goto leave }
-
 		
 		fmt.Fprint(w, "<p>Done! <a href=\"./finish\">Go to the next step.</a></p>")
 		goto footer

@@ -19,6 +19,7 @@ NOTE THAT this is only a general guide of how the tables would be implemented. t
   	-- 4 - admin
       -- 5 - super admin.
   	-- 7 - banned.
+  	-- 8 - normal user (blocked from creating namespace)
   	-- difference between admin & super admin: super admin can remove
   	-- admin status while admin can't.
   	user_status INTEGER,

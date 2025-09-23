@@ -133,6 +133,9 @@ We wish you all the best in your future endeavours.
 				succeedMsg = "A confirmation email has been sent to the email address you have specified. Please proceed from there."
 			} else {
 				status := model.NORMAL_USER
+				if rc.Config.DefaultNewUserStatus != 0 {
+					status = rc.Config.DefaultNewUserStatus
+				}
 				_, err = rc.DatabaseInterface.RegisterUser(userName, email, string(passwordHash), status)
 				if err != nil {
 					LogTemplateError(rc.LoadTemplate("registration").Execute(w, &templates.RegistrationTemplateModel{
@@ -143,10 +146,40 @@ We wish you all the best in your future endeavours.
 					return
 				}
 				if rc.Config.UseNamespace {
-					_, err = rc.DatabaseInterface.RegisterNamespace(userName, userName)
-					if err != nil {
+					if status == model.NORMAL_USER {
+						_, err = rc.DatabaseInterface.RegisterNamespace(userName, userName)
+						if err != nil {
+							rc.ReportInternalError(
+								fmt.Sprintf("Failed at registering namespace %s. Please contact site admin for this issue.", err.Error()),
+								w, r,
+							)
+							return
+						}
+					}
+					if len(rc.Config.DefaultNewUserNamespace) > 0 {
+						ns, err := rc.DatabaseInterface.GetNamespaceByName(rc.Config.DefaultNewUserNamespace)
+						if err != nil {
+							rc.ReportInternalError(
+								fmt.Sprintf("Failed at getting default new user namespace: %s. Please contact site admin for this issue.", err.Error()),
+								w, r,
+							)
+							return
+						}
+						ns.ACL.ACL[userName] = &model.ACLTuple{
+							AddMember: false,
+							DeleteMember: false,
+							EditMember: false,
+							EditInfo: false,
+							AddRepository: true,
+							PushToRepository: false,
+							ArchiveRepository: false,
+							DeleteRepository: false,
+							EditHooks: false,
+							EditWebHooks: false,
+						}
+						err = rc.DatabaseInterface.UpdateNamespaceInfo(ns.Name, ns)
 						rc.ReportInternalError(
-							fmt.Sprintf("Failed at registering namespace %s. Please contact site admin for this issue.", err.Error()),
+							fmt.Sprintf("Failed when updating namespace info: %s. Please contact site admin for this issue.", err.Error()),
 							w, r,
 						)
 						return
