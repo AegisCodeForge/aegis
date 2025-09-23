@@ -22,6 +22,10 @@
 
 </div>
 
+{{if eq .Repository.Status 4}}
+<div>NOTE: This repository has been archived; it has now become read-only.</div>
+{{end}}
+
 <div class="repo-description">{{.Repository.Description}}</div>
 
   
