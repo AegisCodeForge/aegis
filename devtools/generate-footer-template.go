@@ -32,7 +32,7 @@ func main() {
 		f.WriteString(fmt.Sprintf(`
 {{define "_footer"}}
 <div class="footer-message">
-    Powered by <a href="https://github.com/bctnry/aegis">Aegis</a>, version %s (%s)
+    Powered by <a href="https://github.com/AegisCodeForge/aegis">Aegis</a>, version %s (%s)
 </div>
 {{end}}`, string(versionBytes), newCountStr))
 		f.Close()
