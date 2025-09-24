@@ -3503,7 +3503,7 @@ VALUES (?,?,?,?,?,?,?)
 `, pfx))
 	if err != nil { return nil, err }
 	t := time.Now()
-	_, err = stmt.Exec(fmt.Sprintf("%s:%s", username, name), name, username, new(string), t.Unix(), status, new(map[string]bool))
+	_, err = stmt.Exec(fmt.Sprintf("%s:%s", username, name), name, username, new(string), t.Unix(), status, "{}")
 	if err != nil { return nil, err }
 	p := path.Join(dbif.config.SnippetRoot, username, name)
 	if !db.IsSubDir(dbif.config.SnippetRoot, p) {
@@ -3511,6 +3511,8 @@ VALUES (?,?,?,?,?,?,?)
 	}
 	os.RemoveAll(p)
 	err = os.MkdirAll(p, fs.ModeDir|0755)
+	if err != nil { return nil, err }
+	err = tx.Commit()
 	if err != nil { return nil, err }
 	return &model.Snippet{
 		Name: name,
@@ -3680,20 +3682,23 @@ WHERE username = ? AND (status = 1 OR status = 2 OR (status = 4 AND shared_user 
 	defer r.Close()
 	var name, desc string
 	var status uint8
-	var timestamp time.Time
-	var sharedUser map[string]bool
+	var timestamp int64
+	var sharedUser string
+	var sharedUserMap map[string]bool
 	res := make([]*model.Snippet, 0)
 	for r.Next() {
 		err = r.Scan(&name, &desc, &timestamp, &status, &sharedUser)
+		if err != nil { return nil, err }
+		err = json.Unmarshal([]byte(sharedUser), &sharedUserMap)
 		if err != nil { return nil, err }
 		res = append(res, &model.Snippet{
 			Name: name,
 			BelongingUser: username,
 			Description: desc,
 			Status: status,
-			Time: timestamp.Unix(),
+			Time: timestamp,
 			FileList: nil,
-			SharedUser: sharedUser,
+			SharedUser: sharedUserMap,
 		})
 	}
 	return res, nil
@@ -3751,7 +3756,7 @@ WHERE username = ? AND name = ?
 	err = r.Scan(&desc, &timestamp, &status, &shareduser)
 	if err != nil { return nil, err }
 	var su map[string]bool
-	err = json.Unmarshal([]byte(shareduser), &shareduser)
+	err = json.Unmarshal([]byte(shareduser), &su)
 	if err != nil { return nil, err }
 	return &model.Snippet{
 		Name: name,

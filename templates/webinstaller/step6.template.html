@@ -45,9 +45,24 @@
 		  </tbody>
 		</table>
 	  </div>
+	  
 
 	  {{if .Config.PlainMode}}
 	  {{else}}
+	  
+	  <div class="field">
+		<label class="field-label" for="snippet-root">Snippet Root</label>
+		<p class="field-description">The root directory for storing snippets. Must be accessible by the Git user configured above.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="snippet-root">snippetRoot</label></td>
+			  <td><input name="snippet-root" id="snippet-root" value="{{htmlEscape .Config.SnippetRoot}}" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  
 	  <p>You have choosen to not use Plain Mode. Step 7 only makes sense if you use Plain Mode, so we'll direct you to Step 8.</p>
 	  {{end}}
 	  <input type="submit" value="Submit and go to next step" />

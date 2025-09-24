@@ -53,9 +53,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindIssueController(context)
 		bindLabelController(context)
 
-		if context.Config.EnableSnippet {
-			bindSnippetController(context)
-		}
+		bindSnippetController(context)
 	}
 }
 

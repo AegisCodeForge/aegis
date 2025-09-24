@@ -14,7 +14,7 @@ import (
 
 func bindSnippetController(ctx *RouterContext) {
 	http.HandleFunc("GET /snippet/{username}/{name}", UseMiddleware(
-		[]Middleware{Logged, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			username := r.PathValue("username")
 			name := r.PathValue("name")
@@ -104,7 +104,7 @@ func bindSnippetController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("GET /snippet/{username}/{name}/setting", UseMiddleware(
-		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, UseLoginInfo, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			username := r.PathValue("username")
 			name := r.PathValue("name")
@@ -132,7 +132,7 @@ func bindSnippetController(ctx *RouterContext) {
 	
 	http.HandleFunc("POST /snippet/{username}/{name}/setting", UseMiddleware(
 		[]Middleware{Logged, ValidPOSTRequestRequired,
-			LoginRequired, GlobalVisibility, ErrorGuard,
+			UseLoginInfo, LoginRequired, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			username := r.PathValue("username")

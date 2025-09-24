@@ -156,7 +156,6 @@ type AegisConfig struct {
 	ConfirmCodeManager AegisConfirmCodeManagerConfig `json:"confirmCode"`
 
 	// root directory for storing snippets.
-	EnableSnippet bool `json:"enableSnippet"`
 	SnippetRoot string `json:"snippetRoot"`
 
 	DefaultNewUserStatus model.AegisUserStatus `json:"defaultNewUserStatus"`
@@ -377,7 +376,6 @@ func CreateConfigFile(p string) error {
 			Type: "in-memory",
 			DefaultTimeoutMinute: 5,
 		},
-		EnableSnippet: true,
 		SnippetRoot: "",
 		DefaultNewUserStatus: model.AegisUserStatus(model.NORMAL_USER),
 		DefaultNewUserNamespace: "",

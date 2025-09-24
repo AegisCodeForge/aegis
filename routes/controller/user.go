@@ -75,7 +75,7 @@ func bindUserController(ctx *RouterContext) {
 	))
 
 	http.HandleFunc("GET /u/{userName}/snippet", UseMiddleware(
-		[]Middleware{Logged, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			username := r.PathValue("userName")
 			user, err := ctx.DatabaseInterface.GetUserByName(username)

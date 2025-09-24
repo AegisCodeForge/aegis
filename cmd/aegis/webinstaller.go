@@ -243,6 +243,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}
 		ctx.Config.GitRoot = strings.TrimSpace(r.Form.Get("git-root"))
 		ctx.Config.GitUser = strings.TrimSpace(r.Form.Get("git-user"))
+		ctx.Config.SnippetRoot = strings.TrimSpace(r.Form.Get("snippet-root"))
 		next := ""
 		if ctx.Config.PlainMode {
 			next = "/step7"
