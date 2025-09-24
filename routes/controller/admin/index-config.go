@@ -3,9 +3,6 @@ package admin
 import (
 	"fmt"
 	"net/http"
-	"os"
-	"path"
-	"path/filepath"
 	"strings"
 
 	. "github.com/bctnry/aegis/routes"
@@ -57,10 +54,6 @@ func bindAdminIndexConfigController(ctx *RouterContext) {
 			indexType := r.Form.Get("index-type")
 			namespace := r.Form.Get("namespace")
 			repository := r.Form.Get("repository")
-			fileName := r.Form.Get("file-name")
-			if !strings.HasPrefix(fileName, "/") {
-				fileName = "/" + fileName
-			}
 			fileContent := r.Form.Get("file-content")
 			rc.Config.LockForSync()
 			defer rc.Config.Unlock()
@@ -73,26 +66,10 @@ func bindAdminIndexConfigController(ctx *RouterContext) {
 				rc.Config.FrontPageType = fmt.Sprintf("namespace/%s", namespace)
 			case "repository":
 				rc.Config.FrontPageType = fmt.Sprintf("repository/%s:%s", namespace, repository)
-			case "static":
-				rc.Config.FrontPageType = fileName
-				p := path.Join(rc.Config.StaticAssetDirectory, fileName)
-				pp, err := filepath.Rel(rc.Config.StaticAssetDirectory, p)
-				if err != nil || strings.HasPrefix(pp, "..") {
-					rc.ReportNormalError(fmt.Sprintf("Invalid location for static front page: %s", err), w, r)
-					return
-				}
-				f, err := os.OpenFile(p, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0664)
-				if err != nil {
-					rc.ReportInternalError(fmt.Sprintf("Failed to open static file: %s", err), w, r)
-					return
-				}
-				defer f.Close()
-				_, err = f.Write([]byte(fileContent))
-				if err != nil {
-					rc.ReportInternalError(fmt.Sprintf("Failed to save static file: %s", err), w, r)
-					return
-				}
-				err = rc.Config.Sync()
+			default:
+				rc.Config.FrontPageType = indexType
+				rc.Config.FrontPageContent = fileContent
+				err := rc.Config.Sync()
 				if err != nil {
 					rc.ReportInternalError(fmt.Sprintf("Failed to save config: %s", err), w, r)
 					return

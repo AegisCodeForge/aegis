@@ -83,7 +83,7 @@ func main() {
 	lastConfigNeeded := containsCommand && (isSsh || isWebHooks)
 	dbifNeeded := isWebServer || (containsCommand && (isSsh || isWebHooks || isResetAdmin))
 	ssifNeeded := isWebServer
-	keyctxNeeded := isWebServer
+	keyctxNeeded := isWebServer || (containsCommand && isSsh)
 	rsifNeeded := isWebServer
 	mailerNeeded := isWebServer
 	ccmNeeded := isWebServer

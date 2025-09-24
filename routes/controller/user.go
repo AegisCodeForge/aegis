@@ -15,7 +15,7 @@ import (
 
 func bindUserController(ctx *RouterContext) {
 	http.HandleFunc("GET /u/{userName}", UseMiddleware(
-		[]Middleware{Logged, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			un := r.PathValue("userName")
 			if !model.ValidUserName(un) {

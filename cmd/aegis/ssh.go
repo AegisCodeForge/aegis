@@ -46,7 +46,9 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
 	isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
 	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
-	if relPath[0] == '~' || relPath[0] == '/' { relPath = relPath[1:] }
+	if relPath[0] == '~' || relPath[0] == '/' {
+		relPath = relPath[1:]
+	}
 	relPathSegment := strings.SplitN(relPath, "/", 2)
 	namespaceName := ""
 	repositoryName := ""
@@ -100,7 +102,7 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 			os.Exit(1)
 		}
 	}
-	
+
 	// see also:
 	//     https://git-scm.com/docs/git-receive-pack
 	//     https://git-scm.com/docs/git-upload-pack
@@ -120,4 +122,3 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 	}
 	os.Exit(0)
 }
-
