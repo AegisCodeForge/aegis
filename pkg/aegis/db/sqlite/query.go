@@ -1443,7 +1443,7 @@ SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_
 FROM %s_repository repo
 FULL JOIN (SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR (ns_owner = ? OR ns_acl LIKE ? ESCAPE ?)) ns
 ON repo.repo_namespace = ns.ns_name
-WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
+WHERE ((ns_status = 1 OR ns_status = 3) AND ns.ns_name IS NOT NULL)
 OR (repo_status = 1 OR repo_status = 4 OR repo_status = 5)
 OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
@@ -1457,7 +1457,7 @@ SELECT repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo_
 FROM %s_repository repo
 FULL JOIN (SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3) ns
 ON repo.repo_namespace = ns.ns_name
-WHERE ((ns_status = 1 OR ns_status = 3) AND ns_name IS NOT NULL)
+WHERE ((ns_status = 1 OR ns_status = 3) AND ns.ns_name IS NOT NULL)
 OR (repo_status = 1 OR repo_status = 4)
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx, pfx))
@@ -1619,7 +1619,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
 FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1638,7 +1638,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
 FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1654,7 +1654,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 SELECT repo_type, repo_namespace, repo_name, repo_description, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_webhook, rowid
 FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1747,7 +1747,6 @@ SELECT COUNT(*) FROM %s_namespace WHERE (ns_status = 1 OR ns_status = 3)
 }
 
 func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResult(username string, pattern string) (int64, error) {
-	// TODO: fix this.
 	pfx := dbif.config.Database.TablePrefix
 	var r *sql.Row
 	var err error
@@ -1758,7 +1757,7 @@ func (dbif *SqliteAegisDatabaseInterface) CountAllVisibleRepositoriesSearchResul
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1772,7 +1771,7 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1788,7 +1787,7 @@ AND (repo_name LIKE ? ESCAPE ? OR repo_namespace LIKE ? ESCAPE ?)
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3 OR ns_owner = ? OR ns_acl LIKE ? ESCAPE ?
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
@@ -1801,11 +1800,12 @@ WHERE (
 			stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_repository repo
 FULL JOIN (
-    SELECT ns_name FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
+    SELECT ns_name, ns_status FROM %s_namespace WHERE ns_status = 1 OR ns_status = 3
 ) ns ON repo.repo_namespace = ns.ns_name
 WHERE (
     ((ns.ns_status = 1 OR ns.ns_status = 3) AND ns.ns_name IS NOT NULL)
-    OR repo.repo_status = 1 OR repo_status = 4)
+    OR repo.repo_status = 1 OR repo_status = 4
+)
 `, pfx, pfx))
 			if err != nil { return 0, err }
 			r = stmt.QueryRow()

@@ -57,4 +57,22 @@ among the possible ways of hosting, only running directly and nginx reverse prox
 
 if you want to use https w/ certbot, it's recommended to setup a simple ~server~ block that only serves static page first, proceed to obtain license w/ certbot, /then/ configure the ~server~ block into a reverse proxy as above.
 
+it's recommended to have a service for easy management. if you run systemd, you can have the following in the file ~/etc/systemd/system/aegis.service~:
+
+#+begin_src ini
+[Unit]
+Description=Aegis
+
+[Service]
+Type=Simple
+User=git
+ExecStart=/home/git/git-shell-commands/aegis -config /home/git/aegis-config.json
+WorkingDirectory=/home/git
+
+[Install]
+WantedBy=multi-user.target
+#+end_src
+
+... and run ~systemctl enable aegis~ and ~systemctl start aegis~.
+
 
