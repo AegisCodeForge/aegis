@@ -21,8 +21,30 @@ body {
 	background-color: var(--background-color);
 	color: var(--foreground-color);
 	margin: 2rem;
+	margin-left: 160px;
+	margin-right: 160px;
 	font-family: 'Nimbus Sans', sans-serif;
 }
+
+@media (max-width: 720px) {
+	body {
+		margin-left: 2rem;
+		margin-right: 2rem;
+	}
+}
+@media (min-width: 720px) and (max-width: 800px) {
+	body {
+		margin-left: 80px;
+		margin-right: 80px;
+	}
+}
+@media (min-width: 800px) and (max-width: 960px) {
+	body {
+		margin-left: 120px;
+		margin-right: 120px;
+	}
+}
+
 
 a {
 	color: var(--foreground-color);

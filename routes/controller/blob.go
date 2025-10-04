@@ -38,18 +38,18 @@ func bindBlobController(ctx *RouterContext) {
 			}
 			if !ctx.Config.PlainMode {
 				rc.LoginInfo.IsOwner = (repo.Owner == rc.LoginInfo.UserName) || (ns.Owner == rc.LoginInfo.UserName)
+				rc.LoginInfo.IsStrictOwner = repo.Owner == rc.LoginInfo.UserName
 			}
 			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
-				t := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
-				if t == nil {
-					t = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+				chk := rc.LoginInfo.IsAdmin || rc.LoginInfo.IsOwner
+				if !chk {
+					chk = repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName) != nil
 				}
-				if t == nil {
-					LogTemplateError(ctx.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-						LoginInfo: rc.LoginInfo,
-						ErrorCode: 403,
-						ErrorMessage: "Not enough privilege.",
-					}))
+				if !chk {
+					chk = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName) != nil
+				}
+				if !chk {
+					rc.ReportNotFound(repo.FullName(), "Repository", "Depot", w, r)
 					return
 				}
 			}

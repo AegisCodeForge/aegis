@@ -147,17 +147,17 @@ func bindBranchController(ctx *RouterContext) {
 			if !rc.Config.PlainMode {
 				rc.LoginInfo.IsOwner = (repo.Owner == rc.LoginInfo.UserName) || (ns.Owner == rc.LoginInfo.UserName)
 			}
-			if !rc.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
-				t := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
-				if t == nil {
-					t = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			// reject visit if repo is private & user not logged in or not member.
+			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+				chk := rc.LoginInfo.IsAdmin || rc.LoginInfo.IsOwner
+				if !chk {
+					chk = repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName) != nil
 				}
-				if t == nil {
-					LogTemplateError(rc.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-						LoginInfo: rc.LoginInfo,
-						ErrorCode: 403,
-						ErrorMessage: "Not enough privilege.",
-					}))
+				if !chk {
+					chk = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName) != nil
+				}
+				if !chk {
+					rc.ReportNotFound(repo.FullName(), "Repository", "Depot", w, r)
 					return
 				}
 			}
@@ -210,6 +210,10 @@ func bindBranchController(ctx *RouterContext) {
 			if err != nil { rc.ReportInternalError(err.Error(), w, r) }
 			target, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 			if err != nil {
+				if err == gitlib.ErrObjectNotFound {
+					rc.ReportNotFound(treePath, "Path", fmt.Sprintf("repository %s", repo.FullName()), w, r)
+					return
+				}
 				rc.ReportInternalError(err.Error(), w, r)
 				return
 			}
@@ -381,6 +385,10 @@ func bindBranchController(ctx *RouterContext) {
 					dirPath := path.Dir(path.Dir(treePath)) + "/"
 					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 					if err != nil {
+						if err == gitlib.ErrObjectNotFound {
+							rc.ReportNotFound(treePath, "Directory", "Repository", w, r)
+							return
+						}
 						rc.ReportInternalError(err.Error(), w, r)
 						return
 					}
@@ -423,6 +431,10 @@ func bindBranchController(ctx *RouterContext) {
 				dirPath := path.Dir(treePath) + "/"
 				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 				if err != nil {
+					if err == gitlib.ErrObjectNotFound {
+						rc.ReportNotFound(treePath, "File", "Repository", w, r)
+						return
+					}
 					rc.ReportInternalError(err.Error(), w, r)
 					return
 				}

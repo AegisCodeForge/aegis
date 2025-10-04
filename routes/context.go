@@ -107,7 +107,7 @@ func (ctx RouterContext) ReportForbidden(msg string, w http.ResponseWriter, r *h
 	LogTemplateError(ctx.LoadTemplate("error").Execute(w,
 		templates.ErrorTemplateModel{
 			Config: ctx.Config,
-			ErrorCode: 500,
+			ErrorCode: 403,
 			ErrorMessage: fmt.Sprintf(
 				"Forbidden: %s",
 				msg,

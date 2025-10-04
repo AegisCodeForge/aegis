@@ -58,21 +58,20 @@ func bindTagController(ctx *RouterContext) {
 				rc.LoginInfo.IsOwner = repo.Owner == rc.LoginInfo.UserName || ns.Owner == rc.LoginInfo.UserName
 			}
 
-			if !rc.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
-				t := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
-				if t == nil {
-					t = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+			// reject visit if repo is private & user not logged in or not member.
+			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+				chk := rc.LoginInfo.IsAdmin || rc.LoginInfo.IsOwner
+				if !chk {
+					chk = repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName) != nil
 				}
-				if t == nil {
-					LogTemplateError(rc.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-						LoginInfo: rc.LoginInfo,
-						ErrorCode: 403,
-						ErrorMessage: "Not enough privilege.",
-					}))
+				if !chk {
+					chk = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName) != nil
+				}
+				if !chk {
+					rc.ReportNotFound(repo.FullName(), "Repository", "Depot", w, r)
 					return
 				}
 			}
-
 			rr := repo.Repository.(*gitlib.LocalGitRepository)
 			tagName := r.PathValue("tagId")
 			treePath := r.PathValue("treePath")
@@ -177,6 +176,14 @@ func bindTagController(ctx *RouterContext) {
 
 			if subject.Type() == gitlib.TREE {
 				subject, err = rr.ResolveTreePath(subject.(*gitlib.TreeObject), treePath)
+				if err != nil {
+					if err == gitlib.ErrObjectNotFound {
+						rc.ReportNotFound(treePath, "Path", fmt.Sprintf("tag %s of repository %s", tagName, repo.FullName()), w, r)
+						return
+					}
+					rc.ReportInternalError(err.Error(), w, r)
+					return
+				}
 				if subject.Type() == gitlib.TREE && len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
 					FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s/%s/", rfn, tagName, treePath))
 					return

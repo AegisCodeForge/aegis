@@ -48,18 +48,18 @@ func bindCommitController(ctx *RouterContext) {
 			if !rc.Config.PlainMode {
 				rc.LoginInfo.IsOwner = (repo.Owner == rc.LoginInfo.UserName) || (ns.Owner == rc.LoginInfo.UserName)
 			}
-			
-			if !rc.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
-				t := repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
-				if t == nil {
-					t = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
+
+			// reject visit if repo is private & user not logged in or not member.
+			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+				chk := rc.LoginInfo.IsAdmin || rc.LoginInfo.IsOwner
+				if !chk {
+					chk = repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName) != nil
 				}
-				if t == nil {
-					LogTemplateError(rc.LoadTemplate("error").Execute(w, templates.ErrorTemplateModel{
-						LoginInfo: rc.LoginInfo,
-						ErrorCode: 403,
-						ErrorMessage: "Not enough privilege.",
-					}))
+				if !chk {
+					chk = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName) != nil
+				}
+				if !chk {
+					rc.ReportNotFound(repo.FullName(), "Repository", "Depot", w, r)
 					return
 				}
 			}
@@ -96,12 +96,19 @@ func bindCommitController(ctx *RouterContext) {
 			if err != nil { rc.ReportInternalError(err.Error(), w, r) }
 			target, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), treePath)
 			if err != nil {
+				if err == gitlib.ErrObjectNotFound {
+					rc.ReportNotFound(treePath, "Path", fmt.Sprintf("repository %s", repo.FullName()), w, r)
+					return
+				}
 				rc.ReportInternalError(err.Error(), w, r)
+				return
 			}
 
+			isTargetBlob := target.Type() == gitlib.BLOB
+			
 			isSnapshotRequest :=  r.URL.Query().Has("snapshot")
 			if isSnapshotRequest {
-				if target.Type() == gitlib.BLOB {
+				if isTargetBlob {
 					mime := mime.TypeByExtension(path.Ext(treePath))
 					if len(mime) <= 0 { mime = "application/octet-stream" }
 					w.Header().Add("Content-Type", mime)
@@ -112,46 +119,6 @@ func bindCommitController(ctx *RouterContext) {
 					return
 				}
 			}
-
-			
-			isBlameRequest := r.URL.Query().Has("blame")
-			if isBlameRequest {
-				if target.Type() == gitlib.BLOB {
-					mime := mime.TypeByExtension(path.Ext(treePath))
-					if len(mime) <= 0 { mime = "application/octet-stream" }
-					if !strings.HasPrefix(mime, "image/") {
-						dirPath := path.Dir(treePath) + "/"
-						dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
-						if err != nil {
-							rc.ReportInternalError(err.Error(), w, r)
-							return
-						}
-						blame, err := rr.Blame(cobj, treePath)
-						if err != nil {
-							rc.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
-							return
-						}
-						LogTemplateError(rc.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
-							Repository: repo,
-							RepoHeaderInfo: *repoHeaderInfo,
-							TreeFileList: &templates.TreeFileListTemplateModel{
-								ShouldHaveParentLink: len(treePath) > 0,
-								RepoPath: fmt.Sprintf("/repo/%s", rfn),
-								RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "commit", cobj.Id),
-								TreePath: dirPath,
-								FileList: dirObj.(*gitlib.TreeObject).ObjectList,
-							},
-							Blame: blame,
-							CommitInfo: commitInfo,
-							TagInfo: nil,
-							LoginInfo: rc.LoginInfo,
-							Config: rc.Config,
-						}))
-						return
-					}
-				}
-			}
-			
 			
 			tp1 := make([]string, 0)
 			treePathSegmentList := make([]struct{Name string;RelPath string}, 0)
@@ -175,13 +142,71 @@ func bindCommitController(ctx *RouterContext) {
 				TreePathSegmentList: treePathSegmentList,
 			}
 
+			isBlameRequest := r.URL.Query().Has("blame")
+			if isBlameRequest && isTargetBlob {
+				mime := mime.TypeByExtension(path.Ext(treePath))
+				if len(mime) <= 0 { mime = "application/octet-stream" }
+				if !strings.HasPrefix(mime, "image/") {
+					dirPath := path.Dir(treePath) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						rc.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					blame, err := rr.Blame(cobj, treePath)
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to run git-blame: %s.", err), w, r)
+						return
+					}
+					LogTemplateError(rc.LoadTemplate("git-blame").Execute(w, &templates.GitBlameTemplateModel{
+						Repository: repo,
+						RepoHeaderInfo: *repoHeaderInfo,
+						TreeFileList: &templates.TreeFileListTemplateModel{
+							ShouldHaveParentLink: len(treePath) > 0,
+							RepoPath: fmt.Sprintf("/repo/%s", rfn),
+							RootPath: fmt.Sprintf("/repo/%s/%s/%s", rfn, "commit", cobj.Id),
+							TreePath: dirPath,
+							FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+						},
+						TreePath: treePathModelValue,
+						PermaLink: permaLink,
+						Blame: blame,
+						CommitInfo: commitInfo,
+						TagInfo: nil,
+						LoginInfo: rc.LoginInfo,
+						Config: rc.Config,
+					}))
+					return
+				}
+			}
+			
+			
 			switch target.Type() {
 			case gitlib.TREE:
 				if len(treePath) > 0 && !strings.HasSuffix(treePath, "/") {
 					FoundAt(w, fmt.Sprintf("%s/%s/", rootPath, treePath))
 					return
 				}
-				// TODO: find a better way to do this...
+				// NOTE: this is intentional. by the time we've reached here
+				// `treePath` would end with a slash `/`, and the first `path.Dir`
+				// call would only remove that slash, whose result is not the path
+				// of the parent directory.
+				var parentTreeFileList *templates.TreeFileListTemplateModel = nil
+				if treePath != "" {
+					dirPath := path.Dir(path.Dir(treePath)) + "/"
+					dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
+					if err != nil {
+						rc.ReportInternalError(err.Error(), w, r)
+						return
+					}
+					parentTreeFileList = &templates.TreeFileListTemplateModel{
+						ShouldHaveParentLink: len(treePath) > 0,
+						RepoPath: repoPath,
+						RootPath: rootPath,
+						TreePath: dirPath,
+						FileList: dirObj.(*gitlib.TreeObject).ObjectList,
+					}
+				}
 				for i, k := range target.(*gitlib.TreeObject).ObjectList {
 					cid, err := rr.ResolvePathLastCommitId(cobj, treePath + k.Name)
 					if err != nil { continue }
@@ -200,6 +225,7 @@ func bindCommitController(ctx *RouterContext) {
 						FileList: target.(*gitlib.TreeObject).ObjectList,
 					},
 					PermaLink: permaLink,
+					ParentTreeFileList: parentTreeFileList,
 					TreePath: treePathModelValue,
 					CommitInfo: commitInfo,
 					TagInfo: nil,
@@ -207,7 +233,7 @@ func bindCommitController(ctx *RouterContext) {
 					Config: rc.Config,
 				}))
 			case gitlib.BLOB:
-				dirPath := path.Dir(treePath)
+				dirPath := path.Dir(treePath) + "/"
 				dirObj, err := rr.ResolveTreePath(gobj.(*gitlib.TreeObject), dirPath)
 				if err != nil {
 					rc.ReportInternalError(err.Error(), w, r)
@@ -244,6 +270,7 @@ func bindCommitController(ctx *RouterContext) {
 						TreePath: dirPath,
 						FileList: dirObj.(*gitlib.TreeObject).ObjectList,
 					},
+					AllowBlame: !strings.HasPrefix(mime, "image/"),
 					TreePath: treePathModelValue,
 					CommitInfo: commitInfo,
 					TagInfo: nil,

@@ -152,6 +152,8 @@ func parseTreeObject(objid string, f io.Reader) (*TreeObject, error) {
 	return &tree, nil
 }
 
+var ErrObjectNotFound = errors.New("Object not found")
+
 func (gr LocalGitRepository) ResolveTreePath(t *TreeObject, p string) (GitObject, error) {
 	var gobj GitObject = t
 	var err error = nil
@@ -170,7 +172,7 @@ func (gr LocalGitRepository) ResolveTreePath(t *TreeObject, p string) (GitObject
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("Cannot find object named %s in tree", item)
+			return nil, ErrObjectNotFound
 		}
 	}
 	return gobj, nil
