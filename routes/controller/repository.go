@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/auxfuncs"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -24,15 +25,13 @@ func bindRepositoryController(ctx *RouterContext) {
 			rfn := r.PathValue("repoName")
 			branch := strings.TrimSpace(r.URL.Query().Get("branch"))
 			if len(branch) > 0 {
-				k := strings.SplitN(branch, ":", 2)
-				switch k[0] {
-				case "branch":
-					FoundAt(w, fmt.Sprintf("/repo/%s/branch/%s", rfn, k[1]))
-					return
-				case "tag":
-					FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s", rfn, k[1]))
-					return
-				}
+				FoundAt(w, fmt.Sprintf("/repo/%s/branch/%s", rfn, branch))
+				return
+			}
+			tag := strings.TrimSpace(r.URL.Query().Get("tag"))
+			if len(tag) > 0 {
+				FoundAt(w, fmt.Sprintf("/repo/%s/tag/%s", rfn, tag))
+				return
 			}
 			_, _, ns, s, err := rc.ResolveRepositoryFullName(rfn)
 			if err == ErrNotFound {
@@ -76,36 +75,75 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 
+			var repoHeaderInfo *templates.RepoHeaderTemplateModel
+			var treeFileList *templates.TreeFileListTemplateModel
+			var commitInfo *templates.CommitInfoTemplateModel
+			var cobj *gitlib.CommitObject
+			var treeObjList []gitlib.TreeObjectItem
+			var permaLink string = ""
+
 			readmeString := ""
 			readmeType := ""
 			readmeTier := 0
-			// now we try to read the README file.
-			// the order would be: README - README.txt
-			//                     - any file that starts with "README."
-			// the branch order would be: master - main
-			// if any of the two cannot be found, it's considered without a readme.
+			// now we try to read the "major" branch.
+			// first we check for "master", then we check for "main",
+			// if both of those branches do not exists we find the first branch
+			// alphabetically.
 			var obj gitlib.GitObject
 			br, ok := rr.BranchIndex["master"]
 			if !ok { br, ok = rr.BranchIndex["main"] }
-			if !ok { goto findingReadmeDone; }
+			if !ok {
+				k := auxfuncs.SortedKeys(rr.BranchIndex)
+				if len(k) <= 0 { goto findingMajorBranchDone; }
+				br = rr.BranchIndex[k[0]];
+			}
+			repoHeaderInfo = GenerateRepoHeader("branch", br.Name)
+			// now we try to read the README file.
+			// the order would be: README - README.txt
+			//                     - any file that starts with "README."
+			// if any of the two cannot be found, it's considered without a readme.
 			obj, err = rr.ReadObject(br.HeadId)
-			if err != nil { goto findingReadmeDone; }
+			if err != nil { goto findingMajorBranchDone; }
 			// i don't know if it would ever happen that a branch head would point to
 			// anything that's not a commit, but if we can't find it we treat it as
 			// no readme.
-			if !gitlib.IsCommitObject(obj) { goto findingReadmeDone; }
-			obj, err = rr.ReadObject(obj.(*gitlib.CommitObject).TreeObjId)
-			if err != nil { goto findingReadmeDone; }
-			for _, item := range obj.(*gitlib.TreeObject).ObjectList {
+			if !gitlib.IsCommitObject(obj) { goto findingMajorBranchDone; }
+			cobj = obj.(*gitlib.CommitObject)
+			commitInfo = &templates.CommitInfoTemplateModel{
+				RootPath: fmt.Sprintf("/repo/%s/branch/%s", s.FullName(), br.Name),
+				Commit: cobj,
+				EmailUserMapping: func()map[string]string{
+					m := make(map[string]string, 0)
+					m[cobj.AuthorInfo.AuthorEmail] = ""
+					m[cobj.CommitterInfo.AuthorEmail] = ""
+					_, err = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+					return m
+				}(),
+			}
+			permaLink = fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, "")
+			obj, err = rr.ReadObject(cobj.TreeObjId)
+			if err != nil { goto findingMajorBranchDone; }
+			treeObjList = obj.(*gitlib.TreeObject).ObjectList
+			treeFileList = &templates.TreeFileListTemplateModel{
+				ShouldHaveParentLink: false,
+				RepoPath: fmt.Sprintf("/repo/%s", s.FullName()),
+				RootPath: fmt.Sprintf("/repo/%s/branch/%s", s.FullName(), br.Name),
+				TreePath: "/",
+				FileList: treeObjList,
+			}
+			for i, item := range treeObjList {
+				// TODO: find a better way to do this...
+				cid, _ := rr.ResolvePathLastCommitId(cobj, item.Name)
+				o, err := rr.ReadObject(strings.TrimSpace(cid))
+				treeObjList[i].LastCommit = o.(*gitlib.CommitObject)
 				if item.Name == "README" || strings.HasPrefix(item.Name, "README.") {
 					// NOTE: this is to make sure that README.md and the like will
 					// always have a higher priority than other README file; some repo
 					// put platform-specific README in files like `README.{plat}.md`
 					// and you can't have them getting selected when a more general
 					// readme exists.
-					thisTier := 2
-					if item.Name == "README" || item.Name == "README.txt" || item.Name == "README.org" || item.Name == "README.md" { thisTier = 1 }
-					if readmeTier > 0 && thisTier > readmeTier { continue }
+					thisTier := strings.Count(item.Name, ".")
+					if readmeTier > 0 && thisTier >= readmeTier { continue }
 					readmeTier = thisTier
 					obj, err = rr.ReadObject(item.Hash)
 					if err != nil { continue }
@@ -113,11 +151,8 @@ func bindRepositoryController(ctx *RouterContext) {
 					obj, err = rr.ReadObject(item.Hash)
 					readmeType = path.Ext(item.Name)
 					readmeString = string(obj.(*gitlib.BlobObject).Data)
-					if thisTier == 1 { goto renderReadme }
 				}
 			}
-			
-		renderReadme:
 			switch readmeType {
 			case ".md":
 				// NOTE: markdown is tricky. because people uses html in
@@ -149,10 +184,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				readmeString = fmt.Sprintf("<pre class=\"repo-readme\">%s</pre>", readmeString)
 			}
 			
-		findingReadmeDone:
-
-			repoHeaderInfo := GenerateRepoHeader("", "")
-
+		findingMajorBranchDone:
 			LogTemplateError(rc.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
 				Config: rc.Config,
 				Repository: s,
@@ -161,6 +193,9 @@ func bindRepositoryController(ctx *RouterContext) {
 				TagList: rr.TagIndex,
 				ReadmeString: readmeString,
 				LoginInfo: rc.LoginInfo,
+				MajorBranchPermaLink: permaLink,
+				TreeFileList: treeFileList,
+				CommitInfo: commitInfo,
 			}))
 		},
 	))

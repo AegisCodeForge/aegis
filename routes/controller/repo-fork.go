@@ -13,7 +13,7 @@ import (
 func bindRepositoryForkController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/fork", UseMiddleware(
 		[]Middleware{Logged, ValidRepositoryNameRequired("repoName"),
-			UseLoginInfo, LoginRequired, GlobalVisibility, ErrorGuard,
+			UseLoginInfo, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			rfn := r.PathValue("repoName")

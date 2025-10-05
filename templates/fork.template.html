@@ -26,17 +26,24 @@
 		<h2>Existing Fork</h2>
 		{{if .ForkedRepoList}}
 		{{if gt (len .ForkedRepoList) 0}}
-		<ul>
-		  {{range $p := .ForkedRepoList}}
-		  <li><a href="{{getRepoPath $p.Namespace $p.Name}}">{{getRepoName $p.Namespace $p.Name}}</a></li>
-		  {{end}}
-		</ul>
+		<table>
+		  <thead>
+			<tr><th>Full name</th><th>Owner</th></tr>
+		  </thead>
+		  <tbody>
+			{{range $p := .ForkedRepoList}}
+			<tr><td><a href="{{getRepoPath $p.Namespace $p.Name}}">{{getRepoName $p.Namespace $p.Name}}</a></td><td><a href="{{getUserPath $p.Owner}}">{{$p.Owner}}</a></td>
+			{{end}}
+		  </tbody>
+		</table>
 		{{else}}
 		<p>No fork exists.</p>
 		{{end}}
 		{{else}}
 		<p>No fork exists.</p>
 		{{end}}
+		
+		{{if .LoginInfo.LoggedIn}}
 		<h2>Fork Repository</h2>
 		<div>Forking repository  <a href="{{$repoPath}}">{{$repoName}}</a> to:</div>
 		<form action="" method="POST">
@@ -56,6 +63,7 @@
 		  <div class="field"><label class="field-label" for="name">Repository Name:</label> <input name="name" /></div>
 		<input type="submit" value="Fork" />
 		</form>
+		{{end}}
 
 	  </div>
 	</main>

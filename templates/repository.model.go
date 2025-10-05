@@ -11,5 +11,9 @@ type RepositoryModel struct{
 	BranchList map[string]*gitlib.Branch
 	TagList map[string]*gitlib.Tag
 	LoginInfo *LoginInfoModel
+
+	MajorBranchPermaLink string
 	ReadmeString string
+	TreeFileList *TreeFileListTemplateModel
+	CommitInfo *CommitInfoTemplateModel
 }
