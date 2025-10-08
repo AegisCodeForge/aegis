@@ -110,7 +110,7 @@ func bindRepositoryController(ctx *RouterContext) {
 			if !gitlib.IsCommitObject(obj) { goto findingMajorBranchDone; }
 			cobj = obj.(*gitlib.CommitObject)
 			commitInfo = &templates.CommitInfoTemplateModel{
-				RootPath: fmt.Sprintf("/repo/%s/branch/%s", s.FullName(), br.Name),
+				RootPath: fmt.Sprintf("/repo/%s", s.FullName()),
 				Commit: cobj,
 				EmailUserMapping: func()map[string]string{
 					m := make(map[string]string, 0)
