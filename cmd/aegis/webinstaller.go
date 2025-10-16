@@ -112,9 +112,13 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
-		ctx.Config.PlainMode = len(r.Form.Get("plain-mode")) > 0
+		if len(r.Form.Get("plain-mode")) > 0 {
+			ctx.Config.OperationMode = "plain"
+		} else {
+			ctx.Config.OperationMode = "normal"
+		}
 		ctx.Config.UseNamespace = len(r.Form.Get("enable-namespace")) > 0
-		if ctx.Config.PlainMode {
+		if ctx.Config.IsInPlainMode() {
 			foundAt(w, "/step6")
 		} else {
 			foundAt(w, "/step2")
@@ -245,7 +249,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		ctx.Config.GitUser = strings.TrimSpace(r.Form.Get("git-user"))
 		ctx.Config.SnippetRoot = strings.TrimSpace(r.Form.Get("snippet-root"))
 		next := ""
-		if ctx.Config.PlainMode {
+		if ctx.Config.IsInPlainMode() {
 			next = "/step7"
 		} else {
 			next = "/step8"
@@ -337,7 +341,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}
 		ctx.Config.DefaultNewUserStatus = model.AegisUserStatus(us)
 		ctx.Config.DefaultNewUserNamespace = strings.TrimSpace(r.Form.Get("default-new-user-namespace"))
-		if ctx.Config.PlainMode {
+		if ctx.Config.IsInPlainMode() {
 			foundAt(w, "/confirm")
 		} else {
 			foundAt(w, "/step9")

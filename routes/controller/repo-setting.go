@@ -657,7 +657,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
 				if !rc.LoginInfo.LoggedIn { FoundAt(w, repoPath); return }
 				// NOTE: we don't support editing namespace from web ui when in plain mode.
-				if rc.Config.PlainMode { FoundAt(w, repoPath); return }
+				if rc.Config.IsInPlainMode() { FoundAt(w, repoPath); return }
 				isRepoOwner := repo.Owner == rc.LoginInfo.UserName
 				isNsOwner := ns.Owner == rc.LoginInfo.UserName
 				rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner
@@ -717,7 +717,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 			}
 			repoPath := fmt.Sprintf("/repo/%s", repo.FullName())
 			if !rc.LoginInfo.LoggedIn { FoundAt(w, repoPath); return }
-			if rc.Config.PlainMode { FoundAt(w, repoPath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, repoPath); return }
 			isRepoOwner := repo.Owner == rc.LoginInfo.UserName
 			isNsOwner := ns.Owner == rc.LoginInfo.UserName
 			rc.LoginInfo.IsOwner = isRepoOwner || isNsOwner

@@ -43,10 +43,10 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 			
-			if !rc.Config.PlainMode {
+			if !rc.Config.IsInPlainMode() {
 				rc.LoginInfo.IsOwner = s.Owner == rc.LoginInfo.UserName || ns.Owner == rc.LoginInfo.UserName
 			}
-			if !rc.Config.PlainMode && s.Status == model.REPO_NORMAL_PRIVATE {
+			if !rc.Config.IsInPlainMode() && s.Status == model.REPO_NORMAL_PRIVATE {
 				t := s.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName)
 				if t == nil {
 					t = ns.ACL.GetUserPrivilege(rc.LoginInfo.UserName)
@@ -200,7 +200,7 @@ func bindRepositoryController(ctx *RouterContext) {
 		},
 	))
 
-	if !ctx.Config.PlainMode {
+	if !ctx.Config.IsInPlainMode() {
 		bindRepositoryForkController(ctx)
 		bindRepositoryPullRequestController(ctx)
 	}

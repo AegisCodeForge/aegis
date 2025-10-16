@@ -45,12 +45,12 @@ func bindCommitController(ctx *RouterContext) {
 				rc.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
 				return
 			}
-			if !rc.Config.PlainMode {
+			if !rc.Config.IsInPlainMode() {
 				rc.LoginInfo.IsOwner = (repo.Owner == rc.LoginInfo.UserName) || (ns.Owner == rc.LoginInfo.UserName)
 			}
 
 			// reject visit if repo is private & user not logged in or not member.
-			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+			if !ctx.Config.IsInPlainMode() && repo.Status == model.REPO_NORMAL_PRIVATE {
 				chk := rc.LoginInfo.IsAdmin || rc.LoginInfo.IsOwner
 				if !chk {
 					chk = repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName) != nil

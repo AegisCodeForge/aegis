@@ -26,7 +26,7 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 		printGitError("This instance of Aegis is currently unavailable.")
 		os.Exit(1)
 	}
-	if ctx.Config.PlainMode {
+	if ctx.Config.IsInPlainMode() {
 		printGitError("This instance of Aegis is in Plain Mode which does not allow Git over SSH.")
 		os.Exit(1)
 	}

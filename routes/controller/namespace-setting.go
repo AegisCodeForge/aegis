@@ -24,7 +24,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
 			// NOTE: we don't support editing namespace from web ui when in plain mode.
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			if !rc.LoginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
@@ -63,7 +63,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
@@ -137,7 +137,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
@@ -173,7 +173,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
@@ -236,7 +236,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
@@ -300,7 +300,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
@@ -346,7 +346,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
@@ -388,7 +388,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				return
 			}
 			namespacePath := fmt.Sprintf("/s/%s", namespaceName)
-			if rc.Config.PlainMode { FoundAt(w, namespacePath); return }
+			if rc.Config.IsInPlainMode() { FoundAt(w, namespacePath); return }
 			if !rc.LoginInfo.LoggedIn { FoundAt(w, namespacePath); return }
 			ns, err := rc.DatabaseInterface.GetNamespaceByName(namespaceName)
 			if err != nil {

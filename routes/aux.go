@@ -74,7 +74,7 @@ func CheckUserSession(ctx *RouterContext, r *http.Request) (bool, error) {
 func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.LoginInfoModel, error) {
 	// NOTE: we don't set .IsOwner here - that needs extra info and is
 	// up to each controller.
-	if ctx.Config.PlainMode { return nil, nil }
+	if ctx.Config.IsInPlainMode() { return nil, nil }
 	loggedIn := false
 	un, err := GetUsernameFromCookie(r)
 	if err != nil {

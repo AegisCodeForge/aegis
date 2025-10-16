@@ -79,9 +79,10 @@ func main() {
 	isWebServer := !containsCommand
 	isSsh := containsCommand && mainCall[0] == "ssh"
 	isWebHooks := containsCommand && mainCall[0] == "web-hooks"
+	isUpdateTrigger := containsCommand && mainCall[0] == "update-trigger"
 	isResetAdmin := containsCommand && mainCall[0] == "reset-admin"
-	lastConfigNeeded := containsCommand && (isSsh || isWebHooks)
-	dbifNeeded := isWebServer || (containsCommand && (isSsh || isWebHooks || isResetAdmin))
+	lastConfigNeeded := containsCommand && (isSsh || isWebHooks || isUpdateTrigger)
+	dbifNeeded := isWebServer || (containsCommand && (isSsh || isWebHooks || isUpdateTrigger || isResetAdmin))
 	ssifNeeded := isWebServer
 	keyctxNeeded := isWebServer || (containsCommand && isSsh)
 	rsifNeeded := isWebServer
@@ -158,8 +159,8 @@ func main() {
 		MasterTemplate: masterTemplate,
 	}
 
-	// if it's not plain mode we need to setup database.
-	if !config.PlainMode {
+	// if it's in normal mode we need to setup database.
+	if config.OperationMode == aegis.OP_MODE_NORMAL {
 		if dbifNeeded {
 			dbif, err := dbinit.InitializeDatabase(config)
 			if err != nil {
@@ -285,6 +286,13 @@ func main() {
 				default:
 					fmt.Print(gitlib.ToPktLine(fmt.Sprintf("Error command for `aegis web-hooks`: %s.", mainCall[1])))
 				}
+				return
+			case "update-trigger":
+				if len(mainCall) < 6 {
+					fmt.Print(gitlib.ToPktLine("Error format for `aegis-update-trigger`."))
+					return
+				}
+				HandleUpdateTrigger(&context, mainCall[1], mainCall[2], mainCall[3], mainCall[4], mainCall[5])
 				return
 			}
 		}

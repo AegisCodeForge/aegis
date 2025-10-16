@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/routes/controller/admin"
 )
@@ -26,7 +27,7 @@ func InitializeRoute(context *routes.RouterContext) {
 		bindNamespaceSettingController(context)
 	}
 
-	if !context.Config.PlainMode {
+	if context.Config.OperationMode == aegis.OP_MODE_NORMAL {
 		bindUserController(context)
 		bindLoginController(context)
 		bindLogoutController(context)

@@ -23,7 +23,7 @@ func bindNamespaceController(ctx *RouterContext) {
 			var ns *model.Namespace
 			var ok bool
 			var err error
-			if rc.Config.PlainMode {
+			if rc.Config.IsInPlainMode() {
 				ns, ok = rc.GitNamespaceList[namespaceName]
 				if !ok {
 					err = rc.SyncAllNamespacePlain()

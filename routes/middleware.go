@@ -61,7 +61,7 @@ var JSONRequestRequired Middleware = func(f HandlerFunc) HandlerFunc {
 
 var UseLoginInfo Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
-		if !ctx.Config.PlainMode {
+		if !ctx.Config.IsInPlainMode() {
 			ctx.LoginInfo, ctx.LastError = GenerateLoginInfoModel(ctx, r)
 		}
 		f(ctx, w, r)
@@ -70,7 +70,7 @@ var UseLoginInfo Middleware = func(f HandlerFunc) HandlerFunc {
 
 var LoginRequired Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
-		if !ctx.Config.PlainMode {
+		if !ctx.Config.IsInPlainMode() {
 			ctx.LoginInfo, ctx.LastError = GenerateLoginInfoModel(ctx, r)
 			if ctx.LastError != nil {
 				ctx.ReportRedirect("/login", 0, "Login Check Failed", fmt.Sprintf("Failed while checking login status: %s.", ctx.LastError), w, r)
@@ -87,7 +87,7 @@ var LoginRequired Middleware = func(f HandlerFunc) HandlerFunc {
 
 var AdminRequired Middleware = func(f HandlerFunc) HandlerFunc {
 	return func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
-		if !ctx.Config.PlainMode {
+		if !ctx.Config.IsInPlainMode() {
 			if ctx.LoginInfo == nil {
 				ctx.LoginInfo, ctx.LastError = GenerateLoginInfoModel(ctx, r)
 				if ctx.LastError != nil {
@@ -131,7 +131,7 @@ func ValidRepositoryNameRequired(s string) Middleware {
 }
 
 func CheckGlobalVisibleToUser(ctx *RouterContext, loginInfo *templates.LoginInfoModel) bool {
-	if ctx.Config.PlainMode { return true }
+	if ctx.Config.IsInPlainMode() { return true }
 	if loginInfo == nil { return false }
 	switch ctx.Config.GlobalVisibility {
 	case aegis.GLOBAL_VISIBILITY_PUBLIC: return true

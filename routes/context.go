@@ -137,7 +137,7 @@ func (ctx RouterContext) ReportObjectTypeMismatch(objid string, expectedType str
 func (ctx *RouterContext) ReportRedirect(target string, timeout int, title string, message string, w http.ResponseWriter, r *http.Request) {
 	var loginInfoModel *templates.LoginInfoModel
 	var err error
-	if !ctx.Config.PlainMode {
+	if !ctx.Config.IsInPlainMode() {
 		loginInfoModel, err = GenerateLoginInfoModel(ctx, r)
 		if err != nil { panic(err) }
 	}
@@ -207,7 +207,7 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 	var ok bool
 	var err error
 	var ns *model.Namespace
-	if ctx.Config.PlainMode {
+	if ctx.Config.IsInPlainMode() {
 		ns, ok = ctx.GitNamespaceList[namespaceName]
 		if !ok {
 			err := ctx.SyncAllNamespacePlain()

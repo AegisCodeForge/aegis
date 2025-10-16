@@ -56,11 +56,8 @@ type AegisConfig struct {
 	//   GitRoot/xy/cde.git ---> namespace "xy", repo "cde".
 	//                           (fullName would be "xy:cde").
 	UseNamespace bool `json:"enableNamespace"`
-	// setting a gitus instance to be in plain mode will completely
-	// remove all the functionalities that isn't built-in to git; this
-	// includes things like issue tracking and signature verification.
-	// in plain mode, gitus is basically like git instaweb.
-	PlainMode bool `json:"plainMode"`
+	// see docs/operation-mode.org
+	OperationMode string `json:"operationMode"`
 	// when set to true, this field allow user registration.
 	AllowRegistration bool `json:"enableUserRegistration"`
 	// when set to true, email confirmation is required for registration.
@@ -312,6 +309,16 @@ func (cfg *AegisConfig) Unlock() {
 	cfg.lock.Unlock()
 }
 
+const (
+	OP_MODE_PLAIN = "plain"
+	OP_MODE_SIMPLE = "simple"
+	OP_MODE_NORMAL = "normal"
+)
+
+func (cfg *AegisConfig) IsInPlainMode() bool {
+	return cfg.OperationMode == OP_MODE_PLAIN
+}
+
 func CreateConfigFile(p string) error {
 	f, err := os.OpenFile(
 		p,
@@ -325,7 +332,7 @@ func CreateConfigFile(p string) error {
 		GitRoot: "",
 		GitUser: "git",
 		UseNamespace: false,
-		PlainMode: true,
+		OperationMode: "plain",
 		AllowRegistration: true,
 		EmailConfirmationRequired: true,
 		ManualApproval: true,

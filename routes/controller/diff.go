@@ -33,12 +33,12 @@ func bindDiffController(ctx *RouterContext) {
 				ctx.ReportNormalError("The repository you have requested isn't a Git repository.", w, r)
 				return
 			}
-			if !ctx.Config.PlainMode {
+			if !ctx.Config.IsInPlainMode() {
 				rc.LoginInfo.IsOwner = (repo.Owner == rc.LoginInfo.UserName) || (ns.Owner == rc.LoginInfo.UserName)
 			}
 
 			// reject visit if repo is private & user not logged in or not member.
-			if !ctx.Config.PlainMode && repo.Status == model.REPO_NORMAL_PRIVATE {
+			if !ctx.Config.IsInPlainMode() && repo.Status == model.REPO_NORMAL_PRIVATE {
 				chk := rc.LoginInfo.IsAdmin || rc.LoginInfo.IsOwner
 				if !chk {
 					chk = repo.AccessControlList.GetUserPrivilege(rc.LoginInfo.UserName) != nil
