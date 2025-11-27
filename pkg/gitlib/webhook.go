@@ -6,6 +6,7 @@ import (
 	"path"
 )
 
+// TODO: fix this & add config path.
 func (gr *LocalGitRepository) EnableWebHook(repoFullName string) error {
 	p := path.Join(gr.GitDirectoryPath, "hooks", "update")
 	f, err := os.OpenFile(p, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)

@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -82,9 +83,11 @@ func bindCommitController(ctx *RouterContext) {
 
 			cobj := gobj.(*gitlib.CommitObject)
 			m := make(map[string]string, 0)
-			m[cobj.AuthorInfo.AuthorEmail] = ""
-			m[cobj.CommitterInfo.AuthorEmail] = ""
-			_, err = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				m[cobj.AuthorInfo.AuthorEmail] = ""
+				m[cobj.CommitterInfo.AuthorEmail] = ""
+				rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			}
 			// NOTE: we don't check, we just assume the emails are not verified
 			// to anyone if an error occur.
 			commitInfo := &templates.CommitInfoTemplateModel{

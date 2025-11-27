@@ -24,7 +24,9 @@ func InitializeRoute(context *routes.RouterContext) {
 	
 	if context.Config.UseNamespace {
 		bindNamespaceController(context)
-		bindNamespaceSettingController(context)
+		if context.Config.OperationMode == aegis.OP_MODE_NORMAL {
+			bindNamespaceSettingController(context)
+		}
 	}
 
 	if context.Config.OperationMode == aegis.OP_MODE_NORMAL {

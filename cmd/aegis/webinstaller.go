@@ -24,6 +24,9 @@ import (
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	rsinit "github.com/bctnry/aegis/pkg/aegis/receipt/init"
 	ssinit "github.com/bctnry/aegis/pkg/aegis/session/init"
+	"github.com/bctnry/aegis/pkg/auxfuncs"
+	"github.com/bctnry/aegis/pkg/gitlib"
+	"github.com/bctnry/aegis/pkg/shellparse"
 	"github.com/bctnry/aegis/templates"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -54,12 +57,16 @@ type WebInstallerRoutingContext struct {
 	//          email confirmation required
 	//          manual approval
 	// step 9 - confirm code manager setup
-	// plain mode on: 1-6-7-8
-	// plain mode off: 1-2-3-4-5-6-8-9
+	// step 10 - root ssh key setup
+	// plain mode: 1-6-7-8
+	// simple mode: 1-6-8-10
+	// normal mode: 1-2-3-4-5-6-8-9
 	Step int
 	Config *aegis.AegisConfig
 	ConfirmStageReached bool
 	ResultingFilePath string
+	GitUserHome string
+	RootSSHKey string
 }
 
 func logTemplateError(e error) {
@@ -112,16 +119,20 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
-		if len(r.Form.Get("plain-mode")) > 0 {
-			ctx.Config.OperationMode = "plain"
-		} else {
-			ctx.Config.OperationMode = "normal"
+		om := strings.TrimSpace(r.Form.Get("operation-mode"))
+		if om == "" {
+			ctx.reportRedirect("/step1", 5, "Invalid Request", "Operation mode must be one of \"plain\", \"simple\" and \"normal\"", w)
+			return
 		}
+		ctx.Config.OperationMode = om
 		ctx.Config.UseNamespace = len(r.Form.Get("enable-namespace")) > 0
-		if ctx.Config.IsInPlainMode() {
-			foundAt(w, "/step6")
-		} else {
+		switch ctx.Config.OperationMode {
+		case aegis.OP_MODE_NORMAL:
 			foundAt(w, "/step2")
+		case aegis.OP_MODE_PLAIN:
+			foundAt(w, "/step6")
+		case aegis.OP_MODE_SIMPLE:
+			foundAt(w, "/step6")
 		}
 	}))
 	
@@ -294,14 +305,14 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	http.HandleFunc("POST /step8", withLog(func(w http.ResponseWriter, r *http.Request) {
 		err := r.ParseForm()
 		if err != nil {
-			ctx.reportRedirect("/step1", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again. " + err.Error(), w)
 			return
 		}
 		ctx.Config.DepotName = strings.TrimSpace(r.Form.Get("depot-name"))
 		ctx.Config.BindAddress = strings.TrimSpace(r.Form.Get("bind-address"))
 		i, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("bind-port")), 10, 32)
 		if err != nil {
-			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again." + err.Error(), w)
 			return
 		}
 		ctx.Config.BindPort = int(i)
@@ -325,25 +336,31 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 			v := r.Form.Get("front-page-value")
 			ctx.Config.FrontPageType = "namespace/" + v
 		}
-		ctx.Config.AllowRegistration = len(strings.TrimSpace(r.Form.Get("allow-registration"))) > 0
-		ctx.Config.EmailConfirmationRequired = len(strings.TrimSpace(r.Form.Get("email-confirmation-required"))) > 0
-		ctx.Config.ManualApproval = len(strings.TrimSpace(r.Form.Get("manual-approval"))) > 0
+		// NOTE: these options are not used in plain mode and simple mode.
+		if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+			ctx.Config.AllowRegistration = len(strings.TrimSpace(r.Form.Get("allow-registration"))) > 0
+			ctx.Config.EmailConfirmationRequired = len(strings.TrimSpace(r.Form.Get("email-confirmation-required"))) > 0
+			ctx.Config.ManualApproval = len(strings.TrimSpace(r.Form.Get("manual-approval"))) > 0
+			us, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("default-new-user-status")), 10, 32)
+			if err != nil {
+				ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+				return
+			}
+			ctx.Config.DefaultNewUserStatus = model.AegisUserStatus(us)
+			ctx.Config.DefaultNewUserNamespace = strings.TrimSpace(r.Form.Get("default-new-user-namespace"))
+		}
 		maxr, err := strconv.ParseFloat(strings.TrimSpace(r.Form.Get("max-request-in-second")), 64)
 		if err != nil {
 			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
 			return
 		}
 		ctx.Config.MaxRequestInSecond = maxr
-		us, err := strconv.ParseInt(strings.TrimSpace(r.Form.Get("default-new-user-status")), 10, 32)
-		if err != nil {
-			ctx.reportRedirect("/step8", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
-			return
-		}
-		ctx.Config.DefaultNewUserStatus = model.AegisUserStatus(us)
-		ctx.Config.DefaultNewUserNamespace = strings.TrimSpace(r.Form.Get("default-new-user-namespace"))
-		if ctx.Config.IsInPlainMode() {
+		switch ctx.Config.OperationMode {
+		case aegis.OP_MODE_PLAIN:
 			foundAt(w, "/confirm")
-		} else {
+		case aegis.OP_MODE_SIMPLE:
+			foundAt(w, "/step10")
+		case aegis.OP_MODE_NORMAL:
 			foundAt(w, "/step9")
 		}
 	}))
@@ -370,11 +387,29 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		foundAt(w, "/confirm")
 	}))
 	
+	http.HandleFunc("GET /step10", withLog(func(w http.ResponseWriter, r *http.Request) {
+		logTemplateError(ctx.loadTemplate("webinstaller/step10").Execute(w, &templates.WebInstallerTemplateModel{
+			Config: ctx.Config,
+		}))
+	}))
+	
+	http.HandleFunc("POST /step10", withLog(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			ctx.reportRedirect("/step10", 0, "Invalid Request", "The request is of an invalid form. Please try again.", w)
+			return
+		}
+		rootssh := strings.TrimSpace(r.Form.Get("root-ssh"))
+		ctx.RootSSHKey = rootssh
+		foundAt(w, "/confirm")
+	}))
+	
 	http.HandleFunc("GET /confirm", withLog(func(w http.ResponseWriter, r *http.Request) {
 		ctx.ConfirmStageReached = true
 		logTemplateError(ctx.loadTemplate("webinstaller/confirm").Execute(w, &templates.WebInstallerTemplateModel{
 			Config: ctx.Config,
 			ConfirmStageReached: ctx.ConfirmStageReached,
+			RootSSHKey: ctx.RootSSHKey,
 		}))
 	}))
 
@@ -391,7 +426,7 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
     <header>
 	  <h1><a href="/">Aegis Web Installer</a></h1>
 	  <ul>
-        <li><a href="/step1">Step 1: Plain Mode; Use Namespace</a></li>
+        <li><a href="/step1">Step 1: Operation Mode &amp; Enabling Namespace</a></li>
         <li><a href="/step2">Step 2: Database Config</a></li>
         <li><a href="/step3">Step 3: Session Config</a></li>
         <li><a href="/step4">Step 4: Mailer Config</a></li>
@@ -399,6 +434,8 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
         <li><a href="/step6">Step 6: Git Root &amp; Git User</a></li>
         <li><a href="/step7">Step 7: Ignored Namespace/Repositories</a></li>
         <li><a href="/step8">Step 8: Misc. Setup</a></li>
+        <li><a href="/step9">Step 9: Confirm Code Manager Setup</li>
+        <li><a href="/step9">Step 10: Root SSH Key Setup</li>
         <li><a href="/confirm">Confirm</a></li>
       </ul>
 	</header>
@@ -536,10 +573,17 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 				fmt.Fprintf(w, "<p>Failed to save config file: %s\n. You might need to do this again or even manually.</p>", err.Error())
 				return false
 			}
+			err = auxfuncs.ChangeLocationOwnerByName(ctx.Config.FilePath, ctx.Config.GitUser)
+			if err != nil {
+				fmt.Fprintf(w, "<p>Failed to change config file owner: %s. You should do this after the installation process has completed</p>", err)
+			}
 			return true
 		}() { goto leave }
 
 		if !func()bool{
+			if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+				return true
+			}
 			fmt.Fprint(w, "<p>Initializing database...</p>")
 			dbif, err := dbinit.InitializeDatabase(ctx.Config)
 			if err != nil {
@@ -565,6 +609,9 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}() { goto leave }
 		
 		if !func()bool{
+			if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+				return true
+			}
 			fmt.Fprint(w, "<p>Initializing session store...</p>")
 			ssif, err := ssinit.InitializeDatabase(ctx.Config)
 			if err != nil {
@@ -589,6 +636,9 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}() { goto leave }
 		
 		if !func()bool{
+			if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+				return true
+			}
 			w.Write([]byte("<p>Initializing receipt system...</p>"))
 			rsif, err := rsinit.InitializeReceiptSystem(ctx.Config)
 			if err != nil {
@@ -613,6 +663,9 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		}() { goto leave }
 		
 		if !func()bool{
+			if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+				return true
+			}
 			fmt.Fprint(w, "<p>Setting up admin user.</p>")
 			dbif, err := dbinit.InitializeDatabase(ctx.Config)
 			if err != nil {
@@ -698,8 +751,273 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 					}
 				}
 			}
+			ctx.GitUserHome = gitUser.HomeDir
 			return true
 		}() { goto leave }
+
+		if ctx.Config.OperationMode == aegis.OP_MODE_SIMPLE {
+			if !func()bool{
+				var nsName string
+				var keyRepoRelPath, configRepoRelPath string
+				if ctx.Config.UseNamespace {
+					nsName = "__aegis"
+					keyRepoRelPath = path.Join(nsName, "__keys")
+					configRepoRelPath = path.Join(nsName, "__repo_config")
+				} else {
+					keyRepoRelPath = "__keys"
+					configRepoRelPath = "__repo_config"
+				}
+				keyRepoFullPath := path.Join(ctx.Config.GitRoot, keyRepoRelPath)
+				configRepoFullPath := path.Join(ctx.Config.GitRoot, configRepoRelPath)
+				cu, _ := user.Current()
+
+				// make sure this path is absolute.  this is for
+				// setting up update hook for key repo and config
+				// repo.
+				configFullPath := ctx.Config.FilePath
+				if !path.IsAbs(configFullPath) {
+					configFullPath = path.Clean(path.Join(ctx.GitUserHome, configFullPath))
+				}
+				
+				// setting up key repo
+				keyRepo, err := model.CreateLocalRepository(model.REPO_TYPE_GIT, nsName, "__keys", keyRepoFullPath)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to create key repository</p>")
+					return false
+				}
+				// we must make sure we own the repo before adding file...
+				err = model.ChangeFileSystemOwner(keyRepo, cu)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to obtain key repository ownership for setting it up: %s</p>", err)
+					return false
+				}
+				_, err = model.AddFileToRepoString(keyRepo, "master", "admin/ssh/master_key", "Aegis Web Installer", "aegis@web.installer", "Aegis Web Installer", "aegis@web.installer", "init", ctx.RootSSHKey)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to add root ssh key to key repository: %s</p>", err)
+					return false
+				}
+				// setting up hook.
+				keyGitRepo := keyRepo.(*gitlib.LocalGitRepository)
+				err = keyGitRepo.SaveHook("update", fmt.Sprintf(`
+#!/bin/sh
+
+# --- Command line
+refname="$1"
+oldrev="$2"
+newrev="$3"
+
+# --- Safety check
+if [ -z "$GIT_DIR" ]; then
+	echo "Don't run this script from the command line." >&2
+	echo " (if you want, you could supply GIT_DIR then run" >&2
+	echo "  $0 <ref> <oldrev> <newrev>)" >&2
+	exit 1
+fi
+
+if [ -z "$refname" -o -z "$oldrev" -o -z "$newrev" ]; then
+	echo "usage: $0 <ref> <oldrev> <newrev>" >&2
+	exit 1
+fi
+
+# --- Config
+allowunannotated=$(git config --type=bool hooks.allowunannotated)
+allowdeletebranch=$(git config --type=bool hooks.allowdeletebranch)
+denycreatebranch=$(git config --type=bool hooks.denycreatebranch)
+allowdeletetag=$(git config --type=bool hooks.allowdeletetag)
+allowmodifytag=$(git config --type=bool hooks.allowmodifytag)
+
+# --- Check types
+# if $newrev is 0000...0000, it's a commit to delete a ref.
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+if [ "$newrev" = "$zero" ]; then
+	newrev_type=delete
+else
+	newrev_type=$(git cat-file -t $newrev)
+fi
+
+  case "$refname","$newrev_type" in
+	refs/tags/*,commit)
+		# un-annotated tag
+		short_refname=${refname##refs/tags/}
+		if [ "$allowunannotated" != "true" ]; then
+			echo "*** The un-annotated tag, $short_refname, is not allowed in this repository" >&2
+			echo "*** Use 'git tag [ -a | -s ]' for tags you want to propagate." >&2
+			exit 1
+		fi
+		;;
+	refs/tags/*,delete)
+		# delete tag
+		if [ "$allowdeletetag" != "true" ]; then
+			echo "*** Deleting a tag is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/tags/*,tag)
+		# annotated tag
+		if [ "$allowmodifytag" != "true" ] && git rev-parse $refname > /dev/null 2>&1
+		then
+			echo "*** Tag '$refname' already exists." >&2
+			echo "*** Modifying a tag is not allowed in this repository." >&2
+			exit 1
+		fi
+		;;
+	refs/heads/*,commit)
+		# branch
+		if [ "$oldrev" = "$zero" -a "$denycreatebranch" = "true" ]; then
+			echo "*** Creating a branch is not allowed in this repository" >&2
+			exit 1
+		else
+            if [ "$refname" = "refs/heads/master" ]; then
+    			%s -config "%s" simple-mode keys-update "$newrev"
+            fi
+		fi
+		;;
+    refs/heads/*,delete)
+		# delete branch
+		if [ "$allowdeletebranch" != "true" ]; then
+			echo "*** Deleting a branch is not allowed in this repository" >&2
+			exit 1
+		fi
+		;;
+	refs/remotes/*,commit)
+		# tracking branch
+		;;
+	refs/remotes/*,delete)
+		# delete tracking branch
+		if [ "$allowdeletebranch" != "true" ]; then
+			echo "*** Deleting a tracking branch is not allowed in this repository" >&2
+			exit 1
+		fi
+ 		;;
+	,*)
+		# Anything else (is there anything else?)
+		echo "*** Update hook: unknown type of update to ref $refname of type $newrev_type" >&2
+		exit 1
+		;;
+esac
+
+# --- Finished
+exit 0
+`, path.Join(ctx.GitUserHome, "git-shell-commands", "aegis"), shellparse.Quote(configFullPath)))
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to setup git update hook for key repository: %s</p>", err)
+					return false
+				}
+				err = model.ChangeFileSystemOwnerByName(keyRepo, ctx.Config.GitUser)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to return the key repo to configured git user: %s.</p>", err)
+					return false
+				}
+
+				// setting up config repo.
+				fileList := make(map[string]string, 0)
+				configRepo, err := model.CreateLocalRepository(model.REPO_TYPE_GIT, nsName, "__repo_config", configRepoFullPath)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to setup config repository properly: %s</p>", err)
+					return false
+				}
+				err = model.ChangeFileSystemOwner(configRepo, cu)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to change config repo owner: %s</p>", err)
+					return false
+				}
+				if ctx.Config.UseNamespace {
+					fileList["__aegis/config.json"] = `{
+    "namespace": {
+        "description": "",
+        "visibility": "private"
+    }
+}
+`
+				}
+				fileList[path.Join(keyRepoRelPath, "config.json")] = `{ 
+    "repo": {
+        "description": "",
+        "visibility": "private"
+    },
+    "hooks": {
+    },
+    "users": {
+        "admin": {
+            "default": "allow"
+        }
+    }
+}
+`
+				fileList[path.Join(configRepoRelPath, "config.json")] = `{
+    "repo": {
+        "description": "",
+        "visibility": "private"
+    },
+    "hooks": {
+    },
+    "users": {
+        "admin": {
+            "default": "allow"
+        }
+    }
+}
+`
+				_, err = model.AddMultipleFileToRepoString(configRepo, "master", "Aegis Web Installer", "aegis@web.installer", "Aegis Web Installer", "aegis@web.installer", "init", fileList)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to add commit to config repository: %s</p>", err)
+					return false
+				}
+
+				err = configRepo.(*gitlib.LocalGitRepository).SaveHook("post-update", fmt.Sprintf(`
+#!/bin/sh
+
+%s -config "%s" simple-mode aegis-sync "%s"
+`, path.Join(ctx.GitUserHome, "git-shell-commands", "aegis"),
+					shellparse.Quote(configFullPath),
+					shellparse.Quote(path.Join(model.GetLocalRepositoryLocalPath(configRepo), "aegis_sync")),
+				))
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to setup git post-update hook for config repo: %s</p>", err)
+					return false
+				}
+
+				// setting up aegis_sync.  for the reason why
+				// aegis_sync exists, see docs/simple-mode.org.
+				cmd := exec.Command("git", "clone", ".", "aegis_sync")
+				cmd.Dir = configRepoFullPath
+				err = cmd.Run()
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to setup aegis_sync: %s</p>", err)
+					return false
+				}
+				err = model.ChangeFileSystemOwnerByName(configRepo, ctx.Config.GitUser)
+				if err != nil {
+					fmt.Fprintf(w, "<p class=\"error\">Failed to return the config repo to configured git user: %s</p>", err)
+					return false
+				}
+				
+				if ctx.Config.UseNamespace {
+					err = auxfuncs.ChangeLocationOwnerByName(path.Join(ctx.Config.GitRoot, "__aegis"), ctx.Config.GitUser)
+					if err != nil {
+						fmt.Fprintf(w, "<p class=\"error\">Failed to return the namespace to configured git user: %s</p>", err)
+						return false
+					}
+				}
+
+				// setting up authorized_keys file
+				authorizedKeysPath := path.Join(ctx.GitUserHome, ".ssh", "authorized_keys")
+				keyEntry := fmt.Sprintf("command=\"aegis -config %s ssh admin master_key\" %s", shellparse.Quote(configFullPath), ctx.RootSSHKey)
+				keyFile, err := os.OpenFile(authorizedKeysPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to create authorized_keys file: %s</p>", err)
+					return false
+				}
+				_, err = fmt.Fprint(keyFile, keyEntry)
+				if err != nil {
+					fmt.Fprintf(w, "<p>Failed to write authorized_keys file: %s</p>", err)
+					return false
+				}
+				keyFile.Close()
+				fmt.Fprint(w, "<p><code>authorized_keys</code> file created. </p>")
+				return true
+			}() { goto leave }
+		}
 		
 		fmt.Fprint(w, "<p>Done! <a href=\"./finish\">Go to the next step.</a></p>")
 		goto footer

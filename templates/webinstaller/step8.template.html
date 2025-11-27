@@ -105,8 +105,8 @@
 	  </div>
 	  <div class="field">
 		<label class="field-label" for="depot-name">User Management Related</label>
-		{{if .Config.PlainMode}}
-		<p>This field is skipped since you've chosen to activate Plain Mode.</p>
+		{{if or (eq .Config.OperationMode "plain") (eq .Config.OperationMode "simple")}}
+		<p>This field is skipped since you've chosen to activate Plain Mode or Simple Mode.</p>
 		{{else}}
 		<p class="field-description">These fields control the behaviour of certain aspects about user management.</p>
 		<table>

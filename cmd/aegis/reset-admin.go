@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	dbinit "github.com/bctnry/aegis/pkg/aegis/db/init"
 	"github.com/bctnry/aegis/routes"
 	"golang.org/x/crypto/bcrypt"
@@ -11,6 +12,11 @@ import (
 )
 
 func ResetAdmin(ctx *routes.RouterContext) {
+	if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+		// TODO: add more info about how to set things up in simple mode.
+		fmt.Printf("Configuration not in normal mode.")
+		return
+	}
 	dbif, err := dbinit.InitializeDatabase(ctx.Config)
 	if err != nil {
 		fmt.Printf("Failed to connect to database while resetting admin: %s\n", err.Error())

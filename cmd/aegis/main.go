@@ -10,8 +10,6 @@ import (
 	"os/signal"
 	"os/user"
 	"path"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
@@ -70,18 +68,17 @@ func main() {
 		os.Exit(0)
 	}
 
+	mainCall := argparse.Args()
 	// NOTE THAT certain activities does not need parts of Aegis
 	// (e.g. "ssh" and "webhooks" does not require a working mailer
 	// or session store). We've decided they should not report
 	// error when we're not able to initialize them in this case.
-	mainCall := argparse.Args()
 	containsCommand := len(mainCall) > 0
 	isWebServer := !containsCommand
 	isSsh := containsCommand && mainCall[0] == "ssh"
 	isWebHooks := containsCommand && mainCall[0] == "web-hooks"
 	isUpdateTrigger := containsCommand && mainCall[0] == "update-trigger"
 	isResetAdmin := containsCommand && mainCall[0] == "reset-admin"
-	lastConfigNeeded := containsCommand && (isSsh || isWebHooks || isUpdateTrigger)
 	dbifNeeded := isWebServer || (containsCommand && (isSsh || isWebHooks || isUpdateTrigger || isResetAdmin))
 	ssifNeeded := isWebServer
 	keyctxNeeded := isWebServer || (containsCommand && isSsh)
@@ -91,65 +88,18 @@ func main() {
 
 	config, err := aegis.LoadConfigFile(configPath)
 	noConfig := err != nil
-	// we use the same executable for the web server and the ssh handling command,
-	// this is necessary to separate the two situations.
-	// when aegis executable is called through ssh it's a completely different
-	// situation where we would absolutely not have the config file path. a
-	// `last-config` file is used as a hack to provide this info. see
-	// `docs/ssh.org` for more info.
-	if noConfig && lastConfigNeeded {
-		// assumes that we have a clone/push through ssh and assumes the program to be
-		// in the git user's ~/git-shell-commands. go doc said os.Executable may return
-		// symlink path if the program is run through symlink, but in this case we
-		// don't care since `aegis ssh` is meant to be only run by git shell which
-		// means that whatever symlink it is it can only be in ~/git-shell-commands.
-		p, err := os.Executable()
-		if err != nil {
-			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
-			os.Exit(1)
-		}
-		// we attempt to resolve config file location. this also means
-		// that on the same server one git user can only run one aegis
-		// instance on the same server.
-		// we first expect the executable to be at $HOME/git-shell-commands,
-		// which means we should reach $HOME by calling path.Dir twice.
-		lastCfgPath := path.Join(path.Dir(path.Dir(p)), "last-config")
-		f, err := os.ReadFile(lastCfgPath)
-		// if it's not found at that path, we try our best to find it
-		// from other places...
-		if err != nil {
-			subj := p
-			for err != nil {
-				d := path.Dir(subj)
-				tp := path.Join(d, "last-config")
-				f, err = os.ReadFile(tp)
-				if err == nil { break }
-				if path.Dir(d) == d {
-					// we've reached to the root of the fs. if we can't
-					// find it there, we have no chance of finding it.
-					fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
-					os.Exit(1)
-				}
-				subj = d
-			}
-		}
-		if err != nil {
-			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
-			os.Exit(1)
-		}
-		configPath = strings.TrimSpace(string(f))
-		config, err = aegis.LoadConfigFile(configPath)
-		if err != nil {
-			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR Failed while trying to figure out last config: %s\n", err.Error())))
-			os.Exit(1)
-		}
-		noConfig = false
-	}
-
-	// if we still failed to resolve config file we refuse to go further,
-	// since whatever comes next would require info only provided by config.
+	// we use the same executable for the web server and the ssh
+	// handling command. both use cases requires a proper config
+	// file. as of v0.2, we've decided to reuse the `-config` command
+	// line argument in the case of ssh (and similarily other possible
+	// situations), so if we really don't have a config here we cannot
+	// do anything.
 	if noConfig {
-		fmt.Fprintf(os.Stderr, "Failed to load configuration file: %s\n", err.Error())
+		if isSsh {
+			fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR failed to load configuration file: %s\n", err.Error())))
+		} else {
+			fmt.Fprintf(os.Stderr, "Failed to load configuration file: %s\n", err.Error())
+		}
 		os.Exit(1)
 	}
 	
@@ -217,84 +167,74 @@ func main() {
 			context.ConfirmCodeManager = ccm
 		}
 
-		ok, err := aegisReadyCheck(context)
+		ok, err := normalModeAegisReadyCheck(context)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "Aegis Ready Check failed: %s\n", err.Error())
 			InstallAegis(context)
 			os.Exit(1)
 		}
+	}
 
-		u, err := user.Lookup(config.GitUser)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to read /etc/passwd while setting up last-config link: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
-			os.Exit(1)
-		}
+	gitUser, err := user.Lookup(context.Config.GitUser)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to find Git user %s: %s\n", context.Config.GitUser, err.Error())
+		fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
+		os.Exit(1)
+	}
+	context.GitUserHomeDirectory = gitUser.HomeDir
 
-		lastConfigFilePath := path.Join(u.HomeDir, "last-config")
-		err = os.WriteFile(lastConfigFilePath, []byte(configPath), 0644)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to write last-config link: %s\n", err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
-			os.Exit(1)
-		}
-		gitUser, err := user.Lookup(context.Config.GitUser)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to find Git user %s: %s\n", context.Config.GitUser, err.Error())
-			fmt.Fprintf(os.Stderr, "You should try to fix the problem and run Aegis again, or else you might not be able to clone/push through SSH.\n")
-			os.Exit(1)
-		}
-		// peak of stdlib design, golang.
-		uid, _ := strconv.Atoi(gitUser.Uid)
-		gid, _ := strconv.Atoi(gitUser.Gid)
-		err = os.Chown(lastConfigFilePath, uid, gid)
-
-		// the features of these commands are meaningless in the use case of
-		// plain mode, so the dispatching is done within this if branch.
-		if len(mainCall) > 0 {
-			switch mainCall[0] {
-			case "install":
-				if noConfig {
-					fmt.Fprintf(os.Stderr, "No config file specified. Cannot continue.\n")
-				} else {
-					fmt.Println(mainCall)
-					InstallAegis(context)
-				}
-				return
-			case "reset-admin":
-				if noConfig {
-					fmt.Fprintf(os.Stderr, "No config file specified. Cannot continue.\n")
-				} else {
-					ResetAdmin(&context)
-				}
-				return
-			case "ssh":
-				if len(mainCall) < 3 {
-					fmt.Print(gitlib.ToPktLine("Error format for `aegis ssh`."))
-					return
-				}
-				HandleSSHLogin(&context, mainCall[1], mainCall[2])
-				return
-			case "web-hooks":
-				if len(mainCall) < 7 {
-					fmt.Print(gitlib.ToPktLine("Error format for `aegis web-hooks`."))
-					return
-				}
-				switch mainCall[1] {
-				case "send":
-					HandleWebHook(&context, mainCall[2], mainCall[3], mainCall[4], mainCall[5], mainCall[6])
-				default:
-					fmt.Print(gitlib.ToPktLine(fmt.Sprintf("Error command for `aegis web-hooks`: %s.", mainCall[1])))
-				}
-				return
-			case "update-trigger":
-				if len(mainCall) < 6 {
-					fmt.Print(gitlib.ToPktLine("Error format for `aegis-update-trigger`."))
-					return
-				}
-				HandleUpdateTrigger(&context, mainCall[1], mainCall[2], mainCall[3], mainCall[4], mainCall[5])
+	// the features of these commands are meaningless in the use case of
+	// plain mode, so the dispatching is done within this if branch.
+	if len(mainCall) > 0 {
+		switch mainCall[0] {
+		case "install":
+			if noConfig {
+				fmt.Fprintf(os.Stderr, "No config file specified. Cannot continue.\n")
+			} else {
+				fmt.Println(mainCall)
+				InstallAegis(context)
+			}
+			return
+		case "reset-admin":
+			if noConfig {
+				fmt.Fprintf(os.Stderr, "No config file specified. Cannot continue.\n")
+			} else {
+				ResetAdmin(&context)
+			}
+			return
+		case "ssh":
+			if len(mainCall) < 3 {
+				fmt.Print(gitlib.ToPktLine("Error format for `aegis ssh`."))
 				return
 			}
+			HandleSSHLogin(&context, mainCall[1], mainCall[2])
+			return
+		case "simple-mode":
+			if len(mainCall) < 3 {
+				fmt.Print(gitlib.ToPktLine("Error format for `aegis simple-mode`."))
+				return
+			}
+			HandleSimpleMode(&context, mainCall[1], mainCall[2])
+			return
+		case "web-hooks":
+			if len(mainCall) < 7 {
+				fmt.Print(gitlib.ToPktLine("Error format for `aegis web-hooks`."))
+				return
+			}
+			switch mainCall[1] {
+			case "send":
+				HandleWebHook(&context, mainCall[2], mainCall[3], mainCall[4], mainCall[5], mainCall[6])
+			default:
+				fmt.Print(gitlib.ToPktLine(fmt.Sprintf("Error command for `aegis web-hooks`: %s.", mainCall[1])))
+			}
+			return
+		case "update-trigger":
+			if len(mainCall) < 6 {
+				fmt.Print(gitlib.ToPktLine("Error format for `aegis-update-trigger`."))
+				return
+			}
+			HandleUpdateTrigger(&context, mainCall[1], mainCall[2], mainCall[3], mainCall[4], mainCall[5])
+			return
 		}
 	}
 
@@ -358,6 +298,10 @@ func main() {
 		if err = context.ReceiptSystem.Dispose(); err != nil {
 			log.Printf("Failed to dispose receipt system: %s\n", err.Error())
 		}
+	}
+
+	if context.Config.OperationMode == aegis.OP_MODE_SIMPLE {
+		os.RemoveAll(path.Join(gitUser.HomeDir, "aegis.sock"))
 	}
 	
 	log.Println("Graceful shutdown complete.")

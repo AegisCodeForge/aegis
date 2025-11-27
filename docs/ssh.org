@@ -27,9 +27,18 @@ with the **default config of sshd**, when a client is trying to use their pubkey
 
   It is still the same Git user that's being logged in, but the result is different because the ssh key is different (which means the command getting executed when logging in can be different if we make it this way.) When clone with SSH, the original command (type of command & the path of the git repo in question) would be stored in envvar =SSH_ORIGINAL_COMMAND=.
   
-(Note that at this time, we know the *Aegis* username and the target git repository path, but we don't know where the heck everything else is: we need to know where the Git Root actually is. Since we are triggering ~aegis~ w/ the git user, we already know the Aegis executable in the =~/git-shell-commands= directory, this doesn't give us any info about the Git Root. For this reason we need this information stored somewhere, and since we might need to use other information in the future, it's better to just somehow leave a link to the config file that Aegis uses; and because we made it so that you provide the location of the config file to the Aegis server process when you starts it, a different process cannot get that info unless we have a designated place for the info beforehand.
+(Note that at this time, we know the *Aegis* username and the target git repository path, but we don't know where the heck everything else is: we need to know where the Git Root actually is. Since we are triggering ~aegis~ w/ the git user, we already know the Aegis executable in the =~/git-shell-commands= directory, this doesn't give us any info about the Git Root. For this reason we need to pass the path to the current configuration file in the command as well:
 
-Thus the following scheme is currently used: when run with a config specified, Aegis will write a file =last-config= directly under the home directory of the specified git user. The content of the file would be the absolute path of the config file.)
+  #+begin_src
+    command="aegis -config {config-path} ssh {username1} {keyname1}" {ssh-key-1}
+    command="aegis -config {config-path} ssh {username1} {keyname2}" {ssh-key-2}
+    command="aegis -config {config-path} ssh {username2} {keyname1}" {ssh-key-1}
+    command="aegis -config {config-path} ssh {username2} {keyname2}" {ssh-key-2}
+    command="aegis -config {config-path} ssh {username2} {keyname3}" {ssh-key-3}
+    # ...
+  #+end_src
+
+  This path, if relative, is resolved against the git user's home directory.
 
 *** ~AuthorizedKeysCommand~
 

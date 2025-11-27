@@ -16,15 +16,21 @@
 	<p>Please confirm the following value of fields.</p>
 	<form action="/install" method="GET">
 	  <div class="field">
-		<label class="field-label" for="plain-mode">Use Plain Mode?</label>
+		<label class="field-label" for="operation-mode">Operation Mode</label>
 		<p><a href="/step1">Go back and change this setting</a></p>
-		<p class="field-description">When Plain Mode is set to true, Aegis would act like a simple Git web frontend similar to git-instaweb - no user management and related features would be available, including clone-by-SSH. You'll be able to control which namespace/repository would be visible in later steps if you choose to enable Plain Mode.</p>
+		<p class="field-description">Aegis supports 3 different operation mode.:
+		  <ul>
+			<li>Plain Mode: A simple Git web frontend similar to git-instaweb. Repositories would be readonly (with HTTP).</li>
+			<li>Simple Mode: User and repository managements are done by updating special repositories similar to Gitolite. Clone/push through SSH is enabled.</li>
+			<li>Normal Mode: All features enabled (other than the ones you choose to not enable). </li>
+		  </ul>
+		</p>
 		<table>
 		  <thead>
-			<tr><th>Field</th><th>Enable?</th></tr>
+			<tr><th>Field</th><th>Value</th></tr>
 		  </thead>
 		  <tbody>
-			<tr><td class="field-sub-label"><label for="plain-mode">plainMode</label></td><td>{{if and .Config.PlainMode}}Yes{{else}}No{{end}}</td></tr>
+			<tr><td class="field-sub-label"><label for="operation-mode">operationMode</label></td><td>{{.Config.OperationMode}}</td></tr>
 		  </tbody>
 		</table>
 	  </div>
@@ -45,8 +51,10 @@
 
 	  <div class="field">
 		<label class="field-label">Database Config</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p>This field is skipped because you've chosen to enable Simple Mode.</p>
 		{{else}}
 		<p><a href="/step2">Go back and change this setting</a></p>
 		<p class="field-description">This is the main database configuration.</p>
@@ -95,8 +103,10 @@
 	  
 	  <div class="field">
 		<label class="field-label">Session Config</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p>This field is skipped because you've chosen to enable Simple Mode.</p>
 		{{else}}
 		<p><a href="/step3">Go back and change this setting</a></p>
 		<p class="field-description">This is used to store certain relatively short-lived info, e.g. user's login status.</p>
@@ -154,8 +164,10 @@
 	  
 	  <div class="field">
 		<label class="field-label">Mailer Config</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p>This field is skipped because you've chosen to enable Simple Mode.</p>
 		{{else}}
 		<p><a href="/step4">Go back and change this setting</a></p>
 		<p class="field-description">This is used in cases where the system needs to send an email.</p>
@@ -196,8 +208,10 @@
 	  
 	  <div class="field">
 		<label class="field-label">Receipt System</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p>This field is skipped because you've chosen to enable Simple Mode.</p>
 		{{else}}
 		<p><a href="/step5">Go back and change this setting</a></p>
 		<p class="field-description">This is used to manage "receipts", which are callbacks sent to user by email when they perform certain actions.</p>
@@ -274,7 +288,7 @@
 
 	  <div class="field">
 		<label class="field-label" for="ignore-namespace">Ignore Namespace</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		{{if .Config.UseNamespace}}
 		<p><a href="/step7">Go back and change this setting</a></p>
 		<p class="field-description">All namespaces specified here will not be shown to the public. Each name should be separated by a comma <code>,</code> .</p>
@@ -300,7 +314,7 @@
 	  
 	  <div class="field">
 		<label class="field-label" for="ignore-repository">Ignore Repository</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p><a href="/step7">Go back and change this setting</a></p>
 		<p class="field-description">All repositories should be written in the format of <code>{namespae name}:{repo name}</code>, for example, repository <code>testrepo</code> under namespace <code>testns</code> should be written <code>testns:testrepo</code>. All repositories specified here will not be shown to the public. Each name should be separated by a comma <code>,</code> .</p>
 		<table>
@@ -366,7 +380,7 @@
 	  
 	  <div class="field">
 		<label class="field-label" for="ssh-host-name">SSH Host Name</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
 		{{else}}
 		<p><a href="/step8">Go back and change this setting</a></p>
@@ -399,8 +413,10 @@
 	  
 	  <div class="field">
 		<label class="field-label" for="depot-name">User Management Related</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p>This field is skipped because you've chosen to enable Simple Mode, in which case user management is done elsewhere.</p>
 		{{else}}
 		<p><a href="/step8">Go back and change this setting</a></p>
 		<p class="field-description">These fields control the behaviour of certain aspects about user management.</p>
@@ -443,8 +459,10 @@
 	  
 	  <div class="field">
 		<label class="field-label">Confirm Code Manager</label>
-		{{if .Config.PlainMode}}
+		{{if eq .Config.OperationMode "plain"}}
 		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p>This field is skipped because you've chosen to enable Simple Mode.</p>
 		{{else}}
 		<p><a href="/step9">Go back and change this setting</a></p>
 		<p class="field-description">Confirm code is used in two-factor authentication; it's the numerical code (often 6 digits) that would be sent to your email if you've enabled two-factor authentication with email.</p>
@@ -461,6 +479,29 @@
 			<tr><td class="field-sub-label">confirmCodeManager.defaultTimeoutMinute<br/></td><td>{{.Config.ConfirmCodeManager.DefaultTimeoutMinute}}</td></tr>
 		  </tbody>
 		</table>
+		{{end}}
+	  </div>
+
+	  <div class="field">
+		<label class="field-label">Root SSH Key</label>
+		{{if eq .Config.OperationMode "plain"}}
+		<p>This field is skipped because you've chosen to enable Plain Mode.</p>
+		{{else if eq .Config.OperationMode "simple"}}
+		<p><a href="/step10">Go back and change this setting</a></p>
+		<p class="field-description">Simple Mode uses specially designated repositories to manage user keys and repositories. This is to setup the key that allows you to update these designated repositories through SSH.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">Root SSH Key</td>
+			  <td>
+				{{.RootSSHKey}}
+			  </td>
+			</tr>
+		  </tbody>
+		</table>
+
+		{{else}}
+		<p>This field is skipped because you've chosen to enable Normal Mode.</p>
 		{{end}}
 	  </div>
 	  

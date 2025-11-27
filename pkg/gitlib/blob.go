@@ -1,10 +1,15 @@
 package gitlib
 
 import (
+	"bytes"
 	"compress/zlib"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
+	"path"
 )
 
 // blob does not have a format; it's just the file itself.
@@ -40,6 +45,34 @@ func (rgo RawGitObject) ReadAsBlobObject() (*BlobObject, error) {
 		Data: sourceBytes,
 	}
 	return &res, nil
+}
+
+func BlobObjectFromString(s string) *BlobObject {
+	h := sha1.New()
+	fmt.Fprintf(h, "blob %d\x00%s", len(s), s)
+	oid := h.Sum(nil)
+	return &BlobObject{
+		Id: fmt.Sprintf("%x", oid),
+		Data: []byte(s),
+	}
+}
+
+func (lgr *LocalGitRepository) AddBlobObject(content string) (*BlobObject, error) {
+	bobj := BlobObjectFromString(content)
+	objPath := path.Join(bobj.Id[:2], bobj.Id[2:])
+	objFullPath := path.Join(lgr.GitDirectoryPath, objPath)
+	b := new(bytes.Buffer)
+	w := zlib.NewWriter(b)
+	fmt.Fprintf(w, "blob %d\x00%s", len(content), content)
+	w.Close()
+	err := os.MkdirAll(path.Join(lgr.GitDirectoryPath, bobj.Id[:2]), fs.ModeDir)
+	if err != nil { return nil, err }
+	f, err := os.OpenFile(objFullPath, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	if err != nil { return nil, err }
+	defer f.Close()
+	_, err = f.Write(b.Bytes())
+	if err != nil { return nil, err }
+	return bobj, nil
 }
 
 // same as `ReadAsBlobObject` but does not use deflate - assumes `rgo.reader`

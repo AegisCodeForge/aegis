@@ -7,6 +7,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -205,7 +206,9 @@ func bindTagController(ctx *RouterContext) {
 					)
 					return
 				}
-				m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+				if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+					m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+				}
 				tagInfo.EmailUserMapping = m
 				LogTemplateError(rc.LoadTemplate("tag").Execute(w, templates.TagTemplateModel{
 					Repository: repo,
@@ -234,7 +237,9 @@ func bindTagController(ctx *RouterContext) {
 				str := string(bobj.Data)
 				coloredStr, err := colorSyntax("", str)
 				if err == nil { str = coloredStr }
-				m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+				if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+					m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+				}
 				tagInfo.EmailUserMapping = m
 				LogTemplateError(rc.LoadTemplate(templateType).Execute(w, templates.FileTemplateModel{
 					Repository: repo,
@@ -275,7 +280,9 @@ func bindTagController(ctx *RouterContext) {
 					TreePath: treePath,
 					TreePathSegmentList: treePathSegmentList,
 				}
-				m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+				if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+					m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+				}
 				commitInfo.EmailUserMapping = m
 				LogTemplateError(rc.LoadTemplate("tree").Execute(w, templates.TreeTemplateModel{
 					Repository: repo,

@@ -6,7 +6,7 @@
   {{end}}
   <div class="namespace-description">{{.Namespace.Description}}</div>
 </div>
-{{if and .Config (not .Config.PlainMode)}}
+{{if and .Config (eq .Config.OperationMode "normal")}}
 <div class="namespace-nav">
   {{if or (.LoginInfo.IsOwner) (.LoginInfo.IsSettingMember) (.LoginInfo.IsAdmin)}}
   <a href="/s/{{.Namespace.Name}}/setting">Settings</a>

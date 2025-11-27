@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
@@ -23,6 +24,7 @@ import (
 )
 
 type RouterContext struct {
+	GitUserHomeDirectory string
 	Config *aegis.AegisConfig
 	MasterTemplate *template.Template
 	GitRepositoryList map[string]*model.Repository
@@ -36,6 +38,7 @@ type RouterContext struct {
 	LastError error
 	RateLimiter *RateLimiter
 	ConfirmCodeManager confirm_code.AegisConfirmCodeManager
+	SimpleModeConfigCache model.SimpleModeConfigCache
 }
 
 func (ctx RouterContext) LoadTemplate(name string) *template.Template {
@@ -44,6 +47,7 @@ func (ctx RouterContext) LoadTemplate(name string) *template.Template {
 
 func (ctx *RouterContext) NewLocal() *RouterContext {
 	return &RouterContext{
+		GitUserHomeDirectory: ctx.GitUserHomeDirectory,
 		Config: ctx.Config,
 		MasterTemplate: ctx.MasterTemplate,
 		GitRepositoryList: ctx.GitRepositoryList,
@@ -57,6 +61,14 @@ func (ctx *RouterContext) NewLocal() *RouterContext {
 		LastError: ctx.LastError,
 		RateLimiter: ctx.RateLimiter,
 		ConfirmCodeManager: ctx.ConfirmCodeManager,
+	}
+}
+
+func (ctx *RouterContext) ResolvePathAgainstHome(p string) string {
+	if !path.IsAbs(p) {
+		return path.Clean(path.Join(ctx.GitUserHomeDirectory, p))
+	} else {
+		return p
 	}
 }
 
@@ -207,7 +219,7 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 	var ok bool
 	var err error
 	var ns *model.Namespace
-	if ctx.Config.IsInPlainMode() {
+	if ctx.Config.IsInPlainMode() || ctx.Config.OperationMode == aegis.OP_MODE_SIMPLE {
 		ns, ok = ctx.GitNamespaceList[namespaceName]
 		if !ok {
 			err := ctx.SyncAllNamespacePlain()

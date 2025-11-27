@@ -50,7 +50,7 @@ type TreeObjectItem struct {
 	Mode int
 	Name string
 	Hash string
-	// NOTE: this is not an actual field in the tree object, but a place
+	// NOTE: this is not an actual field used in this file, but a place
 	// to store the calculation result of CommitObject.RetrieveTree.
 	LastCommit *CommitObject
 }
@@ -63,6 +63,7 @@ type TreeObject struct {
 	Id string
 	ObjectList []TreeObjectItem
 	rawData []byte
+	isDirty bool
 }
 
 func (c TreeObject) String() string {
@@ -76,6 +77,54 @@ func (c TreeObject) RawData() []byte { return c.rawData }
 func IsTreeObj(c GitObject) bool {
 	_, ok := c.(*TreeObject)
 	return ok
+}
+
+func (c *TreeObject) AddItem(mode int, name string, hash string) {
+	tl := len(c.ObjectList)
+	tobjitem := TreeObjectItem{
+		Mode: mode,
+		Name: name,
+		Hash: hash,
+	}
+	if tl == 0 {
+		c.ObjectList = append(c.ObjectList, tobjitem)
+		return
+	}
+	for k, v := range c.ObjectList {
+		cmpres := strings.Compare(v.Name, name)
+		if cmpres == 0 {
+			c.ObjectList[k].Mode = mode
+			c.ObjectList[k].Hash = hash
+			break
+		} else if cmpres > 0 {
+			c.ObjectList = slices.Insert(c.ObjectList, k, tobjitem)
+			break
+		}
+	}
+	c.isDirty = true
+}
+
+func (c *TreeObject) RenderAsBytes() []byte {
+	b := new(bytes.Buffer)
+	for _, v := range c.ObjectList {
+		switch v.Mode {
+		case TREE_NORMAL_FILE: b.WriteString("100644")
+		case TREE_EXECUTABLE_FILE: b.WriteString("100755")
+		case TREE_SYMBOLIC_LINK: b.WriteString("120000")
+		case TREE_TREE_OBJECT: b.WriteString("040000")
+		case TREE_SUBMODULE: b.WriteString("160000")
+		}
+		b.WriteString(" ")
+		b.WriteString(v.Name)
+		b.WriteByte(0)
+		b.Write(hexStringToBytes(v.Hash))
+	}
+	return b.Bytes()
+}
+
+func (c *TreeObject) RecalculateRawData() {
+	if !c.isDirty { return }
+	c.rawData = c.RenderAsBytes()
 }
 
 func resolveCanonicalMode(m int64) int64 {

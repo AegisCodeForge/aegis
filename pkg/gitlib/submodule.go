@@ -1,6 +1,7 @@
 package gitlib
 
 import (
+	"errors"
 	"os"
 	"path"
 
@@ -17,7 +18,7 @@ type SubmoduleConfig struct {
 func (lgr *LocalGitRepository) LoadSubmoduleConfig() error {
 	p := path.Join(lgr.GitDirectoryPath, ".gitmodules")
 	f, err := os.Open(p)
-	if err == os.ErrNotExist { lgr.Submodule = nil; return nil }
+	if errors.Is(err, os.ErrNotExist) { lgr.Submodule = nil; return nil }
 	if err != nil { return err }
 	i, err := ini.ParseINI(f)
 	if err != nil { return err }

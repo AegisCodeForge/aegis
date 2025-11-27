@@ -69,7 +69,7 @@ func createOtherOwnedDirectory(p string, uids string, gids string) error {
 	return nil
 }
 
-func aegisReadyCheck(ctx routes.RouterContext) (bool, error) {
+func normalModeAegisReadyCheck(ctx routes.RouterContext) (bool, error) {
 	dbif := ctx.DatabaseInterface
 	ssif := ctx.SessionInterface
 	cfg := ctx.Config

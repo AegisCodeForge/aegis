@@ -283,7 +283,7 @@ func (gr LocalGitRepository) CheckIfCanFastForward(branch string, remoteName str
 	localRefPath := path.Join(gr.GitDirectoryPath, "refs", "heads", branch)
 	f1, err := os.ReadFile(localRefPath)
 	if err != nil {
-		return false, errors.New(fmt.Sprintf("Failed to read local branch ref: %s", err))
+		return false, fmt.Errorf("Failed to read local branch ref: %s", err)
 	}
 	return base == strings.TrimSpace(string(f1)), nil
 }
@@ -359,6 +359,39 @@ func (gr *LocalGitRepository) SyncAllBranchList() error {
 	br, err := gr.GetAllBranchList()
 	if err != nil { return err }
 	gr.BranchIndex = br
+	return nil
+}
+
+func (gr *LocalGitRepository) SyncBranch(branchName string) error {
+	rplocal := path.Join(gr.GitDirectoryPath, "refs", "heads")
+	headIdBytes, err := os.ReadFile(path.Join(rplocal, branchName))
+	if err == nil {
+		if gr.BranchIndex == nil {
+			gr.BranchIndex = make(map[string]*Branch)
+		}
+		gr.BranchIndex[branchName] = &Branch{
+			Name: branchName,
+			HeadId: strings.TrimSpace(string(headIdBytes)),
+		}
+		return nil
+	}
+	if !errors.Is(err, os.ErrNotExist) { return err }
+	pi, err := gr.readPackedRefIndex()
+	if errors.Is(err, os.ErrNotExist) { return nil }
+	if err != nil { return err }
+	if len(pi) <= 0 { return nil }
+	for _, item := range pi {
+		if !strings.HasPrefix(item.Name, "refs/heads/") { continue }
+		s := strings.TrimPrefix(item.Name, "refs/heads/")
+		if s != branchName { continue }
+		if gr.BranchIndex == nil {
+			gr.BranchIndex = make(map[string]*Branch)
+		}
+		gr.BranchIndex[branchName] = &Branch{
+			Name: branchName,
+			HeadId: item.Id,
+		}
+	}
 	return nil
 }
 
@@ -443,7 +476,7 @@ func (gr LocalGitRepository) GetCommitHistoryN(cid string, n int) ([]CommitObjec
 		if obj.Type() != COMMIT { return nil, err }
 		c := obj.(*CommitObject)
 		res = append(res, *c)
-		subjId = c.ParentId
+		subjId = c.ParentId()
 		if !limitless { n -= 1 }
 	}
 	return res, nil

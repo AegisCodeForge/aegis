@@ -3,6 +3,9 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"path"
+
+	"github.com/bctnry/aegis/pkg/gitlib"
 )
 
 type AegisRepositoryStatus int
@@ -16,6 +19,7 @@ const (
 )
 
 const (
+	REPO_TYPE_UNKNOWN uint8 = 0
 	REPO_TYPE_GIT uint8 = 1
 )
 
@@ -44,8 +48,6 @@ func ValidStrictRepositoryName(s string) bool {
 	return true
 }
 
-type LocalRepository any
-
 type Repository struct {
 	AbsId int64 `json:"absid"`
 	Type uint8 `json:"type"`
@@ -59,9 +61,11 @@ type Repository struct {
 	LocalPath string `json:"localPath"`
 	ForkOriginNamespace string `json:"forkOriginNamespace"`
 	ForkOriginName string `json:"forkOriginName"`
-	// reserved for features in the future.
 	RepoLabelList []string `json:"labelList"`
 	WebHookConfig *WebHookConfig `json:"webHookConfig"`
+	// used in simple mode only.
+	Visibility string `json:"visibility"`
+	Users map[string]*SimpleModeUserACL `json:"users"`
 }
 
 func ParseWebHookConfig(s string) (*WebHookConfig, error) {
@@ -103,3 +107,8 @@ func (repo *Repository) FullName() string {
 	}
 }
 
+func GuessRepositoryType(repoPath string) uint8 {
+	if gitlib.IsValidGitDirectory(repoPath) { return REPO_TYPE_GIT }
+	if gitlib.IsValidGitDirectory(path.Join(repoPath, ".git")) { return REPO_TYPE_GIT }
+	return REPO_TYPE_UNKNOWN
+}

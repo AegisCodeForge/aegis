@@ -32,6 +32,10 @@ type Namespace struct {
 	ACL *ACL
 	RepositoryList map[string]*Repository `json:"repoList"`
 	LocalPath string `json:"localPath"`
+	// used for reading simple mode config only. you should use
+	// `.Status` if instance is not in simple mode.
+	Visibility string `json:"visibility"`
+	SimpleModeACL map[string]*SimpleModeUserACL `json:"users"`
 }
 
 func ValidNamespaceName(s string) bool {

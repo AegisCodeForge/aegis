@@ -2,6 +2,7 @@ package gitlib
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"regexp"
 	"strconv"
@@ -48,5 +49,22 @@ func parseAuthorTime(s string) AuthorTime {
 	timezone := time.FixedZone("UTC" + timezoneOffsetString, timezoneOffsetInt)
 	res.Time = timePiece.In(timezone)
 	return res
+}
+
+func (at *AuthorTime) String() string {
+	_, i := at.Time.Zone()
+	// i is "seconds east of UTC"...
+	positive := i > 0
+	if i < 0 { i = -i }
+	totalMinutes := i / 60
+	hours := totalMinutes / 60
+	remainderMinutes := totalMinutes % 60
+	var offsetString string
+	if positive {
+		offsetString = fmt.Sprintf("+%02d%02d", hours, remainderMinutes)
+	} else {
+		offsetString = fmt.Sprintf("-%02d%02d", hours, remainderMinutes)
+	}
+	return fmt.Sprintf("%s <%s> %d %s", at.AuthorName, at.AuthorEmail, at.Time.Unix(), offsetString)
 }
 

@@ -3,13 +3,13 @@ package controller
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"mime"
 	"net/http"
 	"os/exec"
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -23,103 +23,6 @@ func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName str
 		repo.Namespace, repo.Name, branchName,
 	)
 	responseWithTreeZip(repo, obj, filename, w)
-}
-
-func addFileToRepoString(
-	repo *model.Repository,
-	branchName string, p string,
-	authorName string, authorEmail string,
-	commitName string, commitEmail string,
-	commitMessage string,
-	content string,
-) (string, error) {
-	cmd := exec.Command("git", "fast-import", "--date-format=now", "--quiet")
-	cmd.Dir = repo.LocalPath
-	stdoutBuff := new(bytes.Buffer)
-	cmd.Stdout = stdoutBuff
-	stderrBuf := new(bytes.Buffer)
-	cmd.Stderr = stderrBuf
-	stdinPipe, err := cmd.StdinPipe()
-	if err != nil { return "", err }
-	payload := fmt.Sprintf(`commit refs/heads/%s
-mark :1
-author %s <%s> now
-committer %s <%s> now
-data %d
-%s
-from refs/heads/%s^0
-M 100644 inline %s
-data %d
-%s
-get-mark :1`,
-		branchName, authorName, authorEmail,
-		commitName, commitEmail,
-		len(commitMessage), commitMessage,
-		branchName,
-		p,
-		len(content), content,
-	)
-	err = cmd.Start()
-	if err != nil { return "", err }
-	_, err = stdinPipe.Write([]byte(payload))
-	if err != nil { return "", err }
-	err = stdinPipe.Close()
-	if err != nil { return "", err }
-	err = cmd.Wait()
-	if err != nil { return "", err }
-	return stdoutBuff.String(), nil
-}
-
-func addFileToRepoReader(
-	repo *model.Repository,
-	branchName string, p string,
-	authorName string, authorEmail string,
-	commitName string, commitEmail string,
-	commitMessage string,
-	content io.Reader, contentSize int64,
-) (string, error) {
-	cmd := exec.Command("git", "fast-import", "--date-format=now", "--quiet")
-	cmd.Dir = repo.LocalPath
-	stdoutBuff := new(bytes.Buffer)
-	cmd.Stdout = stdoutBuff
-	stderrBuf := new(bytes.Buffer)
-	cmd.Stderr = stderrBuf
-	stdinPipe, err := cmd.StdinPipe()
-	fmt.Println("written1", err)
-	if err != nil { return "", err }
-	payload := fmt.Sprintf(`commit refs/heads/%s
-mark :1
-author %s <%s> now
-committer %s <%s> now
-data %d
-%s
-from refs/heads/%s^0
-M 100644 inline %s
-data %d
-`,
-		branchName, authorName, authorEmail,
-		commitName, commitEmail,
-		len(commitMessage), commitMessage,
-		branchName,
-		p,
-		contentSize,
-	)
-	err = cmd.Start()
-	fmt.Println("written1", err)
-	if err != nil { return "", err }
-	_, err = stdinPipe.Write([]byte(payload))
-	if err != nil { return "", err }
-	f, err := io.Copy(stdinPipe, content)
-	fmt.Println("written", f, err)
-	if err != nil { return "", err }
-	_, err = stdinPipe.Write([]byte(`
-get-mark :1`))
-	if err != nil { return "", err }
-	err = stdinPipe.Close()
-	if err != nil { return "", err }
-	err = cmd.Wait()
-	if err != nil { return "", err }
-	return stdoutBuff.String(), nil
 }
 
 func bindBranchController(ctx *RouterContext) {
@@ -196,11 +99,11 @@ func bindBranchController(ctx *RouterContext) {
 
 			cobj := gobj.(*gitlib.CommitObject)
 			m := make(map[string]string, 0)
-			m[cobj.AuthorInfo.AuthorEmail] = ""
-			m[cobj.CommitterInfo.AuthorEmail] = ""
-			_, err = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
-			// NOTE: we don't check, we just assume the emails are not verified
-			// to anyone if an error occur.
+			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				m[cobj.AuthorInfo.AuthorEmail] = ""
+				m[cobj.CommitterInfo.AuthorEmail] = ""
+				rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			}
 			commitInfo := &templates.CommitInfoTemplateModel{
 				RootPath: fmt.Sprintf("/repo/%s", rfn),
 				Commit: cobj,
@@ -534,7 +437,7 @@ func bindBranchController(ctx *RouterContext) {
 			case "edit":
 				treePath = r.PathValue("treePath")
 				content := r.Form.Get("content")
-				commitId, err = addFileToRepoString(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, content)
+				commitId, err = model.AddFileToRepoString(repo.Repository, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, content)
 				if err != nil {
 					rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
 					return
@@ -543,14 +446,14 @@ func bindBranchController(ctx *RouterContext) {
 				treePath = strings.TrimSpace(r.Form.Get("new-file-path"))
 				if len(r.Form.Get("use-upload-file")) > 0 {
 					f, e, err := r.FormFile("file-upload")
-					commitId, err = addFileToRepoReader(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, f, e.Size)
+					commitId, err = model.AddFileToRepoReader(repo.Repository, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, f, e.Size)
 					if err != nil {
 						rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
 						return
 					}
 				} else {
 					content := r.Form.Get("content")
-					commitId, err = addFileToRepoString(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, content)
+					commitId, err = model.AddFileToRepoString(repo.Repository, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, content)
 					if err != nil {
 						rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
 						return
@@ -559,7 +462,7 @@ func bindBranchController(ctx *RouterContext) {
 			case "replace":
 				treePath = r.PathValue("treePath")
 				f, e, err := r.FormFile("file-upload")
-				commitId, err = addFileToRepoReader(repo, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, f, e.Size)
+				commitId, err = model.AddFileToRepoReader(repo.Repository, branchName, treePath, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, rc.LoginInfo.UserFullName, rc.LoginInfo.UserEmail, commitMessage, f, e.Size)
 				if err != nil {
 					rc.ReportInternalError(fmt.Sprintf("Failed while adding file to repo: %s", err), w, r)
 					return

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Aegis Web Installer</title>
+	{{template "webinstaller/_style"}}
+  </head>
+  <body>
+	<header>
+	  <h1><a href="/">Aegis Web Installer</a></h1>
+	  {{template "webinstaller/_nav"}}
+	</header>
+
+	<hr />
+	<!-- step 10: root ssh key setup -->
+	<h2>Step 10: Root SSH Key Setup</h2>
+	<p>NOTE: The previous steps are not needed since you've choosen to enable Simple Mode.</p>
+	<form action="" method="POST">
+	  <div class="field">
+		<label class="field-label">Root SSH Key </label>
+		<p class="field-description">Simple Mode uses specially designated repositories to manage user keys and repositories. This is to setup the key that allows you to update these designated repositories through SSH.</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td class="field-sub-label">Root SSH Public Key</td>
+			  <td>
+				<textarea name="root-ssh" id="root-ssh"></textarea>
+			  </td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
+	  <input type="submit" value="Submit and go to next step" />
+	</form>
+	<hr />
+
+	{{if .ConfirmStageReached}}
+	<p><a href="/confirm">Back to the finish line</a></p>
+	{{end}}
+	
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

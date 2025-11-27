@@ -1,6 +1,7 @@
 package gitlib
 
 import (
+	"errors"
 	"io"
 	"os"
 )
@@ -33,6 +34,7 @@ func byteHexToInt(s string) int {
 	}
 	return s1 * 16 + s2
 }
+
 func digitToChar(c byte) byte {
 	if c >= 0x0a {
 		return c + byte('a') - 10
@@ -109,4 +111,22 @@ func readUntil(f io.Reader, c byte) ([]byte, error) {
 	return res, nil
 }
 
+var ErrInvalidHexString = errors.New("Invalid hex string")
+func hexStringToBytes(s string) []byte {
+	// NOTE: all invalid hex digits are interpreted as zero.
+	res := make([]byte, 0)
+	i := 0
+	l := len(s)
+	if l % 2 > 0 {
+		res = append(res, charHexToDigit(s[0]))
+		i += 1
+	}
+	for i < l {
+		ch1 := charHexToDigit(s[i])
+		ch2 := charHexToDigit(s[i+1])
+		res = append(res, (ch1 << 4) | ch2)
+		i += 2
+	}
+	return res
+}
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	. "github.com/bctnry/aegis/routes"
@@ -64,9 +65,11 @@ func bindDiffController(ctx *RouterContext) {
 			}
 			co := cobj.(*gitlib.CommitObject)
 			m := make(map[string]string, 0)
-			m[co.AuthorInfo.AuthorEmail] = ""
-			m[co.CommitterInfo.AuthorEmail] = ""
-			m, _ = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				m[co.AuthorInfo.AuthorEmail] = ""
+				m[co.CommitterInfo.AuthorEmail] = ""
+				ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
+			}
 			diff, err := rr.GetDiff(commitId)
 			if err != nil {
 				ctx.ReportInternalError(

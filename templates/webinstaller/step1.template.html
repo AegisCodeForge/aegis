@@ -15,14 +15,28 @@
 	<h2>Step 1</h2>
 	<form action="" method="POST">
 	  <div class="field">
-		<label class="field-label" for="plain-mode">Use Plain Mode?</label>
-		<p class="field-description">When Plain Mode is set to true, Aegis would act like a simple Git web frontend similar to git-instaweb - no user management and related features would be available, including clone-by-SSH. You'll be able to control which namespace/repository would be visible in later steps if you choose to enable Plain Mode.</p>
+		<label class="field-label" for="operation-mode">Operation Mode</label>
+		<p class="field-description">Aegis supports 3 different operation mode.:
+		  <ul>
+			<li>Plain Mode: A simple Git web frontend similar to git-instaweb. Repositories would be readonly (with HTTP).</li>
+			<li>Simple Mode: User and repository managements are done by updating special repositories similar to Gitolite. Clone/push through SSH is enabled.</li>
+			<li>Normal Mode: All features enabled (other than the ones you choose to not enable). </li>
+		  </ul>
+		</p>
 		<table>
 		  <thead>
-			<tr><th>Field</th><th>Enable?</th></tr>
+			<tr><th>Field</th><th>Value</th></tr>
 		  </thead>
 		  <tbody>
-			<tr><td><label for="plain-mode">plainMode</label></td><td><input type="checkbox" name="plain-mode" id="plain-mode" {{if and .Config.PlainMode}}checked{{end}} /></td></tr>
+			<tr><td><label for="operation-mode">operationMode</label></td>
+			  <td>
+				<select name="operation-mode" id="operation-mode">
+				  <option value="plain" {{if eq .Config.OperationMode "plain"}}selected{{end}}>Plain Mode</option>
+				  <option value="simple" {{if eq .Config.OperationMode "simple"}}selected{{end}}>Simple Mode</option>
+				  <option value="normal" {{if eq .Config.OperationMode "normal"}}selected{{end}}>Normal Mode</option>
+				</select>
+			  </td>
+			</tr>
 		  </tbody>
 		</table>
 	  </div>

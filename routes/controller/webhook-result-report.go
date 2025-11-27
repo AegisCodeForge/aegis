@@ -45,7 +45,7 @@ func bindWebhookResultReportController(ctx *RouterContext) {
 			repo, err := rc.DatabaseInterface.GetRepositoryByName(ogRes.RepoNamespace, ogRes.RepoName)
 			if errors.Is(err, db.ErrEntityNotFound) {
 				w.WriteHeader(404)
-				fmt.Fprintf(w, "Not found", err)
+				fmt.Fprintf(w, "Not found: %s", err)
 				return
 			}
 			if err != nil {

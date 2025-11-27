@@ -506,6 +506,21 @@ func (cfg *AegisConfig) Sync() error {
 	return nil
 }
 
+func (cfg *AegisConfig) ReadNamespaceSimpleModeConfig(name string) (*model.SimpleModeNamespaceConfig, error) {
+	f := path.Join(cfg.GitRoot, "__aegis", "__repo_config", "aegis_sync", name, "config.json")
+	return model.ReadNamespaceConfigFromFile(f)
+}
+
+func (cfg *AegisConfig) ReadRepositorySimpleModeConfig(namespace string, name string) (*model.SimpleModeRepositoryConfig, error) {
+	var f string
+	if cfg.UseNamespace {
+		f = path.Join(cfg.GitRoot, "__aegis", "__repo_config", "aegis_sync", namespace, name, "config.json")
+	} else {
+		f = path.Join(cfg.GitRoot, "__repo_config", "aegis_sync", name, "config.json")
+	}
+	return model.ReadRepositoryConfigFromFile(f)
+}
+
 func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
 	if cfg.UseNamespace {
 		m, err := cfg.GetAllNamespacePlain()
@@ -521,7 +536,6 @@ func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
 		}
 		return res, nil
 	}
-	if cfg.UseNamespace { return nil, nil }
 	gitPath := cfg.GitRoot
 	res := make([]*model.Repository, 0)
 	l, err := os.ReadDir(gitPath)
@@ -538,6 +552,13 @@ func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
 		if strings.HasSuffix(repoName, ".git") {
 			repoName = repoName[:len(repoName)-len(".git")]
 			if len(repoName) <= 0 { continue }
+		}
+		if cfg.OperationMode == OP_MODE_SIMPLE {
+			m, err := cfg.ReadRepositorySimpleModeConfig("", repoName)
+			if err != nil { continue }
+			if m.Repository.Visibility == model.SIMPLE_MODE_VISIBILITY_PRIVATE {
+				continue
+			}
 		}
 		k := gitlib.NewLocalGitRepository("", repoName, p)
 		res = append(res, &model.Repository{
@@ -558,6 +579,7 @@ func (cfg *AegisConfig) GetAllRepositoryByNamespacePlain(ns string) (map[string]
 	nsPath := path.Join(gitPath, ns)
 	l, err := os.ReadDir(nsPath)
 	if err != nil { return nil, err }
+	
 	for _, item := range l {
 		repoName := item.Name()
 		p := path.Join(nsPath, item.Name())
@@ -571,8 +593,16 @@ func (cfg *AegisConfig) GetAllRepositoryByNamespacePlain(ns string) (map[string]
 			repoName = repoName[:len(repoName)-len(".git")]
 			if len(repoName) <= 0 { continue }
 		}
+		if cfg.OperationMode == OP_MODE_SIMPLE {
+			m, err := cfg.ReadRepositorySimpleModeConfig(ns, repoName)
+			if err != nil { continue }
+			if m.Repository.Visibility == model.SIMPLE_MODE_VISIBILITY_PRIVATE {
+				continue
+			}
+		}
 		k := gitlib.NewLocalGitRepository("", repoName, p)
 		res[repoName] = &model.Repository{
+			Type: model.GuessRepositoryType(p),
 			Namespace: ns,
 			Name: k.Name,
 			Description: k.Description,
@@ -589,6 +619,7 @@ func (cfg *AegisConfig) GetAllNamespacePlain() (map[string]*model.Namespace, err
 	if !cfg.UseNamespace {
 		ns, err := model.NewNamespace("", cfg.GitRoot)
 		if err != nil { return nil, err }
+		// TODO: add privated repo as well.
 		for _, item := range cfg.IgnoreRepository {
 			k := strings.Split(item, ":")
 			if len(k) >= 2 {
@@ -606,17 +637,29 @@ func (cfg *AegisConfig) GetAllNamespacePlain() (map[string]*model.Namespace, err
 	for _, item := range l {
 		namespaceName := item.Name()
 		if !model.ValidNamespaceName(namespaceName) { continue }
-		_, shouldIgnore := slices.BinarySearch(cfg.IgnoreNamespace, namespaceName)
-		if shouldIgnore { continue }
+		if cfg.OperationMode == OP_MODE_PLAIN {
+			_, shouldIgnore := slices.BinarySearch(cfg.IgnoreNamespace, namespaceName)
+			if shouldIgnore { continue }
+		} else if cfg.OperationMode == OP_MODE_SIMPLE {
+			m, err := cfg.ReadNamespaceSimpleModeConfig(namespaceName)
+			if err != nil { continue }
+			if m.Namespace.Visibility == model.SIMPLE_MODE_VISIBILITY_PRIVATE {
+				continue
+			}
+		}
 		p := path.Join(cfg.GitRoot, namespaceName)
 		ns, err := model.NewNamespace(namespaceName, p)
 		if err != nil { return nil, err }
 		// (i'm worried that) this might be slow...
-		for _, item := range cfg.IgnoreRepository {
-			k := strings.Split(item, ":")
-			if len(k) < 2 { continue }
-			if k[0] != namespaceName { continue }
-			delete(ns.RepositoryList, k[1])
+		if cfg.OperationMode == OP_MODE_PLAIN {
+			for _, item := range cfg.IgnoreRepository {
+				k := strings.Split(item, ":")
+				if len(k) < 2 { continue }
+				if k[0] != namespaceName { continue }
+				delete(ns.RepositoryList, k[1])
+			}
+		} else {
+			// TODO: fix this.
 		}
 		res[namespaceName] = ns
 	}

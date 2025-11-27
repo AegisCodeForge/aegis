@@ -6,6 +6,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/auxfuncs"
 	"github.com/bctnry/aegis/pkg/gitlib"
@@ -43,7 +44,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 			
-			if !rc.Config.IsInPlainMode() {
+			if rc.Config.OperationMode != aegis.OP_MODE_NORMAL {
 				rc.LoginInfo.IsOwner = s.Owner == rc.LoginInfo.UserName || ns.Owner == rc.LoginInfo.UserName
 			}
 			if !rc.Config.IsInPlainMode() && s.Status == model.REPO_NORMAL_PRIVATE {
@@ -81,7 +82,10 @@ func bindRepositoryController(ctx *RouterContext) {
 			var cobj *gitlib.CommitObject
 			var treeObjList []gitlib.TreeObjectItem
 			var permaLink string = ""
+			emailUserMap := make(map[string]string, 0)
 
+			repoHeaderInfo = GenerateRepoHeader("", "")
+			
 			readmeString := ""
 			readmeType := ""
 			readmeTier := 0
@@ -97,7 +101,8 @@ func bindRepositoryController(ctx *RouterContext) {
 				if len(k) <= 0 { goto findingMajorBranchDone; }
 				br = rr.BranchIndex[k[0]];
 			}
-			repoHeaderInfo = GenerateRepoHeader("branch", br.Name)
+			repoHeaderInfo.TypeStr = "branch"
+			repoHeaderInfo.NodeName = br.Name
 			// now we try to read the README file.
 			// the order would be: README - README.txt
 			//                     - any file that starts with "README."
@@ -109,16 +114,15 @@ func bindRepositoryController(ctx *RouterContext) {
 			// no readme.
 			if !gitlib.IsCommitObject(obj) { goto findingMajorBranchDone; }
 			cobj = obj.(*gitlib.CommitObject)
+			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				emailUserMap[cobj.AuthorInfo.AuthorEmail] = ""
+				emailUserMap[cobj.CommitterInfo.AuthorEmail] = ""
+				rc.DatabaseInterface.ResolveMultipleEmailToUsername(emailUserMap)
+			}
 			commitInfo = &templates.CommitInfoTemplateModel{
 				RootPath: fmt.Sprintf("/repo/%s", s.FullName()),
 				Commit: cobj,
-				EmailUserMapping: func()map[string]string{
-					m := make(map[string]string, 0)
-					m[cobj.AuthorInfo.AuthorEmail] = ""
-					m[cobj.CommitterInfo.AuthorEmail] = ""
-					_, err = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
-					return m
-				}(),
+				EmailUserMapping: emailUserMap,
 			}
 			permaLink = fmt.Sprintf("/repo/%s/commit/%s/%s", rfn, cobj.Id, "")
 			obj, err = rr.ReadObject(cobj.TreeObjId)
@@ -200,7 +204,7 @@ func bindRepositoryController(ctx *RouterContext) {
 		},
 	))
 
-	if !ctx.Config.IsInPlainMode() {
+	if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
 		bindRepositoryForkController(ctx)
 		bindRepositoryPullRequestController(ctx)
 	}

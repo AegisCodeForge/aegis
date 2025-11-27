@@ -14,7 +14,7 @@ import (
 type CommitObject struct {
 	Id string
 	TreeObjId string
-	ParentId string
+	ParentIdList []string
 	AuthorInfo AuthorTime
 	CoAuthorInfo []AuthorTime
 	CommitterInfo AuthorTime
@@ -22,7 +22,14 @@ type CommitObject struct {
 	CommitMessage string
 	Signature string
 	rawData []byte
+	isDirty bool
 }
+
+func (c *CommitObject) ParentId() string {
+	if len(c.ParentIdList) <= 0 { return "" }
+	return c.ParentIdList[0]
+}
+
 
 func (c CommitObject) Type() GitObjectType { return COMMIT }
 func (c CommitObject) ObjectId() string { return c.Id }
@@ -33,8 +40,22 @@ func IsCommitObject(gobj GitObject) bool {
 	return ok
 }
 
-func (c CommitObject) String() string {
-	return fmt.Sprintf("Commit{%s,%s,%s}", c.ObjectId(), c.ParentId, c.TreeObjId)
+func (c *CommitObject) RenderAsString() string {
+	res := new(bytes.Buffer)
+	fmt.Fprintf(res, "tree %s\n", c.TreeObjId)
+	for _, v := range c.ParentIdList {
+		fmt.Fprintf(res, "parent %s\n", v)
+	}
+	fmt.Fprintf(res, "author %s\n", c.AuthorInfo.String())
+	fmt.Fprintf(res, "committer %s\n", c.CommitterInfo.String())
+	if len(c.Signature) > 0 {
+		fmt.Fprintf(res, "gpgsig %s\n\n", c.Signature)
+	}
+	fmt.Fprintf(res, "%s\n", c.CommitMessage)
+	for _, v := range c.CoAuthorInfo {
+		fmt.Fprintf(res, "Co-Authored-By: %s\n", v.String())
+	}
+	return res.String()
 }
 
 // parse a commit object.
@@ -77,6 +98,7 @@ func parseCommitObject(objid string, f io.Reader) (*CommitObject, error) {
 	message := splittedSource[1]
 	res := CommitObject{}
 	sig := make([]string, 0)
+	res.ParentIdList = make([]string, 0)
 	receivingSig := false
 	for line := range strings.SplitSeq(header, "\n")  {
 		if receivingSig {
@@ -91,7 +113,7 @@ func parseCommitObject(objid string, f io.Reader) (*CommitObject, error) {
 		case "tree":
 			res.TreeObjId = lineContent
 		case "parent":
-			res.ParentId = lineContent
+			res.ParentIdList = append(res.ParentIdList, lineContent)
 		case "author":
 			res.AuthorInfo = parseAuthorTime(lineContent)
 		case "committer":

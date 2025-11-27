@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	. "github.com/bctnry/aegis/routes"
@@ -23,7 +24,7 @@ func bindNamespaceController(ctx *RouterContext) {
 			var ns *model.Namespace
 			var ok bool
 			var err error
-			if rc.Config.IsInPlainMode() {
+			if rc.Config.OperationMode != aegis.OP_MODE_NORMAL {
 				ns, ok = rc.GitNamespaceList[namespaceName]
 				if !ok {
 					err = rc.SyncAllNamespacePlain()
@@ -36,6 +37,15 @@ func bindNamespaceController(ctx *RouterContext) {
 						rc.ReportNotFound(namespaceName, "Namespace", rc.Config.DepotName, w, r)
 						return
 					}
+				}
+				ns.RepositoryList, err = rc.Config.GetAllRepositoryByNamespacePlain(ns.Name)
+				if err != nil {
+					rc.ReportInternalError(fmt.Sprintf("Failed to retrieve repository of namespace %s: %s", ns.Name, err), w, r)
+					return
+				}
+				if ns.Status == model.NAMESPACE_NORMAL_PRIVATE {
+					rc.ReportNotFound(namespaceName, "Namespace", rc.Config.DepotName, w, r)
+					return
 				}
 				LogTemplateError(rc.LoadTemplate("namespace").Execute(w, templates.NamespaceTemplateModel{
 					Namespace: ns,
@@ -85,7 +95,7 @@ func bindNamespaceController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("GET /s/{namespace}/new-repo", UseMiddleware(
-		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, NormalModeRequired, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			nsName := r.PathValue("namespace")
 			if !model.ValidNamespaceName(nsName) {
@@ -116,7 +126,7 @@ func bindNamespaceController(ctx *RouterContext) {
 	))
 	
 	http.HandleFunc("POST /s/{namespace}/new-repo", UseMiddleware(
-		[]Middleware{Logged, ValidPOSTRequestRequired,
+		[]Middleware{Logged, NormalModeRequired, ValidPOSTRequestRequired,
 			LoginRequired, GlobalVisibility, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {

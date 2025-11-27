@@ -9,6 +9,7 @@ import (
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
+	"github.com/bctnry/aegis/pkg/aegis/ssh"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/pkg/shellparse"
 	"github.com/bctnry/aegis/routes"
@@ -20,32 +21,7 @@ func printGitError(s string) {
 	fmt.Print(gitlib.ToPktLine(fmt.Sprintf("ERR %s\n", s)))
 }
 
-func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) {
-	if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC &&
-		ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PRIVATE {
-		printGitError("This instance of Aegis is currently unavailable.")
-		os.Exit(1)
-	}
-	if ctx.Config.IsInPlainMode() {
-		printGitError("This instance of Aegis is in Plain Mode which does not allow Git over SSH.")
-		os.Exit(1)
-	}
-	m, err := ctx.DatabaseInterface.GetAuthKeyByName(username, keyname)
-	if err != nil {
-		printGitError(err.Error())
-		os.Exit(1)
-	}
-	authorizedKey := ctx.SSHKeyManagingContext.GetAuthorizedKey(username, keyname)
-	if authorizedKey != m.KeyText {
-		printGitError(fmt.Sprintf("Integrity check failed:\n auth: %s\nkt: %s", authorizedKey, m.KeyText))
-		os.Exit(1)
-	}
-	origCmd := os.Getenv("SSH_ORIGINAL_COMMAND")
-	// one might be tempted to think that one can just pass SSH_ORIGINAL_COMMAND
-	// to exec.Command, but things don't work that way...
-	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
-	isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
-	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
+func parseTargetRepositoryName(ctx *routes.RouterContext, relPath string) (string, string) {
 	if relPath[0] == '~' || relPath[0] == '/' {
 		relPath = relPath[1:]
 	}
@@ -72,6 +48,100 @@ func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) 
 		namespaceName = ""
 		repositoryName = relPathSegment[0]
 	}
+	return namespaceName, repositoryName
+}
+
+func handleSSHSimpleMode(ctx *routes.RouterContext, username string, keyname string) {
+	if ctx.SSHKeyManagingContext == nil {
+		sshCtx, err := ssh.ToContext(ctx.Config)
+		if err != nil {
+			printGitError(fmt.Sprintf("Failed to create SSH managing context: %s", err))
+			return
+		}
+		ctx.SSHKeyManagingContext = sshCtx
+	}
+	origCmd := os.Getenv("SSH_ORIGINAL_COMMAND")
+	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
+	// isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
+	
+	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
+	namespaceName, repositoryName := parseTargetRepositoryName(ctx, relPath)
+	var configRelPath string
+	if ctx.Config.UseNamespace {
+		configRelPath = path.Join("__aegis", "__repo_config", "aegis_sync")
+	} else {
+		configRelPath = path.Join("__repo_config", "aegis_sync")
+	}
+	configPath := path.Join(ctx.Config.GitRoot, configRelPath, namespaceName, repositoryName, "config.json")
+	config, err := model.ReadRepositoryConfigFromFile(configPath)
+	if err != nil {
+		printGitError(fmt.Sprintf("Failed to read repository config: %s", err))
+		return
+	}
+	userAcl, ok := config.Users[username]
+	if !ok {
+		printGitError("Not enough permission")
+		return
+	}
+	switch userAcl.Default {
+	case "allow":
+		// see also:
+		//     https://git-scm.com/docs/git-receive-pack
+		//     https://git-scm.com/docs/git-upload-pack
+		//     https://git-scm.com/docs/git-upload-archive
+		// all commands have the git dir path at the end of the call, so we resolve it
+		// with ctx.Config.
+		realGitPath := path.Join(ctx.Config.GitRoot, namespaceName, repositoryName)
+		parsedOrigCmd[len(parsedOrigCmd)-1] = realGitPath
+		cmdobj := exec.Command(parsedOrigCmd[0], parsedOrigCmd[1:]...)
+
+		cmdobj.Stdout = os.Stdout
+		cmdobj.Stdin = os.Stdin
+		cmdobj.Stderr = os.Stderr
+		err = cmdobj.Run()
+		if err != nil {
+			printGitError(err.Error())
+		}
+		os.Exit(0)
+	case "disallow": fallthrough
+	default:
+		printGitError("Not enough permission")
+		return
+	}
+	
+}
+
+func HandleSSHLogin(ctx *routes.RouterContext, username string, keyname string) {
+	if ctx.Config.OperationMode == aegis.OP_MODE_SIMPLE {
+		handleSSHSimpleMode(ctx, username, keyname)
+		return
+	}
+	if ctx.Config.IsInPlainMode() {
+		printGitError("This instance of Aegis is in Plain Mode which does not allow Git over SSH.")
+		os.Exit(1)
+	}
+	if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC &&
+		ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PRIVATE {
+		printGitError("This instance of Aegis is currently unavailable.")
+		os.Exit(1)
+	}
+	m, err := ctx.DatabaseInterface.GetAuthKeyByName(username, keyname)
+	if err != nil {
+		printGitError(err.Error())
+		os.Exit(1)
+	}
+	authorizedKey := ctx.SSHKeyManagingContext.GetAuthorizedKey(username, keyname)
+	if authorizedKey != m.KeyText {
+		printGitError(fmt.Sprintf("Integrity check failed:\n auth: %s\nkt: %s", authorizedKey, m.KeyText))
+		os.Exit(1)
+	}
+	origCmd := os.Getenv("SSH_ORIGINAL_COMMAND")
+	// one might be tempted to think that one can just pass SSH_ORIGINAL_COMMAND
+	// to exec.Command, but things don't work that way...
+	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
+	isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
+	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
+	namespaceName, repositoryName := parseTargetRepositoryName(ctx, relPath)
 
 	// check acl.
 	r, err := ctx.DatabaseInterface.GetRepositoryByName(namespaceName, repositoryName)

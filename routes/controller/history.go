@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/bctnry/aegis/pkg/aegis"
 	"github.com/bctnry/aegis/pkg/aegis/model"
 	"github.com/bctnry/aegis/pkg/gitlib"
 	"github.com/bctnry/aegis/routes"
@@ -102,13 +103,13 @@ func bindHistoryController(ctx *RouterContext) {
 			}
 			
 			m := make(map[string]string, 0)
-			for _, k := range h {
-				m[k.AuthorInfo.AuthorEmail] = ""
-				m[k.CommitterInfo.AuthorEmail] = ""
+			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				for _, k := range h {
+					m[k.AuthorInfo.AuthorEmail] = ""
+					m[k.CommitterInfo.AuthorEmail] = ""
+				}
+				ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
 			}
-			_, err = ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)
-			// NOTE: we don't check, we just assume the emails are not verified
-			// to anyone if an error occur.
 			
 			LogTemplateError(ctx.LoadTemplate("commit-history").Execute(
 				w,

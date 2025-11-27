@@ -35,8 +35,10 @@
 		<div class="main-side-top">
 		  {{template "_tree-path" .TreePath}}
 		  <div class="file-nav">
+			{{if eq .Config.OperationMode "normal"}}
 			{{if and .LoginInfo.IsOwner (eq .RepoHeaderInfo.TypeStr "branch")}}
 			<a href="{{getRepoPath .Repository.Namespace .Repository.Name}}/{{.RepoHeaderInfo.TypeStr}}/{{.RepoHeaderInfo.NodeName}}?new-file">New/Upload</a>
+			{{end}}
 			{{end}}
 			<a href="{{.PermaLink}}">Permalink</a>
 		  </div>
