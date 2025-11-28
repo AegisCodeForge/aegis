@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <title>{{$repoName}} :: Gitus</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-issue.css">
   </head>
   <body>
@@ -19,13 +20,25 @@
 	<main>
 	  {{template "issue/_sidebar" .}}
 	  <div class="main-side">
-		<h2>Create New Issue</h2>
-		<form action="" method="POST">
-		  <div class="field"><label class="field-label" for="title">Title:</label>
-			<input class="field-tf" name="title" id="title" /></div>
-		  <div class="field"><label class="field-label" for="content">Content:</label>
-			<textarea name="content" id="content"></textarea></div>
-		  <input type="submit" value="New Issue" />
+		<fieldset>
+		  <legend>Create New Issue</legend>
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="title">Title:</label></td>
+				  <td><input class="field-tf" name="title" id="title" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="content">Content:</label></td>
+				  <td><textarea name="content" id="content"></textarea></td>
+				</tr>
+				<tr class="field">
+				  <td></td>
+				  <td><input type="submit" value="New Issue" /></td>
+				</tr>
+			  </tbody>
+			</table>
 		</form>
 	  </div>
 	</main>

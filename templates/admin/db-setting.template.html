@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Database Settings :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
@@ -18,24 +19,45 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Database Settings</h2>
-		<div>{{.ErrorMsg}}</div>
-		<form action="" method="POST">
-		  <div class="field">
-			<label class="field-label" for="type">Database Type:</label>
-			<select name="type" id="type" value="{{.Config.Database.Type}}">
-			  <option value="sqlite">Sqlite3</option>
-			</select>
-		  </div>
-		  <div class="field"><label class="field-label" for="path">Database Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.Database.Path}}" /></div>
-		  <div class="field"><label class="field-label" for="url">Database URL:</label><input name="url" id="url" class="field-tf" value="{{.Config.Database.URL}}" /></div>
-		  
-		  <div class="field"><label class="field-label" for="user">Database User:</label><input name="user" id="user" class="field-tf" value="{{.Config.Database.UserName}}" /></div>
-		  <div class="field"><label class="field-label" for="name">Database Name:</label><input name="name" id="name" class="field-tf" value="{{.Config.Database.DatabaseName}}" /></div>
-		  <div class="field"><label class="field-label" for="table-prefix">Database Table Prefix:</label><input class="field-tf" name="table-prefix" id="table-prefix" value="{{.Config.Database.TablePrefix}}" /></div>
-		  <div class="field"><label class="field-label" for="password">Database Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Database.Password}}" /></div>
-		  <input class="field-submit" type="submit" value="Save Config" />
-		</form>
+		<fieldset>
+		  <legend>Database Settings</legend>
+		  <div>{{.ErrorMsg}}</div>
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="type">Database Type:</label></td>
+				<td><select name="type" id="type" value="{{.Config.Database.Type}}">
+					<option value="sqlite">Sqlite3</option>
+				</select></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="path">Database Path:</label></td>
+				<td><input name="path" id="path" class="field-tf" value="{{.Config.Database.Path}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="url">Database URL:</label></td>
+				<td><input name="url" id="url" class="field-tf" value="{{.Config.Database.URL}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="user">Database User:</label></td>
+				<td><input name="user" id="user" class="field-tf" value="{{.Config.Database.UserName}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="name">Database Name:</label></td>
+				<td><input name="name" id="name" class="field-tf" value="{{.Config.Database.DatabaseName}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="table-prefix">Database Table Prefix:</label></td>
+				<td><input class="field-tf" name="table-prefix" id="table-prefix" value="{{.Config.Database.TablePrefix}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="password">Database Password:</label></td>
+				<td><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Database.Password}}" /></td>
+			  </tr>
+			</table>
+			<input class="field-submit" type="submit" value="Save Config" />
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

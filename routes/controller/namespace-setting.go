@@ -14,7 +14,7 @@ import (
 
 func bindNamespaceSettingController(ctx *RouterContext) {
 	http.HandleFunc("GET /s/{namespace}/setting", UseMiddleware(
-		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard},
+		[]Middleware{Logged, UseLoginInfo, LoginRequired, GlobalVisibility, ErrorGuard},
 		ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			namespaceName := r.PathValue("namespace")

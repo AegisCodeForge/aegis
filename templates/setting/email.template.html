@@ -21,28 +21,45 @@
 
 	  <div class="setting-main main-side">
 		<h2>Email</h2>
-
+		
 		<table class="admin-table">
 		  <thead>
 			<tr><th>Email Address</th><th>Verified?</th><th>Primary?</th><th>Verify</th><th>Set As Primary</th><th>Delete</th></tr>
 		  </thead>
 		  <tbody>
 			{{range .EmailList}}
-			<tr><td>{{.Email}}</a></td><td>{{if .Verified}}YES{{else}}NO{{end}}</td><td>{{if .Primary}}YES{{end}}</td><td><a href="/setting/email/verify?email={{htmlEscape .Email}}">Verify</a></td><td><a href="/setting/email/primary?email={{htmlEscape .Email}}">Set As Primary</a></td><td><a href="/setting/email/delete?email={{htmlEscape .Email}}">Delete</a></td></tr>
+			<tr>
+			  <td><a href="mailto:{{htmlEscape .Email}}">{{.Email}}</a></td>
+			  <td>{{if .Verified}}YES{{else}}NO{{end}}</td>
+			  <td>{{if .Primary}}YES{{end}}</td>
+			  <td><a href="/setting/email/verify?email={{htmlEscape .Email}}">Verify</a></td>
+			  <td><a href="/setting/email/primary?email={{htmlEscape .Email}}">Set As Primary</a></td>
+			  <td><a href="/setting/email/delete?email={{htmlEscape .Email}}">Delete</a></td>
+			</tr>
 			{{end}}
-		  </tbody>
-		</table>
-
-		<h2>Add new email</h2>
+          </tbody>
+        </table>
 		
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form action="" method="POST">
-		  <div class="field"><label class="field-label" for="email">Email:</label> <input name="email" /></div>
-		  <input type="submit" value="Add Email" />
-		</form>
-		
+		<fieldset>
+		  <legend>Add new email</legend>
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="email">Email:</label></td>
+				  <td><input class="field-tf" name="email" /></td>
+				</tr>
+				<tr>
+				  <td></td>
+				  <td><input type="submit" value="Add Email" /></td>
+				</tr>
+			  </tbody>
+			</table>
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

@@ -19,29 +19,44 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Index Configuration</h2>
-		<div>{{.ErrorMsg}}</div>
-		
-		<div id="form">
-		  <form action="" method="POST">
-			<div class="field"><label class="field-label" for="index-type">Index type:</label>
-			  <select class="field-select" name="index-type" id="index-type">
-				<option {{if eq .IndexType "all/namespace"}}selected{{end}} value="all/namespace">All Namespaces</option>
-				<option {{if eq .IndexType "all/repository"}}selected{{end}} value="all/repository">All Repository</option>
-				<option {{if eq .IndexType "namespace"}}selected{{end}} value="namespace">Namespace</option>
-				<option {{if eq .IndexType "repository"}}selected{{end}} value="repository">Repository</option>
-				<option {{if eq .IndexType "static/html"}}selected{{end}} value="static/html">HTML text</option>
-				<option {{if eq .IndexType "static/markdown"}}selected{{end}} value="static/markdown">Markdown text</option>
-				<option {{if eq .IndexType "static/text"}}selected{{end}} value="static/text">Plain text</option>
-				<option {{if eq .IndexType "static/org"}}selected{{end}} value="static/org">Org-mode text</option>
-			  </select>
-			</div>
-			<div class="field"><label class="field-label" for="namespace">Namespace:</label><input class="field-tf" name="namespace" id="namespace" value="{{.IndexNamespace}}"></div>
-			<div class="field"><label class="field-label" for="repository">Repository:</label><input class="field-tf" name="repository" id="repository" value="{{.IndexRepository}}"></div>
-			<div class="field"><label class="field-label" for="file-content">File content:</label><textarea name="file-content" id="file-content">{{.IndexFileContent}}</textarea></div>
-			<input class="field-submit" type="submit" value="Save" />
-		  </form>
-		</div>
+		<fieldset>
+		  <legend>Index Configuration</legend>
+		  <div>{{.ErrorMsg}}</div>
+		  
+		  <div id="form">
+			<form action="" method="POST">
+			  <table class="field-table">
+				<tr class="field">
+				  <td><label class="field-label" for="index-type">Index type:</label></td>
+				  <td><select class="field-select" name="index-type" id="index-type">
+					  <option {{if eq .IndexType "all/namespace"}}selected{{end}} value="all/namespace">All Namespaces</option>
+					  <option {{if eq .IndexType "all/repository"}}selected{{end}} value="all/repository">All Repository</option>
+					  <option {{if eq .IndexType "namespace"}}selected{{end}} value="namespace">Namespace</option>
+					  <option {{if eq .IndexType "repository"}}selected{{end}} value="repository">Repository</option>
+					  <option {{if eq .IndexType "static/html"}}selected{{end}} value="static/html">HTML text</option>
+					  <option {{if eq .IndexType "static/markdown"}}selected{{end}} value="static/markdown">Markdown text</option>
+					  <option {{if eq .IndexType "static/text"}}selected{{end}} value="static/text">Plain text</option>
+					  <option {{if eq .IndexType "static/org"}}selected{{end}} value="static/org">Org-mode text</option>
+					</select>
+				  </td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="namespace">Namespace:</label></td>
+				  <td><input class="field-tf" name="namespace" id="namespace" value="{{.IndexNamespace}}"></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="repository">Repository:</label></td>
+				  <td><input class="field-tf" name="repository" id="repository" value="{{.IndexRepository}}"></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="file-content">File content:</label></td>
+				  <td><textarea name="file-content" id="file-content">{{.IndexFileContent}}</textarea></td>
+				</tr>
+			  </table>
+			  <input class="field-submit" type="submit" value="Save" />
+			</form>
+		  </div>
+		</fieldset>
 	  </div>
 	</main>
 	

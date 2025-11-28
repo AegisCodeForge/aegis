@@ -20,11 +20,14 @@ func main() {
 	countBytes, _ := os.ReadFile("COUNT")
 	countStr := strings.Split(string(countBytes), ",")
 	var newCountStr string
+	var newVersionStr string
 	if versionStr != strings.TrimSpace(countStr[0]) {
 		newCountStr = fmt.Sprintf("%s,%d", versionStr, 0)
+		newVersionStr = fmt.Sprintf("%s.build_%d", versionStr, 0)
 	} else {
 		c, _ := strconv.Atoi(countStr[1])
 		newCountStr = fmt.Sprintf("%s,%d", versionStr, c+1)
+		newVersionStr = fmt.Sprintf("%s.build_%d", versionStr, c+1)
 	}
 	p := path.Join("templates", "_footer.template.html")
 	f, _ := os.OpenFile(p, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
@@ -34,7 +37,7 @@ func main() {
 <div class="footer-message">
     Powered by <a href="https://github.com/AegisCodeForge/aegis">Aegis</a>, version %s (%s)
 </div>
-{{end}}`, string(versionBytes), newCountStr))
+{{end}}`, string(versionBytes), newVersionStr))
 		f.Close()
 	}
 	f2, _ := os.OpenFile("COUNT", os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)

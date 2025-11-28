@@ -6,7 +6,6 @@
     <title>settings of {{.Namespace.Name}} :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
-	<link rel="stylesheet" href="/static/style-namespace-setting.css">
   </head>
   <body>
 	<header>
@@ -19,29 +18,50 @@
 	  {{template "namespace-setting/_sidebar" .}}
 
 	  <div class="main-side">
-		
-		<h2>Change info</h2>
-		
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form id="namespace-setting-form" action="" method="POST">
-		  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></div>
-		  <div class="field"><label class="field-label" for="owner">Owner:</label> <input class="field-tf" name="owner" id="owner" value="{{.Namespace.Owner}}" /></div>
-		  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></div>
-		  <div class="field"><label class="field-label" for="status">Status:</label>
-			<select class="field-select" name="status" id="status" value="{{.Namespace.Status}}">
-		  <option value="1" {{if eq .Namespace.Status 1}}selected{{end}}>Public</option>
-		  <option value="2" {{if eq .Namespace.Status 2}}selected{{end}}>Private</option>
-		</select>
-		  </div>
-		  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description">{{.Namespace.Description}}</textarea></div>
-		  <input class="form-submit" type="submit" value="Change Info" />
-		</form>
 
-		
-		<h2>Delete Namespace</h2>
-		<a href="/s/{{.Namespace.Name}}/delete">Click here to delete this namespace</a>
+		<fieldset>
+		  <legend>Change info</legend>
+		  
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="title">Title:</label></td>
+				<td><input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="owner">Owner:</label></td>
+				<td><input class="field-tf" name="owner" id="owner" value="{{.Namespace.Owner}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="email">Email:</label></td>
+				<td><input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="status">Status:</label></td>
+				<td><select class="field-select" name="status" id="status" value="{{.Namespace.Status}}">
+					<option value="1" {{if eq .Namespace.Status 1}}selected{{end}}>Public</option>
+					<option value="2" {{if eq .Namespace.Status 2}}selected{{end}}>Private</option>
+				</select></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="description">Description:</label></td>
+				<td><textarea class="field-tf" name="description" id="description">{{.Namespace.Description}}</textarea></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="form-submit" type="submit" value="Change Info" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
+
+		<fieldset>
+		  <legend>Delete Namespace</legend>
+		  <a href="/s/{{.Namespace.Name}}/delete">Click here to delete this namespace</a>
+		</fieldset>
 
 	  </div>
 	</main>

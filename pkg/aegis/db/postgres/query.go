@@ -2894,8 +2894,13 @@ SELECT repo_label_list FROM %s_repository WHERE repo_namespace = $1 AND repo_nam
 	var rll string
 	err := stmt.Scan(&rll)
 	if err != nil { return err }
-	tags := strings.Split(rll[1:len(rll)-1], "}{")
-	if slices.Contains(tags, lbl) { return nil }
+	var tags []string
+	if len(rll) <= 0 {
+		tags = make([]string, 0)
+	} else {
+		tags = strings.Split(rll[1:len(rll)-1], "}{")
+		if slices.Contains(tags, lbl) { return nil }
+	}
 	tags = append(tags, lbl)
 	tx, err := dbif.pool.Begin(ctx)
 	if err != nil { return err }
@@ -2921,7 +2926,6 @@ SELECT repo_label_list FROM %s_repository WHERE repo_namespace = $1 AND repo_nam
 	tags := strings.Split(rll[1:len(rll)-1], "}{")
 	idx := slices.Index(tags, lbl)
 	if idx == -1 { return nil }
-	fmt.Println("tags", tags)
 	tags = slices.Delete(tags, idx, idx+1)
 	tx, err := dbif.pool.Begin(ctx)
 	if err != nil { return err }

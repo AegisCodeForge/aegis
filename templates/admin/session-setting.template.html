@@ -19,29 +19,55 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Session Store Settings</h2>
-		<div>{{.ErrorMsg}}</div>
-		<form action="" method="POST">
-		  <div class="field">
-			<label class="field-label" for="type">Session Store Type:</label>
-			<select name="type" id="type">
-			  <option value="sqlite" {{if eq .Config.Session.Type "sqlite"}}selected{{end}}>Sqlite3</option>
-			  <optgroup label="Redis-like">
-			  <option value="redis" {{if eq .Config.Session.Type "redis"}}selected{{end}}>Redis</option>
-			  <option value="valkey" {{if eq .Config.Session.Type "valkey"}}selected{{end}}>ValKey</option>
-			  <option value="keydb" {{if eq .Config.Session.Type "keydb"}}selected{{end}}>KeyDB</option>
-			  </optgroup>
-			  <option value="memcached" {{if eq .Config.Session.Type "memcached"}}selected{{end}}>Memcached</option>
-			</select>
-		  </div>
-		  <div class="field"><label class="field-label" for="path">Session Store Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.Session.Path}}"/></div>
-		  <div class="field"><label class="field-label" for="table-prefix">Session Store Table Prefix:</label><input name="table-prefix" id="table-prefix" class="field-tf" value="{{.Config.Session.TablePrefix}}"/></div>
-		  <div class="field"><label class="field-label" for="host">Session Store Host:</label><input name="host" id="host" class="field-tf" value="{{.Config.Session.Host}}"/></div>
-		  <div class="field"><label class="field-label" for="user-name">Session Store User Name:</label><input name="user-name" id="user-name" class="field-tf" value="{{.Config.Session.UserName}}"/></div>
-		  <div class="field"><label class="field-label" for="password">Session Store Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Session.Password}}"/></div>
-		  <div class="field"><label class="field-label" for="database-number">Session Store Database Number:</label><input name="database-number" id="database-number" class="field-tf" value="{{.Config.Session.DatabaseNumber}}"/></div>
-		  <input class="field-submit" type="submit" value="Save Config" />
-		</form>
+		<fieldset>
+		  <legend>Session Store Settings</legend>
+		  <div>{{.ErrorMsg}}</div>
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="type">Session Store Type:</label></td>
+				<td><select name="type" id="type">
+					<option value="sqlite" {{if eq .Config.Session.Type "sqlite"}}selected{{end}}>Sqlite3</option>
+					<optgroup label="Redis-like">
+					  <option value="redis" {{if eq .Config.Session.Type "redis"}}selected{{end}}>Redis</option>
+					  <option value="valkey" {{if eq .Config.Session.Type "valkey"}}selected{{end}}>ValKey</option>
+					  <option value="keydb" {{if eq .Config.Session.Type "keydb"}}selected{{end}}>KeyDB</option>
+					</optgroup>
+					<option value="memcached" {{if eq .Config.Session.Type "memcached"}}selected{{end}}>Memcached</option>
+				  </select>
+				</td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="path">Session Store Path:</label></td>
+				<td><input name="path" id="path" class="field-tf" value="{{.Config.Session.Path}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="table-prefix">Session Store Table Prefix:</label></td>
+				<td><input name="table-prefix" id="table-prefix" class="field-tf" value="{{.Config.Session.TablePrefix}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="host">Session Store Host:</label></td>
+				<td><input name="host" id="host" class="field-tf" value="{{.Config.Session.Host}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="user-name">Session Store User Name:</label></td>
+				<td><input name="user-name" id="user-name" class="field-tf" value="{{.Config.Session.UserName}}"/>
+				</td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="password">Session Store Password:</label></td>
+				<td><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Session.Password}}"/>
+				</td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="database-number">Session Store Database Number:</label>
+				</td>
+				<td><input name="database-number" id="database-number" class="field-tf" value="{{.Config.Session.DatabaseNumber}}"/></td>
+			  </tr>
+			</table>
+			<input class="field-submit" type="submit" value="Save Config" />
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

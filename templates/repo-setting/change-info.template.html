@@ -22,25 +22,39 @@
 		{{if .ErrorMsg}}
 		<div class="error-msg">{{.ErrorMsg}}</div>
 		{{end}}
-		
-		<h2>Change info</h2>
-		
-		<form id="repo-setting-form" action="" method="POST">
-		  <div class="field"><label class="field-label" for="status">Status:</label>
-			<select class="field-select" name="status" id="status" value="{{.Repository.Status}}">
-		  <option value="1" {{if eq .Repository.Status 1}}selected{{end}}>Public</option>
-		  <option value="2" {{if eq .Repository.Status 2}}selected{{end}}>Private</option>
-		  <option value="4" {{if eq .Repository.Status 4}}selected{{end}}>Archived</option>
-		</select>
-		  </div>
-		  <div class="field"><label class="field-label" for="owner">Owner:</label> <input class="field-tf" name="owner" id="owner" value="{{.Repository.Owner}}" /></div>
-		  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description">{{.Repository.Description}}</textarea></div>
-		  <input class="form-submit" type="submit" value="Change Info" />
-		</form>
 
+		<fieldset>
+		  <legend>Change info</legend>
+		  <form id="repo-setting-form" action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="status">Status:</label></td>
+				<td><select class="field-select" name="status" id="status" value="{{.Repository.Status}}">
+					<option value="1" {{if eq .Repository.Status 1}}selected{{end}}>Public</option>
+					<option value="2" {{if eq .Repository.Status 2}}selected{{end}}>Private</option>
+					<option value="4" {{if eq .Repository.Status 4}}selected{{end}}>Archived</option>
+				</select></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="owner">Owner:</label></td>
+				<td><input class="field-tf" name="owner" id="owner" value="{{.Repository.Owner}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="description">Description:</label></td>
+				<td><textarea class="field-tf" name="description" id="description">{{.Repository.Description}}</textarea></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="form-submit" type="submit" value="Change Info" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
 		
-		<h2>Delete Repository</h2>
-		<a href="/repo/{{.RepoFullName}}/delete">Click here to delete this repository</a>
+		<fieldset>
+		  <legend>Delete Repository</legend>
+		  <a href="/repo/{{.RepoFullName}}/delete">Click here to delete this repository</a>
+		</fieldset>
 
 	  </div>
 	</main>

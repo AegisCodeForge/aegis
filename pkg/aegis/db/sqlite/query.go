@@ -3337,8 +3337,13 @@ SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? and repo_name
 	var rll string
 	err = r.Scan(&rll)
 	if err != nil { return err }
-	tags := strings.Split(rll[1:len(rll)-1], "}{")
-	if slices.Contains(tags, lbl) { return nil }
+	var tags []string
+	if len(rll) <= 0 {
+		tags = make([]string, 0)
+	} else {
+		tags = strings.Split(rll[1:len(rll)-1], "}{")
+		if slices.Contains(tags, lbl) { return nil }
+	}
 	tags = append(tags, lbl)
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
@@ -3368,7 +3373,7 @@ SELECT repo_label_list FROM %s_repository WHERE repo_namespace = ? AND repo_name
 	tags := strings.Split(rll[1:len(rll)-1], "}{")
 	idx := slices.Index(tags, lbl)
 	if idx == -1 { return nil }
-	tags = append(tags[0:idx], tags[idx+1:len(tags)-1]...)
+	tags = slices.Delete(tags, idx, idx+1)
 	tx, err := dbif.connection.Begin()
 	if err != nil { return err }
 	defer tx.Rollback()
@@ -3409,18 +3414,18 @@ WHERE repo_label_list LIKE ? ESCAPE ?
 AND repo_status = 1 OR repo_status = 4
 `, pfx))
 		if err != nil { return 0, err }
-		r := stmt.QueryRow(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\")
+		r = stmt.QueryRow(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\")
 		if r.Err() != nil { return 0, r.Err() }
 	} else {
 		stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
 SELECT COUNT(*) FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND (
-    repo_status = 1 OR repo_status = 4 OR repo-status = 5
+    repo_status = 1 OR repo_status = 4 OR repo_status = 5
     OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?))
 `, pfx))
 		if err != nil { return 0, err }
-		r := stmt.QueryRow(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", username, db.ToSqlSearchPattern(username), "\\")
+		r = stmt.QueryRow(db.ToSqlSearchPattern(fmt.Sprintf("{%s}", label)), "\\", username, db.ToSqlSearchPattern(username), "\\")
 		if r.Err() != nil { return 0, r.Err() }
 	}
 	var res int64
@@ -3450,7 +3455,7 @@ SELECT  repo_type, repo_namespace, repo_name, repo_description, repo_owner, repo
 FROM %s_repository
 WHERE repo_label_list LIKE ? ESCAPE ?
 AND (
-    repo_status = 1 OR repo_status = 4 OR repo-status = 5
+    repo_status = 1 OR repo_status = 4 OR repo_status = 5
     OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?))
 ORDER BY rowid ASC LIMIT ? OFFSET ?
 `, pfx))

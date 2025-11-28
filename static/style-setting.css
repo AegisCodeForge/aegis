@@ -51,6 +51,13 @@
 
 
 
+.field-table {
+	border-collapse: collapse;
+	width: 100%;
+	border-top: 0 !important;
+	border-bottom: 0 !important;
+}
+
 .setting-table {
 	border-collapse: collapse;
 	border-top: 2px var(--foreground-color) solid;

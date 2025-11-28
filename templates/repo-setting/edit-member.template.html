@@ -25,26 +25,40 @@
 		<div class="error-msg">{{.ErrorMsg}}</div>
 		{{end}}
 
-		<h2>Edit Member</h2>
-		
-		<form id="namespace-setting-form" action="" method="POST">
-		  <div class="field">Username: {{.Username}}</div>
-		  <table style="width:fit-content">
-			<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
-			<tbody>
-			  <tr class="field"><td><label for="addMember">Add Member</label></td> <td><input type="checkbox" name="addMember" id="addMember" {{if and .ACLTuple .ACLTuple.AddMember}}checked{{end}} /></td></tr>
-		<tr class="field"><td><label for="deleteMember">Delete Member</label></td> <td><input type="checkbox" name="deleteMember" id="deleteMember"  {{if and .ACLTuple .ACLTuple.DeleteMember}}checked{{end}}  /></td></tr>
-		<tr class="field"><td><label for="editMember">Edit Member</label></td> <td><input type="checkbox" name="editMember" id="editMember" {{if and .ACLTuple .ACLTuple.EditMember}}checked{{end}} /></td></tr>
-		<tr class="field"><td><label for="editInfo">Edit Info</label></td> <td><input type="checkbox" name="editInfo" id="editInfo" {{if and .ACLTuple .ACLTuple.EditInfo}}checked{{end}} /></td></tr>
-		<tr class="field"><td><label for="pushToRepo">Push To Repository</label></td> <td><input type="checkbox" name="pushToRepo" id="pushToRepo" {{if and .ACLTuple .ACLTuple.PushToRepository}}checked{{end}} /></td></tr>
-		<tr class="field"><td><label for="archiveRepo">Archive Repository</label></td> <td><input type="checkbox" name="archiveRepo" id="archiveRepo" {{if and .ACLTuple .ACLTuple.ArchiveRepository}}checked{{end}} /></td></tr>
-		<tr class="field"><td><label for="deleteRepo">Delete Repository</label></td> <td><input type="checkbox" name="deleteRepo" id="deleteRepo" {{if and .ACLTuple .ACLTuple.DeleteRepository}}checked{{end}} /></td></tr>
-		<tr class="field"><td><label for="editWebHooks">Edit Webhooks</label></td> <td><input type="checkbox" name="editWebHooks" id="editWebHooks" {{if and .ACLTuple .ACLTuple.EditWebHooks}}checked{{end}} /></td></tr>
-			</tbody>
-		  </table>
-
-		  <input class="form-submit" type="submit" value="Edit Member Privilege" />
-		</form>
+		<fieldset>
+		  <legend>Edit Member</legend>
+		  <form id="namespace-setting-form" action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td class="field-label">Username:</td>
+				<td>{{.Username}}</td>
+			  </tr>
+			  <tr class="field">
+				<td class="field-label">Privilege:</td>
+				<td>
+				  <table style="width:fit-content">
+					<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
+					<tbody>
+					  <tr class="field"><td><label for="addMember">Add Member</label></td> <td><input type="checkbox" name="addMember" id="addMember" {{if and .ACLTuple .ACLTuple.AddMember}}checked{{end}} /></td></tr>
+					  <tr class="field"><td><label for="deleteMember">Delete Member</label></td> <td><input type="checkbox" name="deleteMember" id="deleteMember"  {{if and .ACLTuple .ACLTuple.DeleteMember}}checked{{end}}  /></td></tr>
+					  <tr class="field"><td><label for="editMember">Edit Member</label></td> <td><input type="checkbox" name="editMember" id="editMember" {{if and .ACLTuple .ACLTuple.EditMember}}checked{{end}} /></td></tr>
+					  <tr class="field"><td><label for="editInfo">Edit Info</label></td> <td><input type="checkbox" name="editInfo" id="editInfo" {{if and .ACLTuple .ACLTuple.EditInfo}}checked{{end}} /></td></tr>
+					  <tr class="field"><td><label for="pushToRepo">Push To Repository</label></td> <td><input type="checkbox" name="pushToRepo" id="pushToRepo" {{if and .ACLTuple .ACLTuple.PushToRepository}}checked{{end}} /></td></tr>
+					  <tr class="field"><td><label for="archiveRepo">Archive Repository</label></td> <td><input type="checkbox" name="archiveRepo" id="archiveRepo" {{if and .ACLTuple .ACLTuple.ArchiveRepository}}checked{{end}} /></td></tr>
+					  <tr class="field"><td><label for="deleteRepo">Delete Repository</label></td> <td><input type="checkbox" name="deleteRepo" id="deleteRepo" {{if and .ACLTuple .ACLTuple.DeleteRepository}}checked{{end}} /></td></tr>
+					  <tr class="field"><td><label for="editWebHooks">Edit Webhooks</label></td> <td><input type="checkbox" name="editWebHooks" id="editWebHooks" {{if and .ACLTuple .ACLTuple.EditWebHooks}}checked{{end}} /></td></tr>
+					</tbody>
+				  </table>
+				</td>
+			  </tr>
+			  <tr>
+				<td></td>
+				<td>
+				  <input class="form-submit" type="submit" value="Edit Member Privilege" />
+				</td>
+			  </tr>
+		  </form>
+		</fieldset>
 
 	  </div>
 	</main>

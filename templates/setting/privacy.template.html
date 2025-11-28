@@ -20,20 +20,29 @@
 	  {{template "setting/_sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Two-factor authentication</h2>
-		{{if .ErrorMsg}}
-		{{if eq .ErrorMsg.Type "info"}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		{{end}}
-		<h3>Email</h3>
-		<form action="" method="POST">
-		  <input type="hidden" name="section" value="2fa" />
-		  <input type="hidden" name="type" value="email" />
-		  <div class="field"><label class="field-label" for="email-enable">Enable:</label> <input type="checkbox" name="email-enable" id="email-enable" {{if .User.TFAConfig.Email.Enable}}checked{{end}}/></div>
-		  <input type="submit" value="Save" />
-		</form>
-		
+		<fieldset>
+		  <legend>Two-factor authentication</legend>
+		  {{if .ErrorMsg}}
+		  {{if eq .ErrorMsg.Type "info"}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  {{end}}
+		  <h3>Email</h3>
+		  <form action="" method="POST">
+			<input type="hidden" name="section" value="2fa" />
+			<input type="hidden" name="type" value="email" />
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="email-enable">Enable:</label></td>
+				<td><input type="checkbox" name="email-enable" id="email-enable" {{if .User.TFAConfig.Email.Enable}}checked{{end}}/></td>
+			  </tr>
+			  <tr>
+				<td></td>
+				<td><input type="submit" value="Save" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

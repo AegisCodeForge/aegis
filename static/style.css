@@ -461,6 +461,9 @@ form input {
 	border: 2px var(--foreground-color) solid;
 	font-size: 1rem;
 }
+form input:active {
+	border-radius: 0;
+}
 form textarea {
 	border: 2px var(--foreground-color) solid;
 	background-color: var(--background-color);;
@@ -551,5 +554,53 @@ form input[type="submit"]:hover, .form-submit:hover {
 }
 
 
+/* ======================================================== */
+fieldset {
+	margin-top: 1rem;
+	margin-bottom: 1rem;
+	padding-left: 2rem;
+	padding-right: 2rem;
+	padding-bottom: 2rem;
+	padding-top: 1rem;
+}
+fieldset legend {
+    font-weight: bold;
+    font-size: 1.2rem;
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+}
 
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--background-color);
+  margin: 0;
+  font: inherit;
+  color: currentColor;
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--foreground-color);
+  display: grid;
+  place-content: center;
+}
+
+input[type="checkbox"]:checked {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: var(--foreground-color);
+  margin: 0;
+  font: inherit;
+  color: var(--background-color);
+  width: 1em;
+  height: 1em;
+  border: 2px solid var(--foreground-color);
+  display: grid;
+  place-content: center;
+}
+
+input[type="checkbox"]:focus {
+    outline: 1px solid var(--foreground-color);
+    outline-offset: 2px;
+    border-radius: 0;
+}
 

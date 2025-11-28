@@ -44,14 +44,23 @@
 		<p>There is no GPG keys set for this user.</p>
 		{{end}}
 
-		<h2>Add new GPG key</h2>
-		<form action="" method="POST">
-		  <div class="field">
-		  <label class="field-label" for="key-text">Key text:</label>
-		  <textarea name="key-text"></textarea>
-		  </div>
-		  <input type="submit" value="Add SSH key" />
-		</form>
+		<fieldset>
+		  <legend>Add new GPG key</legend>
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="key-text">Key text:</label></td>
+				  <td><textarea name="key-text"></textarea></td>
+				</tr>
+				<tr>
+				  <td></td>
+				  <td><input type="submit" value="Add SSH key" /></td>
+				</tr>
+			  </tbody>
+			</table>
+		  </form>
+		</fieldset>
 		
 	  </div>
 	</main>

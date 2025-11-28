@@ -19,22 +19,41 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		<h2>Receipt System Settings</h2>
-		<div>{{.ErrorMsg}}</div>
-		<form action="" method="POST">
-		  <div class="field">
-			<label class="field-label" for="type">Receipt System Type:</label>
-			<select name="type" id="type" value="{{.Config.ReceiptSystem.Type}}">
-			  <option value="sqlite">Sqlite3</option>
-			</select>
-		  </div>
-		  <div class="field"><label class="field-label" for="path">Receipt System Path:</label><input name="path" id="path" class="field-tf" value="{{.Config.ReceiptSystem.Path}}"/></div>
-		  <div class="field"><label class="field-label" for="url">Receipt System URL:</label><input name="url" id="url" class="field-tf" value="{{.Config.ReceiptSystem.URL}}"/></div>
-		  <div class="field"><label class="field-label" for="username">Receipt System Username:</label><input name="username" id="username" class="field-tf" value="{{.Config.ReceiptSystem.UserName}}"/></div>
-		  <div class="field"><label class="field-label" for="password">Receipt System Password:</label><input name="password" id="password" type="password" class="field-tf" value="{{.Config.ReceiptSystem.Password}}"/></div>
-		  <div class="field"><label class="field-label" for="table-prefix">Receipt System Table Prefix:</label><input name="table-prefix" id="table-prefix" class="field-tf" value="{{.Config.ReceiptSystem.TablePrefix}}"/></div>
-		  <input class="field-submit" type="submit" value="Save Config" />
-		</form>
+		<fieldset>
+		  <legend>Receipt System Settings</legend>
+		  <div>{{.ErrorMsg}}</div>
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="type">Receipt System Type:</label></td>
+				<td><select name="type" id="type" value="{{.Config.ReceiptSystem.Type}}">
+					<option value="sqlite">Sqlite3</option>
+				</select></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="path">Receipt System Path:</label></td>
+				<td><input name="path" id="path" class="field-tf" value="{{.Config.ReceiptSystem.Path}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="url">Receipt System URL:</label></td>
+				<td><input name="url" id="url" class="field-tf" value="{{.Config.ReceiptSystem.URL}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="username">Receipt System Username:</label></td>
+				<td><input name="username" id="username" class="field-tf" value="{{.Config.ReceiptSystem.UserName}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="password">Receipt System Password:</label></td>
+				<td><input name="password" id="password" type="password" class="field-tf" value="{{.Config.ReceiptSystem.Password}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="table-prefix">Receipt System Table Prefix:</label></td>
+				<td><input name="table-prefix" id="table-prefix" class="field-tf" value="{{.Config.ReceiptSystem.TablePrefix}}"/></td>
+			  </tr>
+			</table>
+			<input class="field-submit" type="submit" value="Save Config" />
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

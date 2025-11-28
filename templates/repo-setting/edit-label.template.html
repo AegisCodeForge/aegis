@@ -19,8 +19,9 @@
 	  {{template "repo-setting/_sidebar" .}}
 
 	  <div class="main-side">
-		
-		<h2>Edit label</h2>
+
+		<fieldset>
+		  <legend>Edit label</legend>
 
 		<div>
 		{{if .Repository.RepoLabelList}}
@@ -38,6 +39,7 @@
 		  </div>
 		  <input class="form-submit" type="submit" value="Add New Label" />
 		</form>
+		</fieldset>
 
 		
 	  </div>

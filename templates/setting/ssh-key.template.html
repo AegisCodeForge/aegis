@@ -39,21 +39,28 @@
 		<p>There is no SSH keys set for this user.</p>
 		{{end}}
 
-		<h2>Add new SSH key</h2>
-		
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form action="" method="POST">
-		  <div class="field">
-		  <label class="field-label" for="key-text">Key text:</label>
-		  <textarea name="key-text"></textarea>
-		  </div>
-		  <div class="field">
-			<label class="field-label" for="password">Confirm with your password:</label><input type="password" name="password" required />
-		  </div>
-		  <input type="submit" value="Add SSH key" />
-		</form>
+		<fieldset>
+		  <legend>Add new SSH key</legend>
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="key-text">Key text:</label></td>
+				<td><textarea name="key-text"></textarea></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="password">Confirm with your password:</label></td>
+				<td><input class="field-tf" type="password" name="password" required /></td>
+			  </tr>
+			  <tr>
+				<td></td>
+				<td><input type="submit" value="Add SSH key" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
 		
 	  </div>
 	</main>

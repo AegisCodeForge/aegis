@@ -6,7 +6,6 @@
     <title>Settings of {{.Namespace.Name}} :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
-	<link rel="stylesheet" href="/static/style-namespace-setting.css">
   </head>
   <body>
 	<header>
@@ -20,81 +19,96 @@
 
 	  <div class="main-side">
 
-		<h2>Member List</h2>
-		
-		<div class="setting-list-nav">
-		  <div class="setting-list-page-nav">
-			{{if gt .PageInfo.PageNum 1}}
-			<a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&lt;&lt;</a>
-			{{end}}
-			<span class="setting-list-page-nav-page-indicator">{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}</span>
-			{{if lt .PageInfo.PageNum (sub .PageInfo.TotalPage 1)}}
-			<a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&gt;&gt;</a>
-			{{end}}
-			<form class="setting-list-page-nav-form" action="" method="GET">
-			  <input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
-			  <label for="p">Page:</label> <input class="setting-list-page-nav-form-tf" name="p" id="p" />
-			  <input type="submit" value="Go" />
-			</form>
-
-			<div class="setting-list-page-nav-page-sizer">
-			(<a class="setting-list-page-nav-l" href="?s=10">10</a>
-			<a class="setting-list-page-nav-l" href="?s=25">25</a>
-			<a class="setting-list-page-nav-l" href="?s=50">50</a>)
+		<fieldset>
+		  <legend>Member List</legend>
+		  <div class="setting-list-nav">
+			<div class="setting-list-page-nav">
+			  {{if gt .PageInfo.PageNum 1}}
+			  <a href="?p={{sub .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&lt;&lt;</a>
+			  {{end}}
+			  <span class="setting-list-page-nav-page-indicator">{{.PageInfo.PageNum}} / {{.PageInfo.TotalPage}}</span>
+			  {{if lt .PageInfo.PageNum (sub .PageInfo.TotalPage 1)}}
+			  <a href="?p={{add .PageInfo.PageNum 1}}&s={{.PageInfo.PageSize}}">&gt;&gt;</a>
+			  {{end}}
+			  <form class="setting-list-page-nav-form" action="" method="GET">
+				<input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
+				<label for="p">Page:</label> <input class="setting-list-page-nav-form-tf" name="p" id="p" />
+				<input type="submit" value="Go" />
+			  </form>
+			  
+			  <div class="setting-list-page-nav-page-sizer">
+				(<a class="setting-list-page-nav-l" href="?s=10">10</a>
+				<a class="setting-list-page-nav-l" href="?s=25">25</a>
+				<a class="setting-list-page-nav-l" href="?s=50">50</a>)
+			  </div>
 			</div>
+			<!-- we'll come back to this later...
+				 <div class="setting-list-search">
+				   <form class="setting-list-search-form" action="" method="GET">
+					 <label for="q">Search User:</label> <input class="setting-list-search-tf" name="q" id="q" />
+					 <input type="submit" value="Search" />
+				   </form>
+				 </div>
+				 -->
 		  </div>
-		  <!-- we'll come back to this later...
-		  <div class="setting-list-search">
-			<form class="setting-list-search-form" action="" method="GET">
-			  <label for="q">Search User:</label> <input class="setting-list-search-tf" name="q" id="q" />
-			  <input type="submit" value="Search" />
-			</form>
-		  </div>
-		  -->
-		</div>
-		<table class="setting-table">
-		  <thead>
-			<tr><th>User Name</th><th>Permission</th><th>Edit</th><th>Remove</th></tr>
-		  </thead>
-		  <tbody>
-			{{range $userName, $k := .ACL}}
-			<tr>
-			  <td><a target="_blank" href="/u/{{$userName}}">{{$userName}}</a></td>
-			  <td>{{renderACLTuple $k}}</td>
-			  <td><a href="/s/{{$namespaceName}}/member/{{$userName}}/edit">Edit</a></td>
-			  <td><a href="/s/{{$namespaceName}}/member/{{$userName}}/delete">Delete</a></td>
-			</tr>
-			{{end}}
-		  </tbody>
-		</table>
-		{{if not .ACL}}
-		<p>There's no member for this namespace.</p>
-		{{end}}
-		
-		<h2>Add Member</h2>
-		
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form id="namespace-setting-form" action="" method="POST">
-		  <div class="field"><label class="field-label" for="username">Username:</label> <input class="field-tf" name="username" id="username" /></div>
-		  <table style="width:fit-content">
-			<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
+		  
+		  <table class="setting-table">
+			<thead>
+			  <tr><th>User Name</th><th>Permission</th><th>Edit</th><th>Remove</th></tr>
+			</thead>
 			<tbody>
-			  <tr><td><div class="field"><label for="addMember">Add Member</label></td><td><input type="checkbox" name="addMember" id="addMember" /></td></tr>
-		<tr><td><div class="field"><label for="deleteMember">Delete Member</label></td><td><input type="checkbox" name="deleteMember" id="deleteMember" /></td></tr>
-		<tr><td><div class="field"><label for="editMember">Edit Member</label></td><td><input type="checkbox" name="editMember" id="editMember" /></td></tr>
-		<tr><td><div class="field"><label for="editInfo">Edit Info</label></td><td><input type="checkbox" name="editInfo" id="editInfo" /></td></tr>
-		<tr><td><div class="field"><label for="addRepo">Add Repository</label></td><td><input type="checkbox" name="addRepo" id="addRepo" /></td></tr>
-		<tr><td><div class="field"><label for="pushToRepo">Push To Repository</label></td><td><input type="checkbox" name="pushToRepo" id="pushToRepo" /></td></tr>
-		<tr><td><div class="field"><label for="archiveRepo">Archive Repository</label></td><td><input type="checkbox" name="archiveRepo" id="archiveRepo" /></td></tr>
-		<tr><td><div class="field"><label for="deleteRepo">Delete Repository</label></td><td><input type="checkbox" name="deleteRepo" id="deleteRepo" /></td></tr>
-		<tr><td><div class="field"><label for="editHooks">Edit Hooks</label></td><td><input type="checkbox" name="editHooks" id="editHooks" /></td></tr>
+			  {{range $userName, $k := .ACL}}
+			  <tr>
+				<td><a target="_blank" href="/u/{{$userName}}">{{$userName}}</a></td>
+				<td>{{renderACLTuple $k}}</td>
+				<td><a href="/s/{{$namespaceName}}/member/{{$userName}}/edit">Edit</a></td>
+				<td><a href="/s/{{$namespaceName}}/member/{{$userName}}/delete">Delete</a></td>
+			  </tr>
+			  {{end}}
 			</tbody>
 		  </table>
+		  {{if not .ACL}}
+		  <p>There's no member for this namespace.</p>
+		  {{end}}
+		</fieldset>
 
-		  <input class="form-submit" type="submit" value="Add Member" />
-		</form>
+		<fieldset>
+		  <legend>Add Member</legend>
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="username">Username:</label></td>
+				<td><input class="field-tf" name="username" id="username" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><span class="field-label">Privilege</span></td>
+				<td>
+				  <table>
+					<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
+					<tbody>
+					  <tr><td><div class="field"><label for="addMember">Add Member</label></td><td><input type="checkbox" name="addMember" id="addMember" /></td></tr>
+					  <tr><td><div class="field"><label for="deleteMember">Delete Member</label></td><td><input type="checkbox" name="deleteMember" id="deleteMember" /></td></tr>
+					  <tr><td><div class="field"><label for="editMember">Edit Member</label></td><td><input type="checkbox" name="editMember" id="editMember" /></td></tr>
+					  <tr><td><div class="field"><label for="editInfo">Edit Info</label></td><td><input type="checkbox" name="editInfo" id="editInfo" /></td></tr>
+					  <tr><td><div class="field"><label for="addRepo">Add Repository</label></td><td><input type="checkbox" name="addRepo" id="addRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="pushToRepo">Push To Repository</label></td><td><input type="checkbox" name="pushToRepo" id="pushToRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="archiveRepo">Archive Repository</label></td><td><input type="checkbox" name="archiveRepo" id="archiveRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="deleteRepo">Delete Repository</label></td><td><input type="checkbox" name="deleteRepo" id="deleteRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="editHooks">Edit Hooks</label></td><td><input type="checkbox" name="editHooks" id="editHooks" /></td></tr>
+					</tbody>
+				  </table>
+				</td>
+			  </tr>
+			  <tr>
+				<td></td>
+				<td><input class="form-submit" type="submit" value="Add Member" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
 
 	  </div>
 	</main>
