@@ -28,6 +28,8 @@ type SimpleModeNamespaceConfig struct {
 
 type SimpleModeUserACL struct {
 	Default string `json:"default"`
+	Push string `json:"push"`
+	Pull string `json:"pull"`
 	// NOTE(2025.10.31): Patterns are postponed until we come back to the pack format.
 	// Pattern map[string][]string `json:"patterns"`
 }

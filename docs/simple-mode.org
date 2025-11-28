@@ -10,8 +10,7 @@ under simple mode, two special repositories would be used for configuration:
 
 These repositories would be setup during the installation phase. If these repositories were not found when Aegis is started and is configured to run in Simple Mode, it would create the repositories accordingly. The ~__keys~ repository would be created with update hook configured, so that all updates would trigger the command ~aegis simple-mode keys-update~. The hook is written to only trigger the command when the ~master~ branch is updated.
 
-The ~__repo_config~ repository is also created with update hook configured, so that all updates to the ~master~ branch would trigger ~aegis simple-mode config-update~. This command would go through the repository and ensure all the repositories are created. Since settings like ACL and visibilities are also done within the repository and they're
-
+The ~__repo_config~ repository is created with the post-update hook configured (instead of the update hook, which is called *before* packs are received), so that all updates to the ~master~ branch would trigger ~aegis simple-mode aegis-sync~. This command would go through the repository and ensure all the repositories are created.
 
 ** ~__keys~
 
@@ -97,25 +96,27 @@ the ~.json~ that are directly under the directories for namespaces are as follow
   	"users": {
   		"{username1}": {
   			"default": "{`allow` or `disallow`}",
+  			"push": "{`allow` or `disallow`}",
+  			"pull": "{`allow` or `disallow`}"
   			// ...
   		},
   	}
   }
 #+end_src
 
-NOTE: the ~username~ part currently only has one field: ~default~. This determines whether a repo allow a particular user to push. More specific access control is planned in the future.
-
 ** simple mode acl
 
-a simple mode acl is currently just an object composed of a ~default~ field. Reference-specific access control is currently planned for the future.
+a simple mode acl is currently an object composed of a ~default~, ~push~ and ~pull~ field,which allows a certain user to push, pull and all actions respectively. Configurations for ~push~ and ~pull~ have higher priorities than ~default~. Ref-specific access control is currently planned for the future.
 
 #+begin_src json
 {
     "default": "allow",
+    "push": "{`allow` or `disallow`}",
+    "pull": "{`allow` or `disallow`}"
 }
 #+end_src json
 
-the field ~default~ must be either ~allow~ or ~disallow~. for any ref and any action that's not specified in the acl, this would be the final verdict of whether to allow the user to do things or not.
+each field must be either ~allow~ or ~disallow~. for any ref and any action that's not specified in the acl, the value configured in ~default~ this would be the final verdict of whether to allow the user to do things or not.
 
 ** how things are updated in simple mode
 
@@ -126,5 +127,5 @@ the field ~default~ must be either ~allow~ or ~disallow~. for any ref and any ac
 
 if we choose the first method, we will have to create a repository model object for ~__aegis:__repo_config~ and parse through its internal git objects every single time, which involves file IO, zlib decompress and JSON deserializing. for this reason, we currently keep a clone of this repo is thus created directly under the git folder of ~__aegis:__repo_config~ with the subfolder name ~aegis_sync~, so that we can skip the zlib decompress part (also os API is slightly easier to handle).
 
-the update of this ~aegis_sync~ cannot be done during the execution of the ~update~ hook since the update is only complete *after* the hook has completed running. we prepare the command `aegis simple-mode aegis-sync` for this.
+the update of this ~aegis_sync~ cannot be done during the execution of the ~update~ hook since the update is only complete *after* the hook has completed running. we prepare the command ~aegis simple-mode aegis-sync~ for this.
 

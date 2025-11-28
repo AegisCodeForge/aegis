@@ -62,7 +62,7 @@ func handleSSHSimpleMode(ctx *routes.RouterContext, username string, keyname str
 	}
 	origCmd := os.Getenv("SSH_ORIGINAL_COMMAND")
 	parsedOrigCmd := shellparse.ParseShellCommand(origCmd)
-	// isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
+	isPushingToRemote := parsedOrigCmd[0] == "git-receive-pack"
 	
 	relPath := parsedOrigCmd[len(parsedOrigCmd)-1]
 	namespaceName, repositoryName := parseTargetRepositoryName(ctx, relPath)
@@ -83,7 +83,15 @@ func handleSSHSimpleMode(ctx *routes.RouterContext, username string, keyname str
 		printGitError("Not enough permission")
 		return
 	}
-	switch userAcl.Default {
+	var allowVerdict string
+	if isPushingToRemote {
+		allowVerdict = userAcl.Push
+	} else {
+		allowVerdict = userAcl.Pull
+	}
+	if allowVerdict == "" { allowVerdict = userAcl.Default }
+
+	switch allowVerdict {
 	case "allow":
 		// see also:
 		//     https://git-scm.com/docs/git-receive-pack
