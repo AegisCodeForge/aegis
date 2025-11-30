@@ -10,9 +10,7 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  
-	  <h1 class="header-name" style="margin-bottom: 0">
-		Admin
-	  </h1>
+	  <h1 class="header-name" style="margin-bottom: 0">Settings</h1>
 	</header>
 	<hr />
 
@@ -30,8 +28,8 @@
 			<b>Key Name</b>: {{.Key.KeyName}}
 		  </div>
 		  <div class="field">
-		  <label class="field-label" for="key-text">Key text:</label>
-		  <textarea name="key-text">{{.Key.KeyText}}</textarea>
+		  <label class="field-label" for="ta-key-text">Key text:</label>
+		  <textarea id="ta-key-text" name="key-text">{{.Key.KeyText}}</textarea>
 		  </div>
 		  <input type="submit" value="Save GPG key" />
 		</form>

@@ -26,11 +26,29 @@
 
 	<hr />
 
-	<form method="POST" class="snippet-setting">
-	  <div class="field">File Name: {{.FileName}}</div>
-	  <div class="field"><label class="field-label" for="content">Content:</label> <textarea name="content" id="content">{{.FileContent}}</textarea></div>
-	  <input type="submit" value="Save" />
-	</form>
+	<p><a href="/snippet/{{.BelongingUser}}/{{.Name}}/setting">Back</a></p>
+
+	<fieldset>
+	  <legend>Edit File {{.FileName}}</legend>
+	  <form method="POST" class="snippet-setting">
+		<table class="field-table">
+		  <tbody>
+			<tr class="field">
+			  <td><span class="field-label">File Name:</span></td>
+			  <td>{{.FileName}}</td>
+			</tr>
+			<tr class="field">
+			  <td><label class="field-label" for="ta-content">Content:</label></td>
+			  <td><textarea name="content" id="ta-content">{{.FileContent}}</textarea></td>
+			</tr>
+			<tr class="field">
+			  <td></td>
+			  <td><input type="submit" value="Save" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </form>
+	</fieldset>
 	
     <hr />
 	<footer>

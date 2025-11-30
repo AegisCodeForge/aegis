@@ -17,9 +17,9 @@ func bindIndexController(ctx *RouterContext) {
 	http.HandleFunc("GET /", UseMiddleware(
 		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(rc.Config.FrontPageType, "static/") {
-				frontPageContentType := rc.Config.FrontPageType[len("static/"):]
-				f := rc.Config.FrontPageContent
+			if strings.HasPrefix(rc.Config.FrontPage.Type, "static/") {
+				frontPageContentType := strings.TrimPrefix(rc.Config.FrontPage.Type, "static/")
+				f := rc.Config.FrontPage.FileContent
 				var frontPageHtml string
 				switch frontPageContentType {
 				case "text":
@@ -43,11 +43,11 @@ func bindIndexController(ctx *RouterContext) {
 					FrontPage: frontPageHtml,
 				}))
 				return
-			} else if rc.Config.FrontPageType == "all/namespace" {
+			} else if rc.Config.FrontPage.Type == "all/namespace" {
 				FoundAt(w, "/all/namespace")
-			} else if rc.Config.FrontPageType == "all/repository" {
+			} else if rc.Config.FrontPage.Type == "all/repository" {
 				FoundAt(w, "/all/repo")
-			} else if strings.HasPrefix(rc.Config.FrontPageType, "namespace/") {
+			} else if rc.Config.FrontPage.Type == "namespace" {
 				if !rc.Config.UseNamespace {
 					frontPageHtml := "<p>Misconfiguration: a namespace is used for the front page, but the depot itself is configured to not support namespaces. Please contact the site owner about this issue.</p>"
 					LogTemplateError(rc.LoadTemplate("index-static").Execute(w, templates.IndexStaticTemplateModel{
@@ -57,9 +57,9 @@ func bindIndexController(ctx *RouterContext) {
 					}))
 					return
 				}
-				FoundAt(w, fmt.Sprintf("/s/%s", rc.Config.FrontPageType[len("namespace/"):]))
-			} else if strings.HasPrefix(rc.Config.FrontPageType, "repository/") {
-				FoundAt(w, fmt.Sprintf("/repo/%s", rc.Config.FrontPageType[len("repository/"):]))
+				FoundAt(w, fmt.Sprintf("/s/%s", rc.Config.FrontPage.Namespace))
+			} else if rc.Config.FrontPage.Type == "repository" {
+				FoundAt(w, fmt.Sprintf("/repo/%s", rc.Config.FrontPage.Repository))
 			} else {
 				if rc.Config.UseNamespace {
 					FoundAt(w, "/all/namespace")

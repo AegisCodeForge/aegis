@@ -27,33 +27,35 @@
 		  {{end}}
 		  <form action="" method="POST">
 			<table class="field-table">
-			  <tr class="field">
-				<td><label class="field-label" for="title">Title:</label></td>
-				<td><input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></td>
-			  </tr>
-			  <tr class="field">
-				<td><label class="field-label" for="owner">Owner:</label></td>
-				<td><input class="field-tf" name="owner" id="owner" value="{{.Namespace.Owner}}" /></td>
-			  </tr>
-			  <tr class="field">
-				<td><label class="field-label" for="email">Email:</label></td>
-				<td><input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></td>
-			  </tr>
-			  <tr class="field">
-				<td><label class="field-label" for="status">Status:</label></td>
-				<td><select class="field-select" name="status" id="status" value="{{.Namespace.Status}}">
-					<option value="1" {{if eq .Namespace.Status 1}}selected{{end}}>Public</option>
-					<option value="2" {{if eq .Namespace.Status 2}}selected{{end}}>Private</option>
-				</select></td>
-			  </tr>
-			  <tr class="field">
-				<td><label class="field-label" for="description">Description:</label></td>
-				<td><textarea class="field-tf" name="description" id="description">{{.Namespace.Description}}</textarea></td>
-			  </tr>
-			  <tr class="field">
-				<td></td>
-				<td><input class="form-submit" type="submit" value="Change Info" /></td>
-			  </tr>
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-title">Title:</label></td>
+				  <td><input class="field-tf" name="title" id="tf-title" value="{{.Namespace.Title}}" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-owner">Owner:</label></td>
+				  <td><input class="field-tf" name="owner" id="tf-owner" value="{{.Namespace.Owner}}" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-email">Email:</label></td>
+				  <td><input class="field-tf" name="email" id="tf-email" value="{{.Namespace.Email}}" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="s-status">Status:</label></td>
+				  <td><select class="field-select" name="status" id="s-status" value="{{.Namespace.Status}}">
+					  <option value="1" {{if eq .Namespace.Status 1}}selected{{end}}>Public</option>
+					  <option value="2" {{if eq .Namespace.Status 2}}selected{{end}}>Private</option>
+				  </select></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="ta-description">Description:</label></td>
+				  <td><textarea class="field-tf" name="description" id="ta-description">{{.Namespace.Description}}</textarea></td>
+				</tr>
+				<tr class="field">
+				  <td></td>
+				  <td><input class="field-submit" type="submit" value="Change Info" /></td>
+				</tr>
+			  </tbody>
 			</table>
 		  </form>
 		</fieldset>

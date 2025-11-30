@@ -19,6 +19,8 @@
 
 	  <div class="main-side">
 
+		<p><a href="{{getNamespacePath .Namespace.Name}}/member">Back to Member List</a></p>
+
 		<fieldset>
 		  <legend>Edit Member</legend>
 		  {{if .ErrorMsg}}
@@ -36,15 +38,26 @@
 				  <table>
 					<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
 					<tbody>
-					  <tr><td><div class="field"><label for="addMember">Add Member</label></td><td><input type="checkbox" name="addMember" id="addMember" {{if and .ACLTuple .ACLTuple.AddMember}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="deleteMember">Delete Member</label></td><td><input type="checkbox" name="deleteMember" id="deleteMember"  {{if and .ACLTuple .ACLTuple.DeleteMember}}checked{{end}}  /></td></tr>
-					  <tr><td><div class="field"><label for="editMember">Edit Member</label></td><td><input type="checkbox" name="editMember" id="editMember" {{if and .ACLTuple .ACLTuple.EditMember}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="editInfo">Edit Info</label></td><td><input type="checkbox" name="editInfo" id="editInfo" {{if and .ACLTuple .ACLTuple.EditInfo}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="addRepo">Add Repository</label></td><td><input type="checkbox" name="addRepo" id="addRepo" {{if and .ACLTuple .ACLTuple.AddRepository}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="pushToRepo">Push To Repository</label></td><td><input type="checkbox" name="pushToRepo" id="pushToRepo" {{if and .ACLTuple .ACLTuple.PushToRepository}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="archiveRepo">Archive Repository</label></td><td><input type="checkbox" name="archiveRepo" id="archiveRepo" {{if and .ACLTuple .ACLTuple.ArchiveRepository}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="deleteRepo">Delete Repository</label></td><td><input type="checkbox" name="deleteRepo" id="deleteRepo" {{if and .ACLTuple .ACLTuple.DeleteRepository}}checked{{end}} /></td></tr>
-					  <tr><td><div class="field"><label for="editHooks">Edit Hooks</label></td><td><input type="checkbox" name="editHooks" id="editHooks" {{if and .ACLTuple .ACLTuple.EditHooks}}checked{{end}} /></td></tr>
+					  <tr>
+						<td><div class="field"><label for="chkbox-addMember">Add Member</label></td>
+						<td><input type="checkbox" name="addMember" id="chk-addMember" {{if and .ACLTuple .ACLTuple.AddMember}}checked{{end}} /></td>
+					  </tr>
+					  <tr><td><div class="field"><label for="chkbox-deleteMember">Delete Member</label></td>
+						<td><input type="checkbox" name="deleteMember" id="chkbox-deleteMember"  {{if and .ACLTuple .ACLTuple.DeleteMember}}checked{{end}}  /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-editMember">Edit Member</label></td>
+						<td><input type="checkbox" name="editMember" id="chkbox-editMember" {{if and .ACLTuple .ACLTuple.EditMember}}checked{{end}} /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-editInfo">Edit Info</label></td>
+						<td><input type="checkbox" name="editInfo" id="chkbox-editInfo" {{if and .ACLTuple .ACLTuple.EditInfo}}checked{{end}} /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-addRepo">Add Repository</label></td>
+						<td><input type="checkbox" name="addRepo" id="chkbox-addRepo" {{if and .ACLTuple .ACLTuple.AddRepository}}checked{{end}} /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-pushToRepo">Push To Repository</label></td>
+						<td><input type="checkbox" name="pushToRepo" id="chkbox-pushToRepo" {{if and .ACLTuple .ACLTuple.PushToRepository}}checked{{end}} /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-archiveRepo">Archive Repository</label></td>
+						<td><input type="checkbox" name="archiveRepo" id="chkbox-archiveRepo" {{if and .ACLTuple .ACLTuple.ArchiveRepository}}checked{{end}} /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-deleteRepo">Delete Repository</label></td>
+						<td><input type="checkbox" name="deleteRepo" id="chkbox-deleteRepo" {{if and .ACLTuple .ACLTuple.DeleteRepository}}checked{{end}} /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-editHooks">Edit Hooks</label></td>
+						<td><input type="checkbox" name="editHooks" id="chkbox-editHooks" {{if and .ACLTuple .ACLTuple.EditHooks}}checked{{end}} /></td></tr>
 					</tbody>
 				  </table>
 				</td>
@@ -52,7 +65,7 @@
 			  <tr>
 				<td></td>
 				<td>
-				  <input class="form-submit" type="submit" value="Edit Member Privilege" />
+				  <input class="field-submit" type="submit" value="Edit Member Privilege" />
 				</td>
 			  </tr>
 			</table>

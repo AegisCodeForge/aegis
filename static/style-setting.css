@@ -110,3 +110,8 @@
 		display: block;
 	}
 }
+@media (max-width: 720px) {
+	.setting-main {
+		padding: 0;
+	}
+}

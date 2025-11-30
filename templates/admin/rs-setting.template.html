@@ -25,33 +25,36 @@
 		  <form action="" method="POST">
 			<table class="field-table">
 			  <tr class="field">
-				<td><label class="field-label" for="type">Receipt System Type:</label></td>
-				<td><select name="type" id="type" value="{{.Config.ReceiptSystem.Type}}">
+				<td><label class="field-label" for="s-type">Receipt System Type:</label></td>
+				<td><select name="type" id="s-type" value="{{.Config.ReceiptSystem.Type}}">
 					<option value="sqlite">Sqlite3</option>
 				</select></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="path">Receipt System Path:</label></td>
-				<td><input name="path" id="path" class="field-tf" value="{{.Config.ReceiptSystem.Path}}"/></td>
+				<td><label class="field-label" for="tf-path">Receipt System Path:</label></td>
+				<td><input name="path" id="tf-path" class="field-tf" value="{{.Config.ReceiptSystem.Path}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="url">Receipt System URL:</label></td>
-				<td><input name="url" id="url" class="field-tf" value="{{.Config.ReceiptSystem.URL}}"/></td>
+				<td><label class="field-label" for="tf-url">Receipt System URL:</label></td>
+				<td><input name="url" id="tf-url" class="field-tf" value="{{.Config.ReceiptSystem.URL}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="username">Receipt System Username:</label></td>
-				<td><input name="username" id="username" class="field-tf" value="{{.Config.ReceiptSystem.UserName}}"/></td>
+				<td><label class="field-label" for="tf-username">Receipt System Username:</label></td>
+				<td><input name="username" id="tf-username" class="field-tf" value="{{.Config.ReceiptSystem.UserName}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="password">Receipt System Password:</label></td>
-				<td><input name="password" id="password" type="password" class="field-tf" value="{{.Config.ReceiptSystem.Password}}"/></td>
+				<td><label class="field-label" for="tf-password">Receipt System Password:</label></td>
+				<td><input name="password" id="tf-password" type="password" class="field-tf" value="{{.Config.ReceiptSystem.Password}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="table-prefix">Receipt System Table Prefix:</label></td>
-				<td><input name="table-prefix" id="table-prefix" class="field-tf" value="{{.Config.ReceiptSystem.TablePrefix}}"/></td>
+				<td><label class="field-label" for="tf-table-prefix">Receipt System Table Prefix:</label></td>
+				<td><input name="table-prefix" id="tf-table-prefix" class="field-tf" value="{{.Config.ReceiptSystem.TablePrefix}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" type="submit" value="Save Config" /></td>
 			  </tr>
 			</table>
-			<input class="field-submit" type="submit" value="Save Config" />
 		  </form>
 		</fieldset>
 	  </div>

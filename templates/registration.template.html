@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <title>Registration :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-registration.css">
   </head>
   <body>
@@ -18,17 +19,37 @@
 	</div>
 	{{end}}
 
-	<div id="reg-form">
-	<form action="" method="POST">
-	  <div class="field"><label class="field-label" for="username">Username:</label><input class="field-tf" name="username" id="username" /></div>
-	  <div class="field"><label class="field-label" for="email">Email:</label><input class="field-tf" name="email" id="email" /></div>
-	  <div class="field"><label class="field-label" for="password">Password:</label><input class="field-tf" type="password" name="password" id="password" /></div>
-	  {{if .Config.ManualApproval}}
-	  <div class="field"><label class="field-label" for="reason">Please describe your reason for registration, etc..</label><textarea name="reason"></textarea></div>
-	  {{end}}
-	  <input class="form-submit" type="submit" value="Register" />
-	</form>
-	</div>
+	<fieldset id="reg-form">
+	  <legend>Registration</legend>
+	  <form action="" method="POST">
+		<table class="field-table">
+		  <tbody>
+			<tr class="field">
+			  <td><label class="field-label" for="tf-username">Username:</label></td>
+			  <td><input class="field-tf" name="username" id="tf-username" /></td>
+			</tr>
+			<tr class="field">
+			  <td><label class="field-label" for="tf-email">Email:</label></td>
+			  <td><input class="field-tf" name="email" id="tf-email" /></td>
+			</tr>
+			<tr class="field">
+			  <td><label class="field-label" for="tf-password">Password:</label></td>
+			  <td><input class="field-tf" type="password" name="password" id="tf-password" /></td>
+			</tr>
+			{{if .Config.ManualApproval}}
+			<tr class="field">
+			  <td><label class="field-label" for="ta-reason">Please describe your reason for registration, etc..</label></td>
+			  <td><textarea name="ta-reason"></textarea></td>
+			</tr>
+			{{end}}
+			<tr class="field">
+			  <td></td>
+			  <td><input class="form-submit" type="submit" value="Register" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </form>
+	</fieldset>
 
     <hr />
 	<footer>

@@ -15,7 +15,7 @@ import (
 
 func bindSettingSSHController(ctx *RouterContext) {
 	http.HandleFunc("GET /setting/ssh", UseMiddleware(
-		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 		un := rc.LoginInfo.UserName
 		if !model.ValidUserName(un) {

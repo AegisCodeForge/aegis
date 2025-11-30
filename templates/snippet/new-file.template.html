@@ -26,13 +26,27 @@
 
 	<hr />
 
-	<form method="POST" class="snippet-setting">
-	  <div class="field"><label class="field-label" for="filename">File Name:</label>
-		<input name="filename" id="filename" />
-	  </div>
-	  <div class="field"><label class="field-label" for="content">Content:</label> <textarea name="content" id="content"></textarea></div>
-	  <input type="submit" value="Save" />
-	</form>
+	<fieldset>
+	  <legend>New File</legend>
+	  <form method="POST" class="snippet-setting">
+		<table class="field-table">
+		  <tbody>
+			<tr class="field">
+			  <td><label class="field-label" for="tf-filename">File Name:</label></td>
+			  <td><input name="filename" id="tf-filename" /></td>
+			</tr>
+			<tr class="field">
+			  <td><label class="field-label" for="ta-content">Content:</label></td>
+			  <td><textarea name="content" id="ta-content"></textarea></td>
+			</tr>
+			<tr class="field">
+			  <td></td>
+			  <td><input type="submit" value="Save" /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </form>
+	</fieldset>
 	
     <hr />
 	<footer>

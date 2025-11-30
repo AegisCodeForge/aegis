@@ -53,8 +53,11 @@
 				<td><label class="field-label field-chkbox-label"  for="chkbox-manual-approval">Manual Approval Required:</label></td>
 				<td><input type="checkbox" name="manual-approval" id="chkbox-manual-approval" class="field-chkbox" {{if .Config.ManualApproval}}checked{{end}}/></td>
 			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" type="submit" value="Save Config" /></td>
+			  </tr>
 			</table>
-			<input class="field-submit" type="submit" value="Save Config" />
 		  </form>
 		</fieldset>
 		
@@ -64,29 +67,73 @@
 			<input type="hidden" name="section" value="web" />
 			<table class="field-table">
 			  <tr>
-				<td class="field"><label class="field-label" for="http-host-name">HTTP Host Name:</label></td>
-				<td><input name="http-host-name" id="http-host-name" class="field-tf" value="{{.Config.HttpHostName}}"/></td>
+				<td class="field"><label class="field-label" for="tf-http-host-name">HTTP Host Name:</label></td>
+				<td><input name="http-host-name" id="tf-http-host-name" class="field-tf" value="{{.Config.HttpHostName}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="ssh-host-name">SSH Host Name:</label></td>
-				<td><input name="ssh-host-name" id="ssh-host-name" class="field-tf" value="{{.Config.SshHostName}}"/></td>
+				<td><label class="field-label" for="tf-ssh-host-name">SSH Host Name:</label></td>
+				<td><input name="ssh-host-name" id="tf-ssh-host-name" class="field-tf" value="{{.Config.SshHostName}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="static-asset-directory">Static Asset Directory:</label></td>
-				<td><input name="static-asset-directory" id="static-asset-directory" class="field-tf" value="{{.Config.StaticAssetDirectory}}"/></td>
+				<td><label class="field-label" for="tf-static-asset-directory">Static Asset Directory:</label></td>
+				<td><input name="static-asset-directory" id="tf-static-asset-directory" class="field-tf" value="{{.Config.StaticAssetDirectory}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="bind-address">Bind Address:</label></td>
-				<td><input name="bind-address" id="bind-address" class="field-tf" value="{{.Config.BindAddress}}"/></td>
+				<td><label class="field-label" for="tf-bind-address">Bind Address:</label></td>
+				<td><input name="bind-address" id="tf-bind-address" class="field-tf" value="{{.Config.BindAddress}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="bind-port">Bind Port:</label></td>
-				<td><input name="bind-port" id="bind-port" class="field-tf" value="{{.Config.BindPort}}"/></td>
+				<td><label class="field-label" for="tf-bind-port">Bind Port:</label></td>
+				<td><input name="bind-port" id="tf-bind-port" class="field-tf" value="{{.Config.BindPort}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" type="submit" value="Save Config" /></td>
 			  </tr>
 			</table>
-			<input class="field-submit" type="submit" value="Save Config" />
 		  </form>
 		</fieldset>
+
+		
+		<fieldset>
+		  <legend>Index Configuration</legend>
+		  <form action="" method="POST">
+			<input type="hidden" name="section" value="front-page" />
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label" for="sel-front-page-type">Front page type:</label></td>
+				<td><select class="field-select" name="front-page-type" id="sel-front-page-type">
+					<option {{if eq .Config.FrontPage.Type "all/namespace"}}selected{{end}} value="all/namespace">All Namespaces</option>
+					<option {{if eq .Config.FrontPage.Type "all/repository"}}selected{{end}} value="all/repository">All Repository</option>
+					<option {{if eq .Config.FrontPage.Type "namespace"}}selected{{end}} value="namespace">Namespace</option>
+					<option {{if eq .Config.FrontPage.Type "repository"}}selected{{end}} value="repository">Repository</option>
+					<option {{if eq .Config.FrontPage.Type "static/html"}}selected{{end}} value="static/html">HTML text</option>
+					<option {{if eq .Config.FrontPage.Type "static/markdown"}}selected{{end}} value="static/markdown">Markdown text</option>
+					<option {{if eq .Config.FrontPage.Type "static/text"}}selected{{end}} value="static/text">Plain text</option>
+					<option {{if eq .Config.FrontPage.Type "static/org"}}selected{{end}} value="static/org">Org-mode text</option>
+				  </select>
+				</td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="namespace">Namespace:</label></td>
+				<td><input class="field-tf" name="namespace" id="namespace" value="{{.Config.FrontPage.Namespace}}"></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="repository">Repository:</label></td>
+				<td><input class="field-tf" name="repository" id="repository" value="{{.Config.FrontPage.Repository}}"></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="file-content">File content:</label></td>
+				<td><textarea name="file-content" id="file-content">{{.Config.FrontPage.FileContent}}</textarea></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" type="submit" value="Save Config" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
+	  </div>
 		
 	  </div>
 	</main>

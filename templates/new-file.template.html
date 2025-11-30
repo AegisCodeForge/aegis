@@ -2,8 +2,9 @@
 <html>
   <head>
     <meta charset="utf-8" />
-	<link rel="stylesheet" href="/static/style.css">
 	<title>Creating new file at {{.RepoHeaderInfo.TypeStr}}:{{.RepoHeaderInfo.NodeName}} @ {{.Repository.Name}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
   </head>
   <body>
 	<header>
@@ -22,31 +23,39 @@
 	  <div class="file-tree left-side">
 	  </div>
 	  <div class="file main-side">
-		<form class="edit-file-form" action="" method="POST" enctype="multipart/form-data">
-		  <input type="hidden" name="action" value="new"/>
-		  <div class="field">
-			<label class="field-label" for="new-file-path" value="{{.TargetFilePath}}">New file path:</label>
-			<input name="new-file-path" id="new-file-path"/>
-		  </div>
-		  <div class="field">
-			<label for="use-uploaded-file">Use uploaded file instead:</label> <input type="checkbox" name="use-upload-file" />
-		  </div>
-		  <div class="field">
-			<label class="field-label" for="file-upload">Upload file:</label>
-			<input type="file" name="file-upload" />
-		  </div>
-		  <div class="field">
-			<label class="field-label" for="content">Content:</label>
-			<textarea style="height:30rem" name="content" id="content"></textarea>
-		  </div>
-		  <div class="field">
-			<label class="field-label" for="commit-message">Commit Message:</label>
-			<textarea name="commit-message" id="commit-message"></textarea>
-		  </div>
-		  <div class="field">
-			<input type="submit" value="Submit" />
-		  </div>
-		</form>
+		<fieldset>
+		  <legend>New/Upload File</legend>
+		  <form class="edit-file-form" action="" method="POST" enctype="multipart/form-data">
+			<input type="hidden" name="action" value="new"/>
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-new-file-path" value="{{.TargetFilePath}}">New file path:</label></td>
+				  <td><input name="new-file-path" id="tf-new-file-path"/></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="chkbox-use-uploaded-file">Use uploaded file instead:</label></td>
+				  <td><input type="checkbox" id="chkbox-use-upload-file" name="use-upload-file" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="f-file-upload">Upload file:</label></td>
+				  <td><input type="file" id="f-file-upload" name="file-upload" /></td>
+				</tr>
+			  </tbody>
+			</table>
+			<div class="field">
+			  <label class="field-label" for="ta-content">Content:</label>
+			  <textarea style="height:30rem" name="content" id="tacontent"></textarea>
+			</div>
+			<div class="field">
+			  <label class="field-label" for="commit-message">Commit Message:</label>
+			  <textarea name="commit-message" id="commit-message"></textarea>
+			</div>
+			<div class="field">
+			  <input type="submit" value="Submit" />
+			</div>
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

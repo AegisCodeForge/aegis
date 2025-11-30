@@ -113,18 +113,7 @@ type AegisConfig struct {
 	ReceiptSystem AegisReceiptSystemConfig `json:"receiptSystem"`
 
 	// what should the instance display when the front page is visited.
-	// 
-	// + "all/namespace"
-	// + "all/repository"
-	// + "repository/{namespace_name}:{repo_name}"
-	// + "namespace/{namespace_name}"
-	// + "static/{file_type}"
-	//
-	// currently support four {file_type}: "markdown", "org", "text"
-	// and "html".
-	// if not set, it's "all/repository" by default.
-	FrontPageType string `json:"frontPageType"`
-	FrontPageContent string `json:"frontPageContent"`
+	FrontPage AegisFrontPageConfig `json:"frontPage"`
 
 	// global private/shutdown mode
 	// supports the following values:
@@ -275,6 +264,26 @@ type AegisConfirmCodeManagerConfig struct {
 	DefaultTimeoutMinute int `json:"defaultTimeoutMinute"`
 }
 
+type AegisFrontPageConfig struct {
+	// + "all/namespace"
+	// + "all/repository"
+	// + "repository"
+	// + "namespace"
+	// + "static/markdown", "static/org", "static/text", "static/html"
+	// if not set, it's "all/repository" by default.
+	Type string `json:"type"`
+
+	// effective only when Type is "namespace".
+	Namespace string `json:"namespace"`
+
+	// effective only when Type is "Repository".
+	// should be "full name", i.e. "{namespace_name}:{repo_name}".
+	Repository string `json:"repository"`
+
+	// effective only when Type starts with "static".
+	FileContent string `json:"fileContent"`
+}
+
 // proper http host name. no trailing slash.
 func (cfg *AegisConfig) ProperHTTPHostName() string {
 	// proper http host name. no trailing slash.
@@ -386,6 +395,12 @@ func CreateConfigFile(p string) error {
 		SnippetRoot: "",
 		DefaultNewUserStatus: model.AegisUserStatus(model.NORMAL_USER),
 		DefaultNewUserNamespace: "",
+		FrontPage: AegisFrontPageConfig{
+			Type: "all/repository",
+			Namespace: "",
+			Repository: "",
+			FileContent: "",
+		},
 	}, "", "    ")
 	if err != nil { return err }
 	f.Write(marshalRes)

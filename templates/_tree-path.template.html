@@ -6,7 +6,7 @@
   <span class="tree-path-segment-head"><a href="{{.RootPath}}">~</a></span>
   {{if gt (len .TreePathSegmentList) 0}}
   {{range $i, $k := .TreePathSegmentList}}
-  {{if eq (sub (len $treePathSegmentList) 1) $i}}
+  {{if eq (sub (int64 (len $treePathSegmentList)) 1) $i}}
   / <span class="tree-path-segment-item">{{.Name}}</span>
   {{else}}
   / <span class="tree-path-segment-item"><a href="{{$rootPath}}/{{.RelPath}}/">{{.Name}}</a></span>

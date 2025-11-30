@@ -19,8 +19,7 @@
 
 	  <div class="main-side">
 
-		<fieldset>
-		  <legend>Member List</legend>
+		<h2>Member List</h2>
 		  <div class="setting-list-nav">
 			<div class="setting-list-page-nav">
 			  {{if gt .PageInfo.PageNum 1}}
@@ -70,7 +69,6 @@
 		  {{if not .ACL}}
 		  <p>There's no member for this namespace.</p>
 		  {{end}}
-		</fieldset>
 
 		<fieldset>
 		  <legend>Add Member</legend>
@@ -80,8 +78,8 @@
 		  <form action="" method="POST">
 			<table class="field-table">
 			  <tr class="field">
-				<td><label class="field-label" for="username">Username:</label></td>
-				<td><input class="field-tf" name="username" id="username" /></td>
+				<td><label class="field-label" for="tf-username">Username:</label></td>
+				<td><input class="field-tf" name="username" id="tf-username" /></td>
 			  </tr>
 			  <tr class="field">
 				<td><span class="field-label">Privilege</span></td>
@@ -89,22 +87,22 @@
 				  <table>
 					<thead><tr><th>Privilege</th><th>Allow?</th></tr></thead>
 					<tbody>
-					  <tr><td><div class="field"><label for="addMember">Add Member</label></td><td><input type="checkbox" name="addMember" id="addMember" /></td></tr>
-					  <tr><td><div class="field"><label for="deleteMember">Delete Member</label></td><td><input type="checkbox" name="deleteMember" id="deleteMember" /></td></tr>
-					  <tr><td><div class="field"><label for="editMember">Edit Member</label></td><td><input type="checkbox" name="editMember" id="editMember" /></td></tr>
-					  <tr><td><div class="field"><label for="editInfo">Edit Info</label></td><td><input type="checkbox" name="editInfo" id="editInfo" /></td></tr>
-					  <tr><td><div class="field"><label for="addRepo">Add Repository</label></td><td><input type="checkbox" name="addRepo" id="addRepo" /></td></tr>
-					  <tr><td><div class="field"><label for="pushToRepo">Push To Repository</label></td><td><input type="checkbox" name="pushToRepo" id="pushToRepo" /></td></tr>
-					  <tr><td><div class="field"><label for="archiveRepo">Archive Repository</label></td><td><input type="checkbox" name="archiveRepo" id="archiveRepo" /></td></tr>
-					  <tr><td><div class="field"><label for="deleteRepo">Delete Repository</label></td><td><input type="checkbox" name="deleteRepo" id="deleteRepo" /></td></tr>
-					  <tr><td><div class="field"><label for="editHooks">Edit Hooks</label></td><td><input type="checkbox" name="editHooks" id="editHooks" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-addMember">Add Member</label></td><td><input type="checkbox" name="addMember" id="chkbox-addMember" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-deleteMember">Delete Member</label></td><td><input type="checkbox" name="deleteMember" id="chkbox-deleteMember" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-editMember">Edit Member</label></td><td><input type="checkbox" name="editMember" id="chkbox-editMember" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-editInfo">Edit Info</label></td><td><input type="checkbox" name="editInfo" id="chkbox-editInfo" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-addRepo">Add Repository</label></td><td><input type="checkbox" name="addRepo" id="chkbox-addRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-pushToRepo">Push To Repository</label></td><td><input type="checkbox" name="pushToRepo" id="chkbox-pushToRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-archiveRepo">Archive Repository</label></td><td><input type="checkbox" name="archiveRepo" id="chkbox-archiveRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-deleteRepo">Delete Repository</label></td><td><input type="checkbox" name="deleteRepo" id="chkbox-deleteRepo" /></td></tr>
+					  <tr><td><div class="field"><label for="chkbox-editHooks">Edit Hooks</label></td><td><input type="checkbox" name="editHooks" id="chkbox-editHooks" /></td></tr>
 					</tbody>
 				  </table>
 				</td>
 			  </tr>
 			  <tr>
 				<td></td>
-				<td><input class="form-submit" type="submit" value="Add Member" /></td>
+				<td><input class="field-submit" type="submit" value="Add Member" /></td>
 			  </tr>
 			</table>
 		  </form>

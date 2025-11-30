@@ -25,40 +25,46 @@
 			<div>{{.ErrorMsg}}</div>
 			<table class="field-table">
 			  <tr class="field">
-				<td><label class="field-label" for="type">Mailer Type:</label></td>
-				<td><select name="type" id="type" value="{{.Config.Mailer.Type}}">
+				<td><label class="field-label" for="s-type">Mailer Type:</label></td>
+				<td><select name="type" id="s-type" value="{{.Config.Mailer.Type}}">
 					<option value="smtp" {{if eq .Config.Mailer.Type "smtp"}}selected{{end}}>SMTP</option>
 					<option value="gmail-plain" {{if eq .Config.Mailer.Type "gmail-plain"}}selected{{end}}>Gmail (w/ App Password)</option>
 				</select></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="server">Mailer SMTP Server:</label></td>
-				<td><input name="server" id="server" class="field-tf" value="{{.Config.Mailer.SMTPServer}}"/></td>
+				<td><label class="field-label" for="tf-server">Mailer SMTP Server:</label></td>
+				<td><input name="server" id="tf-server" class="field-tf" value="{{.Config.Mailer.SMTPServer}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="port">Mailer SMTP Port:</label></td>
-				<td><input name="port" id="port" class="field-tf" value="{{.Config.Mailer.SMTPPort}}"/></td>
+				<td><label class="field-label" for="tf-port">Mailer SMTP Port:</label></td>
+				<td><input name="port" id="tf-port" class="field-tf" value="{{.Config.Mailer.SMTPPort}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="username">Mailer User Name:</label></td>
-				<td><input name="username" id="username" class="field-tf" value="{{.Config.Mailer.User}}"/></td>
+				<td><label class="field-label" for="tf-username">Mailer User Name:</label></td>
+				<td><input name="username" id="tf-username" class="field-tf" value="{{.Config.Mailer.User}}"/></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label" for="password">Mailer User Password:</label></td>
-				<td><input name="password" id="password" type="password" class="field-tf" value="{{.Config.Mailer.Password}}"/></td>
+				<td><label class="field-label" for="tf-password">Mailer User Password:</label></td>
+				<td><input name="password" id="tf-password" type="password" class="field-tf" value="{{.Config.Mailer.Password}}"/></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" name="action" type="submit" value="Save Config" /></td>
 			  </tr>
 			</table>
-			<input class="field-submit" name="action" type="submit" value="Save Config" />
 		  </fieldset>
 		  <fieldset>
 			<legend>Test Email Setting</legend>
 			<table class="field-table">
 			  <tr class="field">
-				<td><label class="field-label" for="test-email-target">Test Email Target:</label></td>
-				<td><input name="test-email-target" id="test-email-target" type="email" class="field-tf" /></td>
+				<td><label class="field-label" for="tf-test-email-target">Test Email Target:</label></td>
+				<td><input name="test-email-target" id="tf-test-email-target" type="email" class="field-tf" /></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" name="action" type="submit" value="Test Mailer" /></td>
 			  </tr>
 			</table>
-			<input class="field-submit" name="action" type="submit" value="Test Mailer" />
 		  </fieldset>
 		</form>
 	  </div>

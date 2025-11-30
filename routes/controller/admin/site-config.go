@@ -56,11 +56,7 @@ func bindAdminSiteConfigController(ctx *RouterContext) {
 					}))
 					return
 				}
-				LogTemplateError(rc.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{
-					Config: rc.Config,
-					LoginInfo: rc.LoginInfo,
-					ErrorMsg: "Updated.",
-				}))
+				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
 			case "basic":
 				rc.Config.DepotName = r.Form.Get("depot-name")
 				rc.Config.GitRoot = r.Form.Get("root")
@@ -91,11 +87,22 @@ func bindAdminSiteConfigController(ctx *RouterContext) {
 					}))
 					return
 				}
-				LogTemplateError(rc.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{
-					Config: rc.Config,
-					LoginInfo: rc.LoginInfo,
-					ErrorMsg: "Updated.",
-				}))
+				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
+			case "front-page":
+				rc.Config.FrontPage.Type = r.Form.Get("front-page-type")
+				rc.Config.FrontPage.Namespace = r.Form.Get("namespace")
+				rc.Config.FrontPage.Repository = r.Form.Get("repository")
+				rc.Config.FrontPage.FileContent = r.Form.Get("file-content")
+				err := rc.Config.Sync()
+				if err != nil {
+					LogTemplateError(rc.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{
+						Config: rc.Config,
+						LoginInfo: rc.LoginInfo,
+						ErrorMsg: fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()),
+					}))
+					return
+				}
+				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
 			}
 		},
 	))

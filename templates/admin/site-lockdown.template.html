@@ -36,8 +36,8 @@
 			<p>Under Private Mode, users cannot visit public namespaces and repositories without login; they cannot clone through HTTP either. All other functionalities work the same.</p>
 			<form action="" method="POST">
 			  <input type="hidden" name="type" value="private" />
-			  <label class="field-label" for="private-notice-message">Message:</label>
-			  <textarea name="private-notice-message" id="private-notice-message">{{.PrivateNoticeMessage}}</textarea>
+			  <label class="field-label" for="ta-private-notice-message">Message:</label>
+			  <textarea name="private-notice-message" id="ta-private-notice-message">{{.PrivateNoticeMessage}}</textarea>
 			  <input type="submit" value="Set to Private mode" />
 			</form>
 		</fieldset>
@@ -53,10 +53,10 @@
 		  </ul>
 		  <form action="" method="POST">
 			<input type="hidden" name="type" value="shutdown" />
-			<label class="field-label" for="full-access-user">Full access user:</label>
-			<input class="field-tf" name="full-access-user" id="full-access-user" value="{{htmlEscape .FullAccessUser}}" />
-			<label class="field-label" for="shutdown-notice-message">Message:</label>
-			<textarea name="shutdown-notice-message" id="shutdown-notice-message">{{.ShutdownNoticeMessage}}</textarea>
+			<label class="field-label" for="tf-full-access-user">Full access user:</label>
+			<input class="field-tf" name="full-access-user" id="tf-full-access-user" value="{{htmlEscape .FullAccessUser}}" />
+			<label class="field-label" for="ta-shutdown-notice-message">Message:</label>
+			<textarea name="shutdown-notice-message" id="ta-shutdown-notice-message">{{.ShutdownNoticeMessage}}</textarea>
 			<input type="submit" value="Set to Shutdown mode" />
 		  </form>
 		</fieldset>
@@ -67,8 +67,8 @@
 		  <form action="" method="POST">
 			<input type="hidden" name="type" value="maintenance" />
 			
-			<label class="field-label" for="maintenance-notice-message">Message:</label>
-			<textarea name="maintenance-notice-message" id="maintenance-notice-message">{{.MaintenanceNoticeMessage}}</textarea>
+			<label class="field-label" for="ta-maintenance-notice-message">Message:</label>
+			<textarea name="maintenance-notice-message" id="ta-maintenance-notice-message">{{.MaintenanceNoticeMessage}}</textarea>
 			<input type="submit" value="Set to Maintenance mode" />
 		  </form>
 		</fieldset>

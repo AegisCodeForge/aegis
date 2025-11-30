@@ -6,6 +6,7 @@
     <meta charset="utf-8" />
     <title>Pull Request #{{.PullRequest.PRId}} of {{$repoName}} :: Gitus</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-pull-request.css">
   </head>
   <body>
@@ -141,36 +142,37 @@
 		  {{end}}
 		</div>
 		
-		
-		<h3>Comment</h3>
-		<form action="" method="POST">
-		  <input type="hidden" name="type" id="type" value="comment" />
-		  <div class="field"><textarea name="content" id="content"></textarea></div>
-		  <input type="submit" value="Post Comment" />
-		</form>
-		{{if not (eq .PullRequest.Status 2)}}
-		{{if eq .PullRequest.Status 1}}
-		<form action="" method="POST">
-		  <input type="hidden" name="type" id="type" value="merge-check" />
-		  <input type="submit" value="Merge Check" />
-		</form>
-		{{if and .PullRequest.MergeCheckResult .PullRequest.MergeCheckResult.Successful}}
-		<form action="" method="POST">
-		  <input type="hidden" name="type" id="type" value="close-as-merged" />
-		  <input type="submit" value="Merge & Close" />
-		</form>
-		{{end}}
-		<form action="" method="POST">
-		  <input type="hidden" name="type" id="type" value="close-as-not-merged" />
-		  <input type="submit" value="Close As Not Merged" />
-		</form>
-		{{else}}
-		<form action="" method="POST">
-		  <input type="hidden" name="type" id="type" value="reopen" />
-		  <input type="submit" value="Reopen" />
-		</form>
-		{{end}}
-		{{end}}
+		<fieldset>
+		  <legend>Comment</legend>
+		  <form action="" method="POST">
+			<input type="hidden" name="type" id="type" value="comment" />
+			<div class="field"><textarea name="content" id="content"></textarea></div>
+			<input type="submit" value="Post Comment" />
+		  </form>
+		  {{if not (eq .PullRequest.Status 2)}}
+		  {{if eq .PullRequest.Status 1}}
+		  <form action="" method="POST">
+			<input type="hidden" name="type" id="type" value="merge-check" />
+			<input type="submit" value="Merge Check" />
+		  </form>
+		  {{if and .PullRequest.MergeCheckResult .PullRequest.MergeCheckResult.Successful}}
+		  <form action="" method="POST">
+			<input type="hidden" name="type" id="type" value="close-as-merged" />
+			<input type="submit" value="Merge & Close" />
+		  </form>
+		  {{end}}
+		  <form action="" method="POST">
+			<input type="hidden" name="type" id="type" value="close-as-not-merged" />
+			<input type="submit" value="Close As Not Merged" />
+		  </form>
+		  {{else}}
+		  <form action="" method="POST">
+			<input type="hidden" name="type" id="type" value="reopen" />
+			<input type="submit" value="Reopen" />
+		  </form>
+		  {{end}}
+		  {{end}}
+		</fieldset>
 	  </div>
 	</main>
 	

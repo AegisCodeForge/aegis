@@ -11,7 +11,7 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  
-	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	  <h1 class="header-name" style="margin-bottom: 0">Admin/User</h1>
 	</header>
 	<hr />
 
@@ -32,8 +32,8 @@
 			<table class="field-table">
 			  <tbody>
 				<tr class="field">
-				  <td><label class="field-label" for="status">Status:</label></td>
-				  <td><select class="field-select" name="status" id="status">
+				  <td><label class="field-label" for="s-status">Status:</label></td>
+				  <td><select class="field-select" name="status" id="s-status">
 					  <option value="1" {{if eq .User.Status 1}}selected{{end}}>Normal User</option>
 					  <option value="2" {{if eq .User.Status 2}}selected{{end}}>Approval Needed</option>
 					  <option value="3" {{if eq .User.Status 3}}selected{{end}}>Confirmation Needed</option>
@@ -48,20 +48,20 @@
 				  </select></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="title">Title:</label></td>
-				  <td><input class="field-tf" name="title" value="{{.User.Title}}"/></td>
+				  <td><label class="field-label" for="tf-title">Title:</label></td>
+				  <td><input class="field-tf" id="tf-title" name="title" value="{{.User.Title}}"/></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="email">Email:</label></td>
-				  <td><input class="field-tf" name="email" value="{{.User.Email}}" /></td>
+				  <td><label class="field-label" for="tf-email">Email:</label></td>
+				  <td><input class="field-tf" id="tf-email" autocomplete="email" name="email" value="{{.User.Email}}" /></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="website">Website:</label></td>
-				  <td><input class="field-tf" name="website" value="{{.User.Website}}" /></td>
+				  <td><label class="field-label" for="tf-website">Website:</label></td>
+				  <td><input class="field-tf" id="tf-website" name="website" value="{{.User.Website}}" /></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="bio">Bio:</label></td>
-				  <td><textarea name="bio">{{.User.Bio}}</textarea></td>
+				  <td><label class="field-label" for="ta-bio">Bio:</label></td>
+				  <td><textarea id="ta-bio" name="bio">{{.User.Bio}}</textarea></td>
 				</tr>
 				<tr>
 				  <td>
@@ -88,16 +88,16 @@
 			<table class="field-table">
 			  <tbody>
 				<tr class="field">
-				  <td><label class="field-label" for="old-password">Old Password:</label></td>
-				  <td><input class="field-tf" name="old-password" type="password" required/></td>
+				  <td><label class="field-label" for="tf-old-password">Old Password:</label></td>
+				  <td><input class="field-tf" id="tf-old-password" name="old-password" type="password" required/></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="new-password">New Password:</label></td>
-				  <td><input class="field-tf" name="new-password" type="password" required /></td>
+				  <td><label class="field-label" for="tf-new-password">New Password:</label></td>
+				  <td><input class="field-tf" id="tf-new-password" name="new-password" type="password" required /></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="confirm-new-password">Confirm new password:</label></td>
-				  <td><input class="field-tf" name="confirm-new-password" type="password" required /></td>
+				  <td><label class="field-label" for="tf-confirm-new-password">Confirm new password:</label></td>
+				  <td><input class="field-tf" id="tf-confirm-new-password" name="confirm-new-password" type="password" required /></td>
 				</tr>
 				<tr>
 				  <td>

@@ -13,7 +13,7 @@ import (
 
 func bindSettingController(ctx *RouterContext) {
 	http.HandleFunc("GET /setting", UseMiddleware(
-		[]Middleware{Logged, UseLoginInfo, GlobalVisibility, ErrorGuard}, ctx,
+		[]Middleware{Logged, LoginRequired, GlobalVisibility, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			un := rc.LoginInfo.UserName
 			if !model.ValidUserName(un) {

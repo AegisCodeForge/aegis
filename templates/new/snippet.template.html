@@ -22,24 +22,45 @@
 	  </div>
 
 	  <div class="setting-main main-side">
-		<h2>New snippet</h2>
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form action="" method="POST">
-		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
-		  <div class="field"><label class="field-label" for="filename">File Name:</label> <input name="filename" /></div>
-		  <div class="field"><label class="field-label" for="status">Visibility:</label> <select name="status">
-			  <option value="1">Public</option>
-			  <option value="2">Internal</option>
-			  <option value="3">Shared-Only (Link)</option>
-			  <option value="4">Shared-Only (Selected Users)</option>
-			  <option value="5">Private</option>
-		  </select></div>
-		  <div class="field"><label class="field-label" for="content">Content:</label> <textarea name="content" id="content"></textarea></div>
-		  <input type="submit" value="New Snippet" />
-		</form>
-		
+		<fieldset>
+		  <legend>New snippet</legend>
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-name">Name:</label></td>
+				  <td><input class="field-tf" id="tf-name" name="name" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-filename">File Name:</label></td>
+				  <td><input class="field-tf" id="tf-filename" name="filename" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="s-status">Visibility:</label></td>
+				  <td><select id="s-status" name="status">
+					  <option value="1">Public</option>
+					  <option value="2">Internal</option>
+					  <option value="3">Shared-Only (Link)</option>
+					  <option value="4">Shared-Only (Selected Users)</option>
+					  <option value="5">Private</option>
+				  </select></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="ta-content">Content:</label></td>
+				  <td><textarea id="ta-content" name="content"></textarea>
+				  </td>
+				</tr>
+				<tr class="field">
+				  <td></td>
+				  <td><input class="field-submit" type="submit" value="New Snippet" /></td>
+				</tr>
+			  </tbody>
+			</table>
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

@@ -22,9 +22,6 @@
 	  <div class="setting-main main-side">
 		<h2>Namespace List</h2>
 		<div>{{.ErrorMsg}}</div>
-		<div class="admin-action">
-		  <a class="admin-action-item" href="/admin/new-namespace">New Namespace</a>
-		</div>
 		<div class="list-nav admin-list-nav">
 		  <div class="list-page-nav admin-list-page-nav">
 			{{if gt .PageInfo.PageNum 1}}
@@ -50,7 +47,7 @@
 		  </div>
 		  <div class="list-search admin-list-search">
 			<form class="admin-list-search-form" action="" method="GET">
-			  <label for="q">Search Namespace:</label> <input class="admin-list-search-tf" name="q" id="q" {{if .Query}}value="{{.Query}}"{{end}} />
+			  <label for="tf-q">Search Namespace:</label> <input class="admin-list-search-tf" name="q" id="tf-q" {{if .Query}}value="{{.Query}}"{{end}} />
 			  <input type="submit" value="Search" />
 			</form>
 		  </div>
@@ -85,6 +82,45 @@
 			{{end}}
 		  </tbody>
 		</table>
+
+
+		<fieldset>
+		  <legend>New Namespace</legend>
+		  <div>{{.ErrorMsg}}</div>
+		  
+		  <form id="namespace-setting-form" action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-name">Name:</label></td>
+				  <td><input class="field-tf" name="name" id="tf-name" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-title">Title:</label></td>
+				  <td><input class="field-tf" name="title" id="tf-title" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-owner">Owner:</label></td>
+				  <td><input class="field-tf" name="owner" id="tf-owner" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-email">Email:</label></td>
+				  <td><input class="field-tf" name="email" id="tf-email" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="s-status">Status:</label></td>
+				  <td><select class="field-select" name="status" id="s-status" >
+					  <option value="1">Public</option>
+					  <option value="2">Private</option>
+				  </select></td>
+				</tr>
+			  </tbody>
+			</table>
+			<div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description"></textarea></div>
+			<input class="field-submit" type="submit" value="New Namespace" />
+		  </form>
+		</fieldset>
+		
 	  </div>
 	</main>
 	

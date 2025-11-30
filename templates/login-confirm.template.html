@@ -18,13 +18,24 @@
 	</div>
 	{{end}}
 
-	<div id="login-form">
+	<fieldset id="login-form">
+	  <legend>Login Confirm</legend>
 	  <form action="" method="POST">
 		<input type="hidden" name="username" value="{{.Username}}" />
-		<div class="field"><label class="field-label" for="confirmation-code">Confirmation Code:</label><input class="field-tf" name="confirmation-code" id="confirmation-code" /></div>
-		<input class="form-submit" type="submit" value="Confirm" />
+		<table class="field-table">
+		  <tbody>
+			<tr class="field">
+			  <td><label class="field-label" for="tf-confirmation-code">Confirmation Code:</label></td>
+			  <td><input class="field-tf" name="confirmation-code" id="tf-confirmation-code" /></td>
+			</tr>
+			<tr class="field">
+			  <td></td>
+			  <td><input class="form-submit" type="submit" value="Confirm" /></td>
+			</tr>
+		  </tbody>
+		</table>
 	  </form>
-	</div>
+	</fieldset>
 
     <hr />
 	<footer>

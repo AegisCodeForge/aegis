@@ -10,9 +10,7 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  
-	  <h1 class="header-name" style="margin-bottom: 0">
-		Settings
-	  </h1>
+	  <h1 class="header-name" style="margin-bottom: 0">Settings</h1>
 	</header>
 	<hr />
 
@@ -21,24 +19,23 @@
 
 	  <div class="setting-main main-side">
 		<fieldset>
-		  <legend>Two-factor authentication</legend>
+		  <legend>Two-Factor Authentication</legend>
 		  {{if .ErrorMsg}}
 		  {{if eq .ErrorMsg.Type "info"}}
 		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
 		  {{end}}
 		  {{end}}
-		  <h3>Email</h3>
 		  <form action="" method="POST">
 			<input type="hidden" name="section" value="2fa" />
 			<input type="hidden" name="type" value="email" />
 			<table class="field-table">
 			  <tr class="field">
-				<td><label class="field-label" for="email-enable">Enable:</label></td>
-				<td><input type="checkbox" name="email-enable" id="email-enable" {{if .User.TFAConfig.Email.Enable}}checked{{end}}/></td>
+				<td><label class="field-label" for="chkbox-email-enable">Enable Email 2FA Confirm Code:</label></td>
+				<td><input type="checkbox" name="email-enable" id="chkbox-email-enable" {{if .User.TFAConfig.Email.Enable}}checked{{end}}/></td>
 			  </tr>
 			  <tr>
 				<td></td>
-				<td><input type="submit" value="Save" /></td>
+				<td><input class="field-submit" type="submit" value="Save" /></td>
 			  </tr>
 			</table>
 		  </form>

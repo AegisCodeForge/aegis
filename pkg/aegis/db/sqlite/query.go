@@ -630,7 +630,7 @@ func (dbif *SqliteAegisDatabaseInterface) GetAllVisibleRepositoryFromNamespace(u
 SELECT repo_name, repo_description, repo_owner, repo_acl, repo_status, repo_fork_origin_namespace, repo_fork_origin_name, repo_label_list, repo_webhook, rowid
 FROM %s_repository
 WHERE repo_namespace = ?
-AND (repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?)
+AND ((repo_status = 1 OR repo_status = 4 OR repo_status = 5) OR (repo_owner = ? OR repo_acl LIKE ? ESCAPE ?))
 `, pfx))
 		if err != nil { return nil, err }
 		rs, err = stmt.Query(ns, username, db.ToSqlSearchPattern(username), "\\")

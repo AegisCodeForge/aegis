@@ -32,16 +32,16 @@
 			<table class="field-table">
 			  <tbody>
 				<tr class="field">
-				  <td><label class="field-label field-chkbox-label" for="enable">Enable Webhook:</label></td>
-				  <td><input type="checkbox" name="enable" id="enable" {{if .Repository.WebHookConfig.Enable}}checked{{end}} /></td>
+				  <td><label class="field-label field-chkbox-label" for="chkbox-enable">Enable Webhook:</label></td>
+				  <td><input type="checkbox" name="enable" id="chkbox-enable" {{if .Repository.WebHookConfig.Enable}}checked{{end}} /></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="secret">Secret:</label></td>
-				  <td><input class="field-tf" name="secret" id="secret" value="{{.Repository.WebHookConfig.Secret}}" /></td>
+				  <td><label class="field-label" for="tf-secret">Secret:</label></td>
+				  <td><input class="field-tf" name="secret" id="tf-secret" value="{{.Repository.WebHookConfig.Secret}}" /></td>
 				</tr>
 				<tr class="field">
-				  <td><label class="field-label" for="target-url">Target URL:</label></td>
-				  <td><input class="field-tf" name="target-url" id="target-url" value="{{.Repository.WebHookConfig.TargetURL}}" /></td>
+				  <td><label class="field-label" for="tf-target-url">Target URL:</label></td>
+				  <td><input class="field-tf" name="target-url" id="tf-target-url" value="{{.Repository.WebHookConfig.TargetURL}}" /></td>
 				</tr>
 				<tr class="field">
 				  <td>

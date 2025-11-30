@@ -21,15 +21,32 @@
 	  </div>
 
 	  <div class="setting-main main-side">
-		<h2>New namespace</h2>
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form action="" method="POST">
-		  <div class="field"><label class="field-label" for="name">Name:</label> <input name="name" /></div>
-		<div class="field"><label class="field-label" for="title">Title:</label> <input name="title" /></div>
-		<input type="submit" value="New Namespace" />
-		</form>
+		<fieldset>
+		  <legend>New namespace</legend>
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-name">Name:</label>
+					<span class="field-label-description">(Must only contains a-z, A-Z, 0-9, dash and/or underscore.)</span>
+				  </td>
+				  <td><input class="field-tf" id="tf-name" name="name" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-title">Title:</label></td>
+				  <td><input class="field-tf" id="tf-title" name="title" /></td>
+				</tr>
+				<tr>
+				  <td></td>
+				  <td><input type="submit" value="New Namespace" /></td>
+				</tr>
+			  </tbody>
+			</table>
+		  </form>
+		</fieldset>
 
 	  </div>
 	</main>

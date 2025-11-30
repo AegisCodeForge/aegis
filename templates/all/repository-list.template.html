@@ -25,7 +25,7 @@
 	  <div class="list-page-goto">
 		<form class="list-page-goto-form" action="" method="GET">
 		  <input type="hidden" name="s" value="{{.PageInfo.PageSize}}" />
-		<label for="p">Page:</label> <input class="list-page-goto-form-tf" name="p" id="p" />
+		<label for="tf-p">Page:</label> <input class="list-page-goto-form-tf" name="p" id="tf-p" />
 		<input type="submit" value="Go" />
 		</form>
 		
@@ -37,7 +37,7 @@
 	  </div>
 	  <div class="list-search">
 		<form class="list-search-form" action="" method="GET">
-		  <label for="q">Search Repository:</label> <input class="list-search-tf" name="q" id="q" value="{{if .Query}}{{.Query}}{{end}}" />
+		  <label for="tf-q">Search Repository:</label> <input class="list-search-tf" name="q" id="tf-q" value="{{if .Query}}{{.Query}}{{end}}" />
 		<input type="submit" value="Search" />
 		</form>
 	  </div>

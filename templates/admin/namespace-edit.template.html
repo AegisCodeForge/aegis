@@ -4,13 +4,14 @@
     <meta charset="utf-8" />
     <title>Namespace Edit :: Admin :: {{.Config.DepotName}}</title>
 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-admin.css">
   </head>
   <body>
 	<header>
 	  {{template "_header-nav" .}}
 	  
-	  <h1 class="header-name" style="margin-bottom: 0">Admin</h1>
+	  <h1 class="header-name" style="margin-bottom: 0">Admin/Namespace</h1>
 	</header>
 	<hr />
 
@@ -18,25 +19,46 @@
 	  {{template "_admin-sidebar"}}
 
 	  <div class="setting-main main-side">
-		
-		<h2>Change info</h2>
-		
-		{{if .ErrorMsg}}
-		<div class="error-msg">{{.ErrorMsg.Message}}</div>
-		{{end}}
-		<form id="namespace-setting-form" action="" method="POST">
-		  <div class="field"><label class="field-label" for="title">Title:</label> <input class="field-tf" name="title" id="title" value="{{.Namespace.Title}}" /></div>
-		  <div class="field"><label class="field-label" for="owner">Owner:</label> <input class="field-tf" name="owner" id="owner" value="{{.Namespace.Owner}}" /></div>
-		  <div class="field"><label class="field-label" for="email">Email:</label> <input class="field-tf" name="email" id="email" value="{{.Namespace.Email}}" /></div>
-		  <div class="field"><label class="field-label" for="status">Status:</label>
-			<select class="field-select" name="status" id="status" value="{{.Namespace.Status}}">
-		  <option value="1">Public</option>
-		  <option value="2">Private</option>
-		</select>
-		  </div>
-		  <div class="field"><label class="field-label" for="description">Description:</label> <textarea class="field-tf" name="description" id="description">{{.Namespace.Description}}</textarea></div>
-		  <input class="form-submit" type="submit" value="Change Info" />
-		</form>
+
+		<fieldset>
+		  <legend>Change info</legend>
+		  {{if .ErrorMsg}}
+		  <div class="error-msg">{{.ErrorMsg.Message}}</div>
+		  {{end}}
+		  <form id="namespace-setting-form" action="" method="POST">
+			<table class="field-table">
+			  <tbody>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-title">Title:</label></td>
+				  <td><input class="field-tf" name="title" id="tf-title" value="{{.Namespace.Title}}" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-owner">Owner:</label></td>
+				  <td><input class="field-tf" name="owner" id="tf-owner" value="{{.Namespace.Owner}}" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="tf-email">Email:</label></td>
+				  <td><input class="field-tf" name="email" id="tf-email" value="{{.Namespace.Email}}" /></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="s-status">Status:</label></td>
+				  <td><select class="field-select" name="status" id="s-status" value="{{.Namespace.Status}}">
+					  <option value="1">Public</option>
+					  <option value="2">Private</option>
+				  </select></td>
+				</tr>
+				<tr class="field">
+				  <td><label class="field-label" for="ta-description">Description:</label></td>
+				  <td><textarea class="field-tf" name="description" id="ta-description">{{.Namespace.Description}}</textarea></td>
+				</tr>
+				<tr>
+				  <td></td>
+				  <td><input class="form-submit" type="submit" value="Change Info" /></td>
+				</tr>
+			  </tbody>
+			</table>
+		  </form>
+		</fieldset>
 	  </div>
 	</main>
 	

@@ -21,8 +21,8 @@ body {
 	background-color: var(--background-color);
 	color: var(--foreground-color);
 	margin: 2rem;
-	margin-left: 160px;
-	margin-right: 160px;
+	margin-left: 3rem;
+	margin-right: 3rem;
 	font-family: 'Nimbus Sans', sans-serif;
 }
 
@@ -31,17 +31,21 @@ body {
 		margin-left: 2rem;
 		margin-right: 2rem;
 	}
+	fieldset {
+		padding-left: 0;
+		padding-right: 0;
+	}
 }
 @media (min-width: 720px) and (max-width: 800px) {
 	body {
-		margin-left: 80px;
-		margin-right: 80px;
+		margin-left: 2rem;
+		margin-right: 2rem;
 	}
 }
 @media (min-width: 800px) and (max-width: 960px) {
 	body {
-		margin-left: 120px;
-		margin-right: 120px;
+		margin-left: 2.5rem;
+		margin-right: 2.5rem;
 	}
 }
 
@@ -438,6 +442,11 @@ main {
 	width: 100%;
 	display: block;
 }
+.field-label-description {
+	font-size: 0.9rem;
+	font-style: italic;
+	color: var(--white-shade-degree-2);
+}
 .field-chkbox-label {
 	width: inherit;
 	display: inline;
@@ -495,6 +504,12 @@ form input[type="submit"], .form-submit {
 form input[type="submit"]:hover, .form-submit:hover {
 	background-color: var(--background-color);;
 	color: var(--foreground-color);
+}
+form td {
+	width: fit-content;
+	min-width: 120px;
+	max-width: 240px;
+	vertical-align: top;
 }
 /* ======================================================== */
 
