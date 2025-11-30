@@ -13,7 +13,7 @@ require (
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/niklasfasching/go-org v1.7.0
 	github.com/redis/go-redis/v9 v9.10.0
-	github.com/wneessen/go-mail v0.6.2
+	github.com/wneessen/go-mail v0.7.1
 	golang.org/x/crypto v0.45.0
 	golang.org/x/term v0.37.0
 	golang.org/x/time v0.12.0
