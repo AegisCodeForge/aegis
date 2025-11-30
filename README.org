@@ -1,4 +1,9 @@
+#+options: toc:nil
 * Aegis
+
+#+begin_center
+[[./logo.png]]
+#+end_center
 
 A web frontend for Git.
 
