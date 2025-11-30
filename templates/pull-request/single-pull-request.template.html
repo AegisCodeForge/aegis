@@ -4,7 +4,9 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Pull Request #{{.PullRequest.PRId}} of {{$repoName}} :: Gitus</title>
+    <title>Pull Request #{{.PullRequest.PRId}} of {{$repoName}} :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style-const-default.css">
+	<link rel="stylesheet" href="/dynamic-asset/style-const-default.css">
 	<link rel="stylesheet" href="/static/style.css">
 	<link rel="stylesheet" href="/static/style-setting.css">
 	<link rel="stylesheet" href="/static/style-pull-request.css">

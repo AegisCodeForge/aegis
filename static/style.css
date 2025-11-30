@@ -1,10 +1,4 @@
 :root {
-	--foreground-color: black;
-	--background-color: white;
-
-}
-
-:root {
 	--shade-degree-0: color(from var(--foreground-color) srgb r g b / 0.2);
 	--shade-degree-1: color(from var(--foreground-color) srgb r g b / 0.4);
 	--shade-degree-2: color(from var(--foreground-color) srgb r g b / 0.6);

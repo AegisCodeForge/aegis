@@ -37,12 +37,21 @@ type AegisUser struct {
 	// SigningKey []AegisSigningKey `json:"signKey"`
 
 	TFAConfig AegisUser2FAConfig `json:"2fa"`
+	WebsitePreference AegisUserWebsitePreference `json:"preference"`
 }
 
 type AegisUser2FAConfig struct {
 	Email struct{
 		Enable bool `json:"enable"`
 	} `json:"email"`
+}
+
+type AegisUserWebsitePreference struct {
+	ForegroundColor string `json:"foregroundColor"`
+	BackgroundColor string `json:"backgroundColor"`
+	// whether to load ui w/ components that requires javascript or
+	// load ui with zero javascript requirements.
+	UseJavascript bool `json:"useJavascript"`
 }
 
 

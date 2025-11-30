@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis/db"
 	"github.com/bctnry/aegis/pkg/aegis/model"
@@ -90,6 +91,15 @@ func bindSettingController(ctx *RouterContext) {
 				if len(r.Form.Get("website")) > 0 { user.Website = r.Form.Get("website") }
 				if len(r.Form.Get("bio")) > 0 { user.Bio = r.Form.Get("bio") }
 				err = ctx.DatabaseInterface.UpdateUserInfo(targetUsername, user)
+				if err != nil {
+					ctx.ReportInternalError(err.Error(), w, r)
+					return
+				}
+			case "website-preference":
+				user.WebsitePreference.ForegroundColor = strings.TrimSpace(r.Form.Get("foreground-color"))
+				user.WebsitePreference.BackgroundColor = strings.TrimSpace(r.Form.Get("background-color"))
+				user.WebsitePreference.UseJavascript = r.Form.Has("use-javascript") && len(r.Form.Get("use-javascript")) > 0
+				err = rc.DatabaseInterface.UpdateUserInfo(user.Name, user)
 				if err != nil {
 					ctx.ReportInternalError(err.Error(), w, r)
 					return

@@ -7,6 +7,8 @@ import (
 )
 
 func InitializeRoute(context *routes.RouterContext) {
+	bindDynamicAssetController(context)
+	
 	bindBlobController(context)
 	bindBranchController(context)
 	bindCommitController(context)

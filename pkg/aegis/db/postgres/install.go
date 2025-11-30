@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS %s_user (
     user_reg_datetime TIMESTAMP,
     user_password_hash VARCHAR(256),
     user_status SMALLINT,
-    user_2fa_config JSONB
+    user_2fa_config JSONB,
+    user_website_preference JSONB
 )
 `, pfx))
 	if err != nil { return err }

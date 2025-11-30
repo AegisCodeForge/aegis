@@ -24,7 +24,9 @@ NOTE THAT this is only a general guide of how the tables would be implemented. t
   	-- admin status while admin can't.
   	user_status INTEGER,
   	-- user 2FA configuration in JSON.
-  	user_2fa_config TEXT
+  	user_2fa_config TEXT,
+  	-- user website preference in JSON.
+  	user_website_preference TEXT
   );
   CREATE UNIQUE INDEX IF NOT EXISTS idx_aegis_user_user_name
   ON aegis_user (user_name);

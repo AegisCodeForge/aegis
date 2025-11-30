@@ -27,18 +27,21 @@ func (dbif *SqliteAegisDatabaseInterface) Dispose() error {
 func (dbif *SqliteAegisDatabaseInterface) GetUserByName(name string) (*model.AegisUser, error) {
 	pfx := dbif.config.Database.TablePrefix
 	stmt, err := dbif.connection.Prepare(fmt.Sprintf(`
-SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash, user_2fa_config
+SELECT user_name, user_title, user_email, user_bio, user_website, user_status, user_password_hash, user_2fa_config, user_website_preference
 FROM %s_user
 WHERE user_name = ?
 `, pfx))
 	if err != nil { return nil, err }
-	var username, title, email, bio, website, ph, tfaConfig string
+	var username, title, email, bio, website, ph, tfaConfig, websitePreference string
 	var status int
-	err = stmt.QueryRow(name).Scan(&username, &title, &email, &bio, &website, &status, &ph, &tfaConfig)
+	err = stmt.QueryRow(name).Scan(&username, &title, &email, &bio, &website, &status, &ph, &tfaConfig, &websitePreference)
 	if err == sql.ErrNoRows { return nil, db.ErrEntityNotFound }
 	if err != nil { return nil, err }
 	var tfa model.AegisUser2FAConfig
 	err = json.Unmarshal([]byte(tfaConfig), &tfa)
+	if err != nil { return nil, err }
+	var wPref model.AegisUserWebsitePreference
+	err = json.Unmarshal([]byte(websitePreference), &wPref)
 	if err != nil { return nil, err }
 	return &model.AegisUser{
 		Name: username,
@@ -49,6 +52,7 @@ WHERE user_name = ?
 		Status: model.AegisUserStatus(status),
 		PasswordHash: ph,
 		TFAConfig: tfa,
+		WebsitePreference: wPref,
 	}, nil
 }
 
@@ -318,13 +322,15 @@ func (dbif *SqliteAegisDatabaseInterface) UpdateUserInfo(name string, uobj *mode
 UPDATE %s_user
 SET
     user_title = ?, user_email = ?, user_bio = ?,
-    user_website = ?, user_status = ?, user_2fa_config = ?
+    user_website = ?, user_status = ?, user_2fa_config = ?,
+    user_website_preference = ?
 WHERE
     user_name = ?
 `, pfx))
 	if err != nil { return err }
 	tfa, _ := json.Marshal(uobj.TFAConfig)
-	_, err = stmt.Exec(uobj.Title, uobj.Email, uobj.Bio, uobj.Website, uobj.Status, string(tfa), name)
+	wpref, _ := json.Marshal(uobj.WebsitePreference)
+	_, err = stmt.Exec(uobj.Title, uobj.Email, uobj.Bio, uobj.Website, uobj.Status, string(tfa), string(wpref), name)
 	if err != nil { return err }
 	err = tx.Commit()
 	if err != nil { return err }
