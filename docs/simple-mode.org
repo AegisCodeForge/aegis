@@ -127,5 +127,5 @@ each field must be either ~allow~ or ~disallow~. for any ref and any action that
 
 if we choose the first method, we will have to create a repository model object for ~__aegis:__repo_config~ and parse through its internal git objects every single time, which involves file IO, zlib decompress and JSON deserializing. for this reason, we currently keep a clone of this repo is thus created directly under the git folder of ~__aegis:__repo_config~ with the subfolder name ~aegis_sync~, so that we can skip the zlib decompress part (also os API is slightly easier to handle).
 
-the update of this ~aegis_sync~ cannot be done during the execution of the ~update~ hook since the update is only complete *after* the hook has completed running. we prepare the command ~aegis simple-mode aegis-sync~ for this.
+the update of this ~aegis_sync~ cannot be done during the execution of the ~update~ hook since the update (to refs/heads/master) is only complete *after* the hook has completed running. we prepare the command ~aegis simple-mode aegis-sync~ for this.
 

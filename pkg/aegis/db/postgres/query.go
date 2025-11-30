@@ -2317,10 +2317,11 @@ func (dbif *PostgresAegisDatabaseInterface) CheckAndMergePullRequest(absId int64
 	// create pull request if the repo is not git repo, but the
 	// code can still be called. DO NOT CALL UNLESS YOU KNOW
 	// WHAT YOU'RE DOING.
-	// TODO: fix this after figuring things out.
+	// TODO: fix this after figuring things out. (doing the
+	// following possibly bad for performance?) this would
+	// need to be fixed in the future...
 	r, err := dbif.CheckPullRequestMergeConflict(absId)
 	if err != nil { return err }
-	// TODO: this would need to be fixed in the future...
 	if !r.Successful { return nil }
 	pfx := dbif.config.Database.TablePrefix
 	ctx := context.Background()
