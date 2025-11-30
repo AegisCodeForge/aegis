@@ -4,7 +4,26 @@
 
 # Aegis
 
-A web frontend for Git.
+Aegis is a self-hosted code forge that mainly supports the Git distributed version control system.
+
++ Simple, functional UI;
++ **No JavaScript** - works all major browsers and a lot of minor ones, including [Ladybird](https://ladybird.org), [K-Meleon](http://kmeleonbrowser.org) and [NetSurf](https://www.netsurf-browser.org).
++ Proper web installer for easy installation;
++ Namespaces (which you can turn off at installation time);
++ Read/write access through SSH with per-namespace and/or per-repository user access control;
++ Issue tracking and pull requests;
++ Webhooks for external CI/CD (experimental feature; subject to change)
++ Support for snippets (à la GitHub snippets)
++ Multiple operation mode for different needs:
+  + Plain Mode for when you only need to have a web interface, similar to `git-instaweb`.
+  + Simple Mode for when you only need mininum features like creating repositories, push/pull by SSH and basic access control.
+  + Normal Mode, which comes with all the usual features.
++ And many tiny things:
+  + Labels for repositories;
+  + UI for Git Blame;
+  + UI for directly editing files;
+  + 2-Factor Authentication
+  + `Co-Authored-By`
 
 ## Build
 
@@ -16,7 +35,7 @@ make all
 
 ## Installation
 
-(for extra details please visit [](./docs/installation.org))
+(for extra details please visit [docs/installation.org](docs/installation.org))
 
 Run the following command:
 
@@ -45,7 +64,7 @@ Currently Aegis only supports the following systems for its components; support 
 + Main database:
   + PostgreSQL
   + SQLite3
-+ Receipt system (see [](./docs/receipt.org)):
++ Receipt system (see [docs/receipt.org](docs/receipt.org)):
   + PostgreSQL
   + SQLite3
 + Session store:
