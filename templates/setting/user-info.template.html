@@ -79,6 +79,10 @@
 				  <td><input id="tf-background-color" name="background-color" value="{{.User.WebsitePreference.BackgroundColor}}" /></td>
 				</tr>
 				<tr class="field">
+				  <td><label class="field-label" for="chkbox-use-sitewide-theme-config">Use Site-Wide Theme Config:</label><span class="field-label-description">(Set this option to checked to bypass the color configuration above)</span></td>
+				  <td><input type="checkbox" id="chkbox-use-sitewide-theme-config" name="use-sitewide-theme-config" {{if .User.WebsitePreference.UseSiteWideThemeConfig}}checked{{end}} /></td>
+				</tr>
+				<tr class="field">
 				  <td><label class="field-label" for="chkbox-use-javascript">Use Javascript:</label><span class="field-label-description">(Set this option to checked to use JavaScript-dependent version of UI)</span></td>
 				  <td><input type="checkbox" id="chkbox-use-javascript" name="use-javascript" {{if .User.WebsitePreference.UseJavascript}}checked{{end}} /></td>
 				</tr>

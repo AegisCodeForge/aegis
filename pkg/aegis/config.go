@@ -146,6 +146,11 @@ type AegisConfig struct {
 
 	DefaultNewUserStatus model.AegisUserStatus `json:"defaultNewUserStatus"`
 	DefaultNewUserNamespace string `json:"defaultNewUserNamespace"`
+
+	// theme.
+	// currently it's just a foreground color & a background color but there
+	// could be more in the future.
+	Theme AegisThemeConfig `json:"theme"`
 }
 
 const (
@@ -284,6 +289,11 @@ type AegisFrontPageConfig struct {
 	FileContent string `json:"fileContent"`
 }
 
+type AegisThemeConfig struct {
+	ForegroundColor string `json:"foregroundColor"`
+	BackgroundColor string `json:"backgroundColor"`
+}
+
 // proper http host name. no trailing slash.
 func (cfg *AegisConfig) ProperHTTPHostName() string {
 	// proper http host name. no trailing slash.
@@ -400,6 +410,10 @@ func CreateConfigFile(p string) error {
 			Namespace: "",
 			Repository: "",
 			FileContent: "",
+		},
+		Theme: AegisThemeConfig{
+			ForegroundColor: "black",
+			BackgroundColor: "white",
 		},
 	}, "", "    ")
 	if err != nil { return err }

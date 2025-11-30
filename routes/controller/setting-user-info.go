@@ -98,6 +98,7 @@ func bindSettingController(ctx *RouterContext) {
 			case "website-preference":
 				user.WebsitePreference.ForegroundColor = strings.TrimSpace(r.Form.Get("foreground-color"))
 				user.WebsitePreference.BackgroundColor = strings.TrimSpace(r.Form.Get("background-color"))
+				user.WebsitePreference.UseSiteWideThemeConfig = r.Form.Has("use-sitewide-theme-config") && len(r.Form.Get("use-sitewide-theme-config")) > 0
 				user.WebsitePreference.UseJavascript = r.Form.Has("use-javascript") && len(r.Form.Get("use-javascript")) > 0
 				err = rc.DatabaseInterface.UpdateUserInfo(user.Name, user)
 				if err != nil {

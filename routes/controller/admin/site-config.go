@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	. "github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/templates"
@@ -88,6 +89,20 @@ func bindAdminSiteConfigController(ctx *RouterContext) {
 					return
 				}
 				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
+			case "theme-config":
+				rc.Config.Theme.ForegroundColor = strings.TrimSpace(r.Form.Get("foreground-color"))
+				rc.Config.Theme.BackgroundColor = strings.TrimSpace(r.Form.Get("background-color"))
+				err := rc.Config.Sync()
+				if err != nil {
+					LogTemplateError(rc.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{
+						Config: rc.Config,
+						LoginInfo: rc.LoginInfo,
+						ErrorMsg: fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()),
+					}))
+					return
+				}
+				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
+				
 			case "front-page":
 				rc.Config.FrontPage.Type = r.Form.Get("front-page-type")
 				rc.Config.FrontPage.Namespace = r.Form.Get("namespace")

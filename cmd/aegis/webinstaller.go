@@ -322,6 +322,8 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		ctx.Config.FrontPage.Namespace = strings.TrimSpace(r.Form.Get("front-page-namespace"))
 		ctx.Config.FrontPage.Repository = strings.TrimSpace(r.Form.Get("front-page-repository"))
 		ctx.Config.FrontPage.FileContent = r.Form.Get("front-page-file-content")
+		ctx.Config.Theme.ForegroundColor = "#000000"
+		ctx.Config.Theme.BackgroundColor = "#ffffff"
 		// NOTE: these options are not used in plain mode and simple mode.
 		if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
 			ctx.Config.AllowRegistration = len(strings.TrimSpace(r.Form.Get("allow-registration"))) > 0

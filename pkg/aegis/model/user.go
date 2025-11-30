@@ -49,6 +49,8 @@ type AegisUser2FAConfig struct {
 type AegisUserWebsitePreference struct {
 	ForegroundColor string `json:"foregroundColor"`
 	BackgroundColor string `json:"backgroundColor"`
+	// ignore user custom fgcolor/bgcolor config if true.
+	UseSiteWideThemeConfig bool `json:"useSiteWideThemeConfig"`
 	// whether to load ui w/ components that requires javascript or
 	// load ui with zero javascript requirements.
 	UseJavascript bool `json:"useJavascript"`
