@@ -165,6 +165,10 @@ func bindBranchController(ctx *RouterContext) {
 			
 			isNewFileRequest := r.URL.Query().Has("new-file")
 			if isNewFileRequest && isTargetTree {
+				if !rc.LoginInfo.LoggedIn {
+					rc.ReportRedirect("/login", 0, "Login Required", "The action you requested requires you to log in. Please log in and try again.", w, r)
+				return
+				}
 				LogTemplateError(rc.LoadTemplate("new-file").Execute(w, &templates.NewFileTemplateModel{
 					Config: rc.Config,
 					Repository: repo,
@@ -179,6 +183,10 @@ func bindBranchController(ctx *RouterContext) {
 			
 			isEditRequest := r.URL.Query().Has("edit")
 			if isEditRequest && isTargetBlob {
+				if !rc.LoginInfo.LoggedIn {
+					rc.ReportRedirect("/login", 0, "Login Required", "The action you requested requires you to log in. Please log in and try again.", w, r)
+				return
+				}
 				mime := mime.TypeByExtension(path.Ext(treePath))
 				if len(mime) <= 0 { mime = "application/octet-stream" }
 				if !strings.HasPrefix(mime, "image/") {
