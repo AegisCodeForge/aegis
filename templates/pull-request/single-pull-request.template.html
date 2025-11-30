@@ -60,9 +60,11 @@
 			{{$mchres := parseMergeCheckResult .EventContent}}
 			<div class="merge-check-result">
 			  {{if $mchres.Successful}}
-			  <b>Merge Check: SUCCESSFUL</b>
+			  <b>Merge Check: SUCCESSFUL</b><br />
+			  <span class="merge-check-result-description">(This pull request resolves in no conflicts and can be merged directly.)</span>
 			  {{else}}
 			  <b>Merge Check: FAILED</b><br />
+			  <span class="merge-check-result-description">(This pull request contains conflicts and <b>CANNOT</b> be merged directly.)</span>
 			  <ul>
 				{{range $k := $mchres.Message}}
 				<li>
@@ -107,20 +109,22 @@
 		  {{end}}
 		  {{end}}
 		</div>
-		
-		<div class="pull-request-merge-conflict-check">
+
+		<fieldset class="pull-request-merge-conflict-check">
+		  <legend>Last Merge Conflict Check Result</legend>
 		  {{if eq .PullRequest.Status 2}}
 		  <div>This merge request is <b>MERGED</b>.</div>
 		  {{else}}
-		  <div>Latest Merge Conflict Check Result:</div>
 		  {{if .PullRequest.MergeCheckResult}}
 		  <div>{{toFuzzyTime .PullRequest.MergeCheckTimestamp}}</div>
 		  <div class="precise-time">{{toPreciseTime .PullRequest.MergeCheckTimestamp}}</div>
 		  <div class="merge-check-result">
 		  {{if .PullRequest.MergeCheckResult.Successful}}
-		  <b>Merge Check: SUCCESSFUL</b>
+		  <b>Merge Check: SUCCESSFUL</b><br />
+			  <span class="merge-check-result-description">(This pull request resolves in no conflicts and can be merged directly.)</span>
 		  {{else}}
 		  <b>Merge Check: FAILED</b><br />
+		  <span class="merge-check-result-description">(This pull request contains conflicts and <b>CANNOT</b> be merged directly.)</span>
 		  <ul>
 			{{range $k := .PullRequest.MergeCheckResult.Message}}
 			<li>
@@ -137,10 +141,10 @@
 		  {{end}}
 		  </div>
 		  {{else}}
-		  <p>There isn't a merge conflict check perfomed yet.</p>
+		  <p>There is no merge conflict check perfomed yet.</p>
 		  {{end}}
 		  {{end}}
-		</div>
+		</fieldset>
 		
 		<fieldset>
 		  <legend>Comment</legend>

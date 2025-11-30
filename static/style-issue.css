@@ -11,21 +11,19 @@
 	border-bottom: 1px var(--foreground-color) solid;
 }
 .issue-list-item {	
-	background-color: var(--white-shade-degree-1);
 	padding: 1em;
 	margin-bottom: 1em;
 }
 .issue-list-item {	
-	background-color: var(--white-shade-degree-1);
     padding: 0.5em;
     /* margin-bottom: 1em; */
-	border-bottom: 2px var(--white-shade-degree-2) solid;
+	border-bottom: 2px var(--shade-degree-2) solid;
 }
 .issue-list-item-closed {
 	background-color: unset;
 }
 .issue-list-item:first-child {
-	border-top: 2px var(--white-shade-degree-2) solid;
+	border-top: 2px var(--shade-degree-2) solid;
 }
 .issue-list-item a {
 	display: inline-block;
@@ -45,11 +43,11 @@
 	border: 0;
 }
 .issue-id {
-	font-size: 1.5em;
+	font-size: 1.2em;
 	font-weight: bold;
 }
 .issue-title {
-	font-size: 1.5em;
+	font-size: 1.2em;
 	font-weight: bold;
 }
 .issue-search-bar {
@@ -71,7 +69,18 @@
 .issue-page-nav {
 	margin-right: 1em;
 }
+.issue-status-tag {
+	border: 1px var(--foreground-color) solid;
+}
+
+.issue-status-tag-open {
+	background-color: var(--foreground-color);
+	color: var(--background-color);
+}
+.issue-title-discarded {
+	text-decoration: line-through;
+}
 
 .precise-time {
-	color: #ffffff7f;
+	color: var(--shade-degree-2);
 }
