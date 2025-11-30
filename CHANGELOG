@@ -1,5 +1,19 @@
 Copyright 2025 Zetian Lin
 
+2025-11-30 Zetian Lin <bctnry@sdf.org>
+
+	* v0.1.5
+	+ Simple mode
+	+ Customizable foreground/background color
+	+ UI revamp
+
+2025-09-24 Zetian Lin <bctnry@sdf.org>
+
+	* v0.1.4
+	+ Webhook result feedback
+	+ Support for in-memory session store
+	+ Bug fixes
+
 2025-09-16 Zetian Lin <bctnry@sdf.org>
 
 	* v0.1.3
