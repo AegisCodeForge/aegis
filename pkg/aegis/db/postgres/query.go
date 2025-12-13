@@ -741,10 +741,12 @@ func (dbif *PostgresAegisDatabaseInterface) RegisterUser(name string, email stri
 	if err != nil { return nil, err }
 	defer tx.Rollback(ctx)
 	t := time.Now()
+	webp := new(model.AegisUserWebsitePreference)
+	webp.UseSiteWideThemeConfig = true
 	_, err = tx.Exec(ctx, fmt.Sprintf(`
-INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_reg_datetime, user_password_hash, user_status, user_2fa_config)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-`, pfx), name, name, email, new(string), new(string), t, passwordHash, status, new(model.AegisUser2FAConfig))
+INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_reg_datetime, user_password_hash, user_status, user_2fa_config, user_website_preference)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+`, pfx), name, name, email, new(string), new(string), t, passwordHash, status, new(model.AegisUser2FAConfig), webp)
 	if err != nil { return nil, err }
 	err = tx.Commit(ctx)
 	if err != nil { return nil, err }

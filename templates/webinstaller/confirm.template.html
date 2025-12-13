@@ -403,10 +403,20 @@
 		<table>
 		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
 		  <tbody>
-			<tr><td class="field-sub-label">frontPageType</td>
-			  <td>{{.Config.FrontPageType}}</td>
+			<tr><td class="field-sub-label">frontPage.type</td>
+			  <td>{{.Config.FrontPage.Type}}</td>
 			</tr>
-			<tr><td class="field-sub-label">frontPageText<br />(Valid only for "Static file". This would be the content of static file, and would be rendered according to the file name.)</td><td><pre>{{.Config.FrontPageContent}}</pre></td></tr>
+			{{if eq .Config.FrontPage.Type "repository"}}
+			<tr><td class="field-sub-label">frontPage.repository</td>
+			  <td>{{.Config.FrontPage.Repository}}</td>
+			</tr>
+			{{else if eq .Config.FrontPage.Type "namespace"}}
+			<tr><td class="field-sub-label">frontPage.namespace</td>
+			  <td>{{.Config.FrontPage.Namespace}}</td>
+			</tr>
+			{{else}}
+			<tr><td class="field-sub-label">frontPage.fileContent<br />(Valid only for "Static file". This would be the content of static file, and would be rendered according to the file name.)</td><td><pre>{{.Config.FrontPage.FileContent}}</pre></td></tr>
+			{{end}}
 		  </tbody>
 		</table>
 	  </div>

@@ -280,11 +280,11 @@ func (dbif *SqliteAegisDatabaseInterface) RegisterUser(name string, email string
 	tx, err := dbif.connection.Begin()
 	if err != nil { return nil, err }
 	stmt, err := tx.Prepare(fmt.Sprintf(`
-INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_password_hash, user_reg_datetime, user_status, user_2fa_config)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO %s_user(user_name, user_title, user_email, user_bio, user_website, user_password_hash, user_reg_datetime, user_status, user_2fa_config, user_website_preference)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `, pfx))
 	if err != nil { return nil, err }
-	_, err = stmt.Exec(name, name, email, new(string), new(string), passwordHash, t, status, `{"email":{"enable":false}}`)
+	_, err = stmt.Exec(name, name, email, new(string), new(string), passwordHash, t, status, `{"email":{"enable":false}}`, `{"useSiteWideThemeConfig":true}`)
 	if err != nil { tx.Rollback(); return nil, err }
 	err = tx.Commit()
 	if err != nil { tx.Rollback(); return nil, err }
