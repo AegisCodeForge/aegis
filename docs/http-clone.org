@@ -1,7 +1,84 @@
 * git clone thru http
 
-For the most part please refer to: https://git-scm.com/book/ms/v2/Git-Internals-Transfer-Protocols
+currently there are three (3) different clone-thru-http protocols: v1-dumb, v1-smart, v2. in git's documentations, v1-dumb and v1-smart are simply called "dumb" and "smart" respectively, while v2 is called "v2". both v1-smart and v2 uses a transfer format called the "pkt-line", which i imagine is the contraction of "packet line"; since they both use this pkt-line format, one might become very confused while reading git's documentations; for this reason i shall explain them in details in our own documentation.
 
+the source of each of these names are as follows:
 
++ for pkt-line in general: https://git-scm.com/docs/gitprotocol-common
++ for how pkt-line is used in pack transfer: https://git-scm.com/docs/gitprotocol-pack
++ for v1-dumb and v1-smart: https://git-scm.com/docs/gitprotocol-http
++ for v2: https://git-scm.com/docs/gitprotocol-v2
 
+the "Git Internals" book that's available online, more specificaly [[https://git-scm.com/book/ms/v2/Git-Internals-Transfer-Protocols][this section]], describes v1-dumb and v1-smart.
+
+as of writing this (2025.12), Aegis uses v1-dumb mainly because both v1-smart and v2 are bloody confusing. github, however, has already deprecated v1-dumb some fourteen years ago.
+
+** v1-dumb
+
+the way v1-dumb works is that git (client's side) would download each object file directly; for any git repo git folder `$GIT_DIR`, the following paths must be available and points to their respective files:
+
++ ~$GIT_DIR/info/refs~ - mappings between ref full names and their corresponding head commit id
++ ~$GIT_DIR/HEAD~ - HEAD ref; used for default cloning
++ ~$GIT_DIR/objects/~ - objects. all files under this directory must be available as well.
+
+these paths are the bare minimum for v1-dumb. that said, due to potential security concerns, i don't recommend accepting requests to other paths (other than ~$GIT_DIR/description~, maybe) unless things break.
+
+one can separate v1-dumb requests from v1-smart and v2 by checking if there's a ~service~ argument in the request url; v1-smart and v2 requests are told to must use this argument (e.g. requesting ~$GIT_DIR/info/refs?service=blah~ instead of just ~$GIT_DIR/info/refs~); to these requests, if your server only knows how to reply in v1-dumb, you should reply in v1-dumb anyway, as if the ~?service=~ part is non-existent.
+
+only supporting v1-dumb is not necessarily problem-free. while the official git client still supports v1-dumb, the documentation for v1 protocols do state that client must not continue if they do not support v1-dumb, which means that a client w/ no v1-dumb support is theoretically tolerated.
+
+v1-dumb servers should not use the response Content-Type of ~application/x-$servicename-advertisement~, where ~$servicename~ is the value of the ~?service=~ parameter we just mentioned; since servers that speak v1-smart are asked to send this header in their responses, some clients might depend on this bit of info to tell that if a server response is in v1-smart or v1-dumb.
+
+** pkt-line
+
+(the code for this part is in ~pkg/gitlib/transfer.go~.)
+
+a single pkt-line consists of two parts: a fixed-length length field and a data field.
+
+the length field is 4 bytes and is of ascii. they encode a length in hexadecimal. this length is the length of the entire pkt-line including this length field itself, so an empty pkt-line would be ~0004~. it's told in the document that you "should not" send this though.
+
+pkt-lines are used to transfer both text and binary data. it's said that if we use it for transferring text data we "should be" add an LF (~\n~) at the end (and making the length increase by one). whether something at a particular time is text and/or binary seems to be context-dependent; if one receives a pkt-line w/ no LF at the end while it's supposed to be a text pkt-line, we still treat it as if the LF is here anyway.
+
+a special instance of pkt-line exists and is the string ~0000~. it's called a "flush pkt" and what it does is seemingly different in different context. sometimes it's used as a delimiter (as we'll see in v1-smart)
+
+in v2, two more special instances of pkt-line are designated w/ meanings. we'll talk about this when we get to v2. these extra special instances don't occur in v1-dumb and v1-smart conversations.
+
+** v1-smart
+
+#+begin_quote
+v1-smart seems to be no longer available through normal means and only available in case people are still using old version of git, see https://stackoverflow.com/questions/66743099/whats-the-difference-between-git-protocol-v1-and-v0-v2 .
+#+end_quote
+
+as mentioned above, both v1-smart and v2 clients would GET with a ~?service=~ query. if we see services that we don't want to serve, we should return a 4xx http status code like 403 or 405. the git document says we "must" return 403, but github seems to do 405. i suppose any 4xx would've probably been fine and 405 is technically "more correct" when it comes to cases like not understanding a protocol, but we'll do 403 because the v1-smart documentation says so. (v2 documentation does not specify this case.)
+
+first the client would GET ~$GIT_DIR/info/refs?service=git-upload-pack~ (or any other service that there might be). ~git-upload-pack~ means the server uploading packs to your client, i.e. you cloning. confusing, i know... (similarly ~git-receive-pack~ means the server *receiving* packs from your client, i.e. you pushing.) the format seems to be as follows:
+
++ one data pkt that says ~# service=$servicename~, where ~$servicename~ is the value of the ~?service=~ query argument, in this case ~git-upload-pack~. this line is a must because per git documentation client "must" check the first pkt-line is of this format.
++ one flush pkt ~0000~
++ one /optional/ data pkt of text ~version 1~.
+  + the way protocol v2 is specified is through the ~Git-Protocol~ header in the request (its value would be ~version=2~ if v2 is desired), and the format of v2 response contains this version line (the text of which would be ~version 2~, naturally). apparently the possibility of some clients wanting v1-smart and passing in ~version=1~ for this header field is anticipated, so it's better to send in a corresponding ~version 1~ text when this happens.
++ one or more data pkt of the following format:
+  + commit id
+  + one whitespace
+  + one ref full name (~HEAD~ is a valid ref full name in this context and is the one you should get if you're cloning the "default" branch)
+  + one LF as per text pkt-line recommendations
+  the data for these, naturally, comes from ~info/refs~. the first of such id-fullname pairs would also have extra parameters, separated by the null character (~\0~).
+
+it's not necessarily a good idea to generate such a response by yourself, and one might want to simply use the output of command ~git upload-pack --http-backend-info-refs~. if you want to get the data this way and don't want to use ~--http-backend-info-refs~, you can also send ~0000~ to the stdin of the spawned git process.
+
+certain http headers must be set when replying in v1-smart. the ~Content-Type~ must be ~application/x-$servicename-advertisement~ (in the case of cloning, ~application/x-git-upload-pack-advertisement~). per git documentation you should also send in the header ~Cache-Control: no-cache~ to prevent caching.
+
+after this, the client would POST ~$GIT_DIR/git-upload-pack~. this would comes with a Content-Type of ~application/git-$servicename-request~ and the body would be a sequence of pkt-lines (*not* urlencoded or any other format). i will not go into the details of the protocol here because it's complicated; currently we simply call ~git upload-pack $GIT_DIR --stateless-rpc~ and pass the POST body along.
+
+** v2
+
+one must note that newer versions of git no longer accepts ~version 1~ in response, which effectively means the canonical git implementation only speaks v1-dumb and v2.
+
+to coax ~git upload-pack~ into speaking v2, use the environment variable ~GIT_PROTOCOL=version=2~.
+
+the first two packet, i.e. the ~# service=git-upload-pack~ and the flush packet right after that is necessarily. you can directly plug in the output of ~git upload-pack $GIT_DIR --http-backend-info-refs~ *after* that.
+
+** notes
+
+the requirement about Content-Type seems to be only for ~info/refs~; all subsequent conversations seems to ignore http content-type altogether.
 

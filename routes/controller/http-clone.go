@@ -1,8 +1,12 @@
 package controller
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 
 	"github.com/bctnry/aegis/pkg/aegis"
@@ -11,6 +15,12 @@ import (
 	"github.com/bctnry/aegis/routes"
 	. "github.com/bctnry/aegis/routes"
 )
+
+func printGitError(w io.Writer, s string) {
+	ss, _ := gitlib.ToPktLine(fmt.Sprintf("ERR %s\n", s))
+	fmt.Fprint(w, ss)
+}
+
 
 // info/refs
 // HEAD
@@ -51,6 +61,36 @@ func bindHttpCloneController(ctx *RouterContext) {
 			w.Write([]byte("404 Not Found"))
 			return
 		}
+		// see docs/http-clone.org.
+		if (r.URL.Query().Has("service")) {
+			switch r.URL.Query().Get("service") {
+			case "git-upload-pack":
+				cmd := exec.Command("git", "upload-pack", repo.LocalPath, "--http-backend-info-refs")
+				cmd.Dir = repo.LocalPath
+				protocol := r.Header.Get("Git-Protocol")
+				if protocol == "" { protocol = "version=2" }
+				cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_PROTOCOL=%s", protocol))
+				stdout := new(bytes.Buffer)
+				cmd.Stdout = stdout
+				err := cmd.Run()
+				if err != nil {
+					w.WriteHeader(500)
+					printGitError(w, err.Error())
+					return
+				}
+				w.Header().Set("Content-Type", "application/x-git-upload-pack-advertisement")
+				w.Header().Set("Cache-Control", "no-cache, max-age=0, must-revalidate")
+				w.WriteHeader(200)
+				fmt.Fprint(w, "001e# service=git-upload-pack\n")
+				fmt.Fprint(w, "0000")
+				w.Write(stdout.Bytes())
+			default:
+				w.WriteHeader(403)
+				printGitError(w, "Not supported service.")
+			}
+			return
+		}
+		// v1-dumb
 		rr := repo.Repository.(*gitlib.LocalGitRepository)
 		p := path.Join(rr.GitDirectoryPath, "info", r.PathValue("p"))
 		s, err := os.ReadFile(p)
@@ -59,6 +99,54 @@ func bindHttpCloneController(ctx *RouterContext) {
 			return
 		}
 		w.Write(s)
+	}))
+	http.HandleFunc("POST /repo/{repoName}/git-upload-pack", WithLog(func(w http.ResponseWriter, r *http.Request) {
+		if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			w.WriteHeader(403)
+			w.Write([]byte("Service not available right now."))
+			return
+		}
+		rfn := r.PathValue("repoName")
+		if !model.ValidRepositoryName(rfn) {
+			w.WriteHeader(404)
+			w.Write([]byte("Repository not found."))
+			return
+		}
+		_, _, ns, repo, err := ctx.ResolveRepositoryFullName(rfn)
+		if err == routes.ErrNotFound {
+			w.WriteHeader(404)
+			w.Write([]byte("Repository not found."))
+			return
+		}
+		if err != nil {
+			ctx.ReportInternalError(err.Error(), w, r)
+			return
+		}
+		if repo.Type != model.REPO_TYPE_GIT {
+			w.WriteHeader(403)
+			w.Write([]byte("Repository not Git."))
+			return
+		}
+		isNamespacePublic := ns.Status == model.NAMESPACE_NORMAL_PUBLIC
+		isRepoPublic := repo.Status == model.REPO_NORMAL_PUBLIC
+		isRepoArchived := repo.Status == model.REPO_ARCHIVED
+		if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
+			w.WriteHeader(404)
+			w.Write([]byte("404 Not Found"))
+			return
+		}
+		w.Header().Set("Content-Type", "application/x-git-upload-pack-response")
+		w.Header().Set("Cache-Control", "no-cache, max-age=0, must-revalidate")
+		w.WriteHeader(200)
+		cmd := exec.Command("git", "upload-pack", repo.LocalPath, "--stateless-rpc")
+		cmd.Stdin = r.Body
+		protocol := r.Header.Get("Git-Protocol")
+		if protocol == "" { protocol = "version=2" }
+		cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_PROTOCOL=%s", protocol))
+		buf := new(bytes.Buffer)
+		cmd.Stdout = buf
+		cmd.Run()
+		io.Copy(w, buf)
 	}))
 	http.HandleFunc("GET /repo/{repoName}/HEAD", WithLog(func(w http.ResponseWriter, r *http.Request) {
 		if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
