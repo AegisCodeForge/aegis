@@ -11,17 +11,18 @@
 	<header>
 	  {{template "_header-nav" .}}
 	  {{template "_repo-header" .}}
+	  
+	  <div class="node-description">
+		{{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
+		{{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
+	  </div>
+	  
 	  {{if .ComparisonInfo}}
 	  {{if eq .LoginInfo.UserName .Repository.Owner}}
 	  {{template "_comparison-info" .ComparisonInfo}}
 	  {{end}}
 	  {{end}}
 	</header>
-	
-	<div class="node-description">
-	  {{if .CommitInfo}}{{template "_commit-info" .CommitInfo}}{{end}}
-	  {{if .TagInfo}}{{template "_tag-info" .TagInfo}}{{end}}
-	</div>
 	
 	<hr />
 

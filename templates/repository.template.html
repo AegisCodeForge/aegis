@@ -34,8 +34,8 @@
 				{{end}}
 			  </select>
 			  <input style="height:100%; margin: 0; margin-top: 0.5rem;" type="submit" value="Go" />
-			  {{end}}
 			</div>
+			{{end}}
 		  </div>
 		</form>
 		<form action="" method="GET">
@@ -51,8 +51,8 @@
 				{{end}}
 			  </select>
 			  <input style="height:100%; margin: 0; margin-top: 0.5rem;" type="submit" value="Go" />
-			  {{end}}
 			</div>
+			{{end}}
 		  </div>
 		</form>
 	  </div>
@@ -71,17 +71,18 @@
 		{{template "_tree-file-list" .TreeFileList}}
 		{{end}}
 
-		<div class="repo-readme">
-		{{if gt (len .ReadmeString) 0}}{{rawHTML .ReadmeString}}{{else}}
+		{{if gt (len .ReadmeString) 0}}
+		<div class="repo-readme">{{rawHTML .ReadmeString}}</div>
+		{{else}}
 		{{if and (eq (len .Repository.Repository.BranchIndex) 0) (eq (len .Repository.Repository.TagIndex) 0)}}
 		<p>
 		  This repository seems to be completely empty. If you've just created this repository, you can follow the instructions below to upload a local Git repository here:
 		</p>
 		<pre>git remote add origin {{getRepoSSH .Config .Repository}}
 git push -u origin</pre>
-		{{else}}<p>This repository has no README text.</p>{{end}}
+		{{else}}
+		<p>This repository has no README text.</p>{{end}}
         {{end}}
-		</div>
 	  </div>
 	</main>
 	

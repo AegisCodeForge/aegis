@@ -41,13 +41,27 @@
 		  {{if or (not .PullRequestList) (le (len .PullRequestList) 0) }}
 		  There is no pull request for this repository.
 		  {{else}}
-		  {{range .PullRequestList}}
-		  <div class="pull-request-list-item {{if eq .Status 1}}{{else}}pull-request-list-item-closed{{end}}">
-			<div class="pull-request-title-bar"><span class="pull-request-id">#{{.PRId}}:</span> <b>{{if eq .Status 1}}<span class="pull-request-status-tag pull-request-status-tag-open">OPEN</span>{{else if eq .Status 2}}<span class="pull-request-status-tag pull-request-status-tag-merged">MERGED</span>{{else if eq .Status 3}}<span class="pull-request-status-tag pull-reqest-status-tag-discarded">DISCARDED</span>{{end}}</b> <a href="{{$repoPath}}/pull-request/{{.PRId}}"><span class="pull-request-title">{{.Title}}</span></a></div>
-			<div class="pull-request-desc-bar"><a href="/u/{{.Author}}" class="pull-request-author">{{.Author}}</a> @ {{toFuzzyTime .Timestamp}}</div>
-			<div class="precise-time">{{toPreciseTime .Timestamp}}</div>
-		  </div>
-		  {{end}}
+		  <table>
+			<thead>
+			  <th>id</th>
+			  <th>status</th>
+			  <th>by</th>
+			  <th>topic</th>
+			</thead>
+			<tbody>
+			  {{range .PullRequestList}}
+			  <tr class="pull-request-list-item {{if eq .Status 1}}{{else}}pull-request-list-item-closed{{end}}">
+				<td class="pull-request-id">{{.PRId}}</td>
+				<td>{{if eq .Status 1}}<span class="pull-request-status-tag pull-request-status-tag-open">OPEN</span>{{else if eq .Status 2}}<span class="pull-request-status-tag pull-request-status-tag-merged">MERGED</span>{{else if eq .Status 3}}<span class="pull-request-status-tag pull-reqest-status-tag-discarded">DISCARDED</span>{{end}}</td>
+				<td><a href="/u/{{.Author}}" class="pull-request-author">{{.Author}}</a></td>
+				<td>
+				  <a href="{{$repoPath}}/pull-request/{{.PRId}}"><span class="pull-request-title">{{.Title}}</span></a><br />
+				  <span class="pull-request-desc-bar"> @ {{toFuzzyTime .Timestamp}}</span> <span class="precise-time">{{toPreciseTime .Timestamp}}</span>
+				</td>
+			  </tr>
+			  {{end}}
+			</tbody>
+		  </table>
 		  {{end}}
 		</div>
 	  </div>

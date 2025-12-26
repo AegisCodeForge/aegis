@@ -1,6 +1,7 @@
 :root {
 	--shade-degree-0: color(from var(--foreground-color) srgb r g b / 0.2);
 	--shade-degree-1: color(from var(--foreground-color) srgb r g b / 0.4);
+	--shade-degree-half: color(from var(--foreground-color) srgb r g b / 0.5);
 	--shade-degree-2: color(from var(--foreground-color) srgb r g b / 0.6);
 	--shade-degree-3: color(from var(--foreground-color) srgb r g b / 0.8);
 	--file-list-height: 1rem;
@@ -152,6 +153,24 @@ hr {
 }
 .commit-history-item-message {
 	margin-top: 1rem;
+}
+.commit-history-table {
+
+}
+.commit-history-table td {
+	vertical-align: top;
+}
+.commit-history-table td:nth-of-type(1) { /* commit id */
+	width: 7rem;
+}
+.commit-history-table td:nth-of-type(2) {
+	width: 160q;
+}
+.commit-history-table td:nth-of-type(3) {
+	width: 360q;
+}
+.commit-history-table td:nth-of-type(1) {
+
 }
 /* ======================================================== */
 
@@ -360,7 +379,9 @@ main {
 	display: flex;
 }
 .left-side {
-	max-width: 30%;
+	max-width: 240q;
+	min-width: 240q;
+	width: 240q;
 	flex-grow: 1;
 	padding-right: 2rem;
 }
@@ -560,7 +581,7 @@ form td {
 
 
 .precise-time {
-	color: #ffffff7f;
+	color: var(--shade-degree-half);
 }
 
 
