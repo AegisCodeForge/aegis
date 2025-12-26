@@ -269,6 +269,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 					Repository: s,
 					LoginInfo: rc.LoginInfo,
 					ProviderRepository: fr,
+					Stage: "repo",
 				}))
 			} else {
 				_, _, _, provider, err := rc.ResolveRepositoryFullName(providerRepositoryName)
@@ -296,6 +297,7 @@ func bindRepositoryPullRequestController(ctx *RouterContext) {
 					ReceiverBranch: receiverBranch,
 					ChosenProviderRepository: provider,
 					ProviderBranchList: branchNameList,
+					Stage: "branch",
 				}))
 			}
 		},

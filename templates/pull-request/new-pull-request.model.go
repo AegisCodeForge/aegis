@@ -11,6 +11,7 @@ type RepositoryNewPullRequestTemplateModel struct {
 	RepoHeaderInfo *RepoHeaderTemplateModel
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
+	Stage string
 	ReceiverBranch string
 	ProviderRepository []*model.Repository
 	ChosenProviderRepository *model.Repository

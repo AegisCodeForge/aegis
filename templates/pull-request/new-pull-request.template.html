@@ -24,8 +24,8 @@
 	  <div class="main-side">
 		<fieldset>
 		  <legend>Create New Pull Request</legend>
-		  {{if .ProviderRepository}}
-		  {{if gt (len .ProviderRepository) 0}}
+		  {{if eq .Stage "repo"}}
+		  {{if and (.ProviderRepository) (gt (len .ProviderRepository) 0)}}
 		  <form action="" method="GET">
 			<table class="field-table">
 			  <tbody>
@@ -56,14 +56,10 @@
 		  {{else}}
 		  <p>There is no repository available for creating a pull request. <a href="{{$repoPath}}/fork">Create a fork and push your changes to your fork first.</a></p>
 		  {{end}}
-		  {{else}}
-		  {{if not .ChosenProviderRepository}}
-		  <p>There is no repository available for creating a pull request. <a href="{{$repoPath}}/fork">Create a fork and push your changes to your fork first.</a></p>
 		  {{end}}
-		  {{end}}
-		  
-		  {{if .ProviderBranchList}}
-		  {{if gt (len .ProviderBranchList) 0}}
+
+		  {{if eq .Stage "branch"}}
+		  {{if and .ProviderBranchList (gt (len .ProviderBranchList) 0)}}
 		  <form action="" method="POST">
 			<input type="hidden" name="receiver-branch" value="{{.ReceiverBranch}}" />
 			<input type="hidden" name="provider-namespace" value="{{.ChosenProviderRepository.Namespace}}" />
@@ -100,6 +96,7 @@
 		  </form>
 		  {{else}}
 		  <p>There is no branch in this provider repository for creating a pull request.</p>
+		  <p><a href="{{$repoPath}}/pull-request/new">Go back and select other repositories</a></p>
 		  {{end}}
 		  {{end}}
 		</fieldset>
