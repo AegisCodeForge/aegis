@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/bctnry/aegis/pkg/aegis"
 	. "github.com/bctnry/aegis/routes"
@@ -49,7 +50,9 @@ func bindLogoutController(ctx *RouterContext) {
 				Secure: true,
 				SameSite: http.SameSiteDefaultMode,
 			}).String())
-			FoundAt(w, "/")
+			callbackURL := strings.TrimSpace(r.URL.Query().Get("callback"))
+			if callbackURL == "" { callbackURL = "/" }
+			FoundAt(w, callbackURL)
 		},
 	))
 }

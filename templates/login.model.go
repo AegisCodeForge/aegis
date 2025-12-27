@@ -8,5 +8,6 @@ type LoginTemplateModel struct {
 	Config *aegis.AegisConfig
 	ErrorMsg string
 	LoginInfo *LoginInfoModel
+	Callback string
 }
 

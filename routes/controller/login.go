@@ -3,6 +3,7 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/bctnry/aegis/pkg/aegis"
@@ -26,6 +27,7 @@ func bindLoginController(ctx *RouterContext) {
 			LogTemplateError(ctx.LoadTemplate("login").Execute(w, templates.LoginTemplateModel{
 				Config: ctx.Config,
 				LoginInfo: rc.LoginInfo,
+				Callback: r.URL.Query().Get("callback"),
 			}))
 		},
 	))
@@ -162,7 +164,9 @@ If this isn't you, we advise you to change your password on %s and other platfor
 				Secure: true,
 				SameSite: http.SameSiteDefaultMode,
 			}).String())
-			FoundAt(w, "/")
+			callbackURL := strings.TrimSpace(r.Form.Get("login-callback"))
+			if callbackURL == "" { callbackURL = "/" }
+			FoundAt(w, callbackURL)
 		},
 	))
 
