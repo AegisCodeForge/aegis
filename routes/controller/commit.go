@@ -15,12 +15,12 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-func handleCommitSnapshotRequest(repo *gitlib.LocalGitRepository, commitId string, obj gitlib.GitObject, w http.ResponseWriter) {
+func handleCommitSnapshotRequest(repo *model.Repository, commitId string, obj gitlib.GitObject, w http.ResponseWriter) {
 	filename := fmt.Sprintf(
 		"%s-%s-commit-%s",
 		repo.Namespace, repo.Name, commitId,
 	)
-	responseWithTreeZip(repo, obj, filename, w)
+	responseWithTreeZip(repo.Repository.(*gitlib.LocalGitRepository), obj, filename, w)
 }
 
 func bindCommitController(ctx *RouterContext) {
@@ -118,7 +118,7 @@ func bindCommitController(ctx *RouterContext) {
 					w.Write((target.(*gitlib.BlobObject)).Data)
 					return
 				} else {
-					handleCommitSnapshotRequest(rr, commitId, target, w)
+					handleCommitSnapshotRequest(repo, commitId, target, w)
 					return
 				}
 			}

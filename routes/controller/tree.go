@@ -12,12 +12,13 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-func handleTreeSnapshotRequest(repo *gitlib.LocalGitRepository, treeId string, obj gitlib.GitObject, w http.ResponseWriter) {
+func handleTreeSnapshotRequest(repo *model.Repository, treeId string, obj gitlib.GitObject, w http.ResponseWriter) {
+	rr := repo.Repository.(*gitlib.LocalGitRepository)
 	filename := fmt.Sprintf(
 		"%s-%s-tree-%s",
 		repo.Namespace, repo.Name, treeId,
 	)
-	responseWithTreeZip(repo, obj, filename, w)
+	responseWithTreeZip(rr, obj, filename, w)
 }
 
 func bindTreeHandler(ctx *RouterContext) {
@@ -94,7 +95,7 @@ func bindTreeHandler(ctx *RouterContext) {
 
 			isSnapshotRequest :=  r.URL.Query().Has("snapshot")
 			if isSnapshotRequest {
-				handleTreeSnapshotRequest(rr, treeId, target, w)
+				handleTreeSnapshotRequest(repo, treeId, target, w)
 				return
 			}
 			

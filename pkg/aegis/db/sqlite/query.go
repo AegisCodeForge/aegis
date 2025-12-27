@@ -450,7 +450,7 @@ WHERE repo_namespace = ? AND repo_name = ?
 		tags = strings.Split(labelList[1:len(labelList)-1], "}{")
 	}
 	p := path.Join(dbif.config.GitRoot, nsName, repoName)
-	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(nsName, repoName, p))
+	res, err := model.NewRepository(nsName, repoName, gitlib.NewLocalGitRepository(p))
 	res.AbsId = rowid
 	res.Type = repoType
 	res.Owner = owner
@@ -676,7 +676,7 @@ AND (repo_status = 1 OR repo_status = 4)
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
-			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			Repository: gitlib.NewLocalGitRepository(p),
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
@@ -722,7 +722,7 @@ WHERE repo_namespace = ?
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
-			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			Repository: gitlib.NewLocalGitRepository(p),
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,
@@ -2646,7 +2646,7 @@ WHERE rowid = ?
 	if err != nil { return nil, err }
 	defer tx.Rollback()
 	p := path.Join(dbif.config.GitRoot, receiverNamespace, receiverName)
-	lgr := gitlib.NewLocalGitRepository(receiverNamespace, receiverName, p)
+	lgr := gitlib.NewLocalGitRepository(p)
 	remoteName := fmt.Sprintf("%s/%s", providerNamespace, providerName)
 	mr, err := lgr.CheckBranchMergeConflict(receiverBranch, remoteName, providerBranch)
 	if err != nil { return nil, err }
@@ -3494,7 +3494,7 @@ ORDER BY rowid ASC LIMIT ? OFFSET ?
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
-			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			Repository: gitlib.NewLocalGitRepository(p),
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,

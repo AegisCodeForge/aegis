@@ -26,7 +26,7 @@ func GetAegisType(x LocalRepository) uint8 {
 func CreateLocalRepository(repoType uint8, namespace string, name string, dirPath string) (LocalRepository, error) {
 	switch repoType {
 	case REPO_TYPE_GIT:
-		return gitlib.NewLocalGitRepository(namespace, name, dirPath), nil
+		return gitlib.NewLocalGitRepository(dirPath), nil
 	default:
 		return nil, ErrNotSupported
 	}

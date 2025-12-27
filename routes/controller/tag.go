@@ -15,12 +15,13 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) error {
+func handleTagSnapshotRequest(repo *model.Repository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) error {
 	// would resolve tags that point to tags.
 	subj := obj
 	var err error = nil
+	rr := repo.Repository.(*gitlib.LocalGitRepository)
 	for subj.Type() == gitlib.TAG {
-		subj, err = repo.ReadObject((subj.(*gitlib.TagObject)).TaggedObjId)
+		subj, err = rr.ReadObject((subj.(*gitlib.TagObject)).TaggedObjId)
 		if err != nil { return err }
 	}
 	filename := fmt.Sprintf(
@@ -28,7 +29,7 @@ func handleTagSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string
 		repo.Namespace, repo.Name, branchName,
 	)
 	if subj.Type() == gitlib.TREE {
-		return responseWithTreeZip(repo, obj, filename, w)
+		return responseWithTreeZip(rr, obj, filename, w)
 	} else {
 		w.Write(subj.RawData())
 		return nil
@@ -109,7 +110,7 @@ func bindTagController(ctx *RouterContext) {
 			}
 
 			if r.URL.Query().Has("snapshot") {
-				handleTagSnapshotRequest(rr, tagName, tobj, w)
+				handleTagSnapshotRequest(repo, tagName, tobj, w)
 				return
 			}
 

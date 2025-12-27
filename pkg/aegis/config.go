@@ -151,6 +151,7 @@ type AegisConfig struct {
 	// currently it's just a foreground color & a background color but there
 	// could be more in the future.
 	Theme AegisThemeConfig `json:"theme"`
+
 }
 
 const (
@@ -589,10 +590,10 @@ func (cfg *AegisConfig) GetAllRepositoryPlain() ([]*model.Repository, error) {
 				continue
 			}
 		}
-		k := gitlib.NewLocalGitRepository("", repoName, p)
+		k := gitlib.NewLocalGitRepository(p)
 		res = append(res, &model.Repository{
-			Namespace: k.Namespace,
-			Name: k.Name,
+			Namespace: "",
+			Name: repoName,
 			Description: k.Description,
 			AccessControlList: nil,
 			Status: model.REPO_NORMAL_PUBLIC,
@@ -629,11 +630,11 @@ func (cfg *AegisConfig) GetAllRepositoryByNamespacePlain(ns string) (map[string]
 				continue
 			}
 		}
-		k := gitlib.NewLocalGitRepository("", repoName, p)
+		k := gitlib.NewLocalGitRepository(p)
 		res[repoName] = &model.Repository{
 			Type: model.GuessRepositoryType(p),
 			Namespace: ns,
-			Name: k.Name,
+			Name: repoName,
 			Description: k.Description,
 			AccessControlList: nil,
 			Status: model.REPO_NORMAL_PUBLIC,

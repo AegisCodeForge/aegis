@@ -17,12 +17,12 @@ import (
 	"github.com/bctnry/aegis/templates"
 )
 
-func handleBranchSnapshotRequest(repo *gitlib.LocalGitRepository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) {
+func handleBranchSnapshotRequest(repo *model.Repository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) {
 	filename := fmt.Sprintf(
 		"%s-%s-branch-%s",
 		repo.Namespace, repo.Name, branchName,
 	)
-	responseWithTreeZip(repo, obj, filename, w)
+	responseWithTreeZip(repo.Repository.(*gitlib.LocalGitRepository), obj, filename, w)
 }
 
 func bindBranchController(ctx *RouterContext) {
@@ -135,7 +135,7 @@ func bindBranchController(ctx *RouterContext) {
 					w.Write((target.(*gitlib.BlobObject)).Data)
 					return
 				} else {
-					handleBranchSnapshotRequest(rr, branchName, target, w)
+					handleBranchSnapshotRequest(repo, branchName, target, w)
 					return
 				}
 			}

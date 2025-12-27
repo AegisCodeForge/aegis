@@ -2251,7 +2251,7 @@ WHERE pull_request_absid = $1
 	if err != nil { return nil, err }
 	defer tx.Rollback(ctx)
 	p := path.Join(dbif.config.GitRoot, receiverNamespace, receiverName)
-	lgr := gitlib.NewLocalGitRepository(receiverNamespace, receiverName, p)
+	lgr := gitlib.NewLocalGitRepository(p)
 	remoteName := fmt.Sprintf("%s/%s", providerNamespace, providerName)
 	mr, err := lgr.CheckBranchMergeConflict(receiverBranch, remoteName, providerBranch)
 	if err != nil { return nil, err }
@@ -3035,7 +3035,7 @@ ORDER BY repo_name ASC, repo_namespace ASC LIMIT $5 OFFSET $6
 			Description: desc,
 			AccessControlList: a,
 			Status: model.AegisRepositoryStatus(status),
-			Repository: gitlib.NewLocalGitRepository(ns, name, p),
+			Repository: gitlib.NewLocalGitRepository(p),
 			ForkOriginNamespace: forkOriginNs,
 			ForkOriginName: forkOriginName,
 			RepoLabelList: tags,

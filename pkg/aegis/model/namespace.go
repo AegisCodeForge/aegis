@@ -79,7 +79,7 @@ func NewNamespace(name string, p string) (*Namespace, error) {
 				continue
 			}
 		}
-		r, err := NewRepository(name, repoName, gitlib.NewLocalGitRepository(name, repoName, repoPath))
+		r, err := NewRepository(name, repoName, gitlib.NewLocalGitRepository(repoPath))
 		if err != nil { return nil, err }
 		repoMap[repoName] = r
 	}

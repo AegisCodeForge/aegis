@@ -11,7 +11,7 @@ func(cfg *aegis.AegisConfig, s string) *model.PullRequestCommentOnCode {
 	var r *model.PullRequestCommentOnCode
 	json.Unmarshal([]byte(s), &r)
 	p := path.Join(cfg.GitRoot, r.RepoNamespace, r.RepoName)
-	localRepo := gitlib.NewLocalGitRepository(r.RepoNamespace, r.RepoName, p)
+	localRepo := gitlib.NewLocalGitRepository(p)
 	gobj, err := localRepo.ReadObject(r.CommitId)
 	if err != nil { log.Fatal(err.Error()) }
 	if gobj.Type() != gitlib.COMMIT {
