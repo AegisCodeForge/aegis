@@ -106,6 +106,18 @@ func GenerateLoginInfoModel(ctx *RouterContext, r *http.Request) (*templates.Log
 	}
 	res, err := ctx.SessionInterface.VerifySession(un, s.Value)
 	if err != nil { return nil, err }
+	if !res {
+		return &templates.LoginInfoModel{
+			LoggedIn: loggedIn,
+			UserName: "",
+			UserFullName: "",
+			UserEmail: "",
+			IsOwner: false,
+			IsSettingMember: false,
+			IsAdmin: false,
+			IsSuperAdmin: false,
+		}, nil
+	}
 	u, err := ctx.DatabaseInterface.GetUserByName(un)
 	if err != nil { return nil, err }
 	return &templates.LoginInfoModel{

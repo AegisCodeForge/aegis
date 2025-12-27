@@ -288,14 +288,34 @@ func (gr LocalGitRepository) CheckIfCanFastForward(branch string, remoteName str
 	return base == strings.TrimSpace(string(f1)), nil
 }
 
-func (gr LocalGitRepository) FetchRemote(branch string, remote string) error {
-	cmd1 := exec.Command("git", "fetch", remote)
+func (gr LocalGitRepository) FetchRemote(remote string) error {
+	cmd1 := exec.Command("git", "fetch", remote, "--tags")
 	cmd1.Dir = gr.GitDirectoryPath
 	stderrBuf := new(bytes.Buffer)
 	cmd1.Stderr = stderrBuf
 	err := cmd1.Run()
 	if err != nil {
 		return fmt.Errorf("Failed to git-fetch: %s; %s", err, stderrBuf.String())
+	}
+	return nil
+}
+
+func (gr LocalGitRepository) SyncEmptyRepositoryFromRemote(remote string) error {
+	err := gr.FetchRemote(remote)
+	if err != nil { return err }
+	cmd1 := exec.Command("git", "ls-remote", "--branches", "--tags", remote)
+	cmd1.Dir = gr.GitDirectoryPath
+	stdout := new(bytes.Buffer)
+	cmd1.Stdout = stdout
+	err = cmd1.Run()
+	if err != nil { return err }
+	for v := range strings.SplitSeq(stdout.String(), "\n") {
+		p := strings.Split(v, "\t")
+		if len(p) < 2 { continue }
+		cmd2 := exec.Command("git", "update-ref", p[1], p[0])
+		cmd2.Dir = gr.GitDirectoryPath
+		err = cmd2.Run()
+		if err != nil { return err }
 	}
 	return nil
 }

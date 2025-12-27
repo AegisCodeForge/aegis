@@ -15,6 +15,14 @@
 	  {{if .CommitInfo}}
 	  {{template "_commit-info" .CommitInfo}}
 	  {{end}}
+	  {{if isFork .Repository}}
+	  <div class="comparison-info">
+		{{template "_comparison-notice" .ComparisonInfo}}
+		{{if shouldShowSynchronizeLink .LoginInfo .ComparisonInfo}}
+		<a href="?ff">Synchronize now.</a>
+		{{end}}
+	  </div>
+	  {{end}}
 	</header>
 	
     <hr />

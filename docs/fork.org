@@ -27,8 +27,10 @@ see [[./pull-request.org]]
 first we must =git-fetch=:
 
 #+begin_src sh
-git fetch [remote]
+git fetch [remote] --tags
 #+end_src
+
+*** to sync a certain branch
 
 =git-merge-base= is used to check if one can be fast-forwarded to another:
 
@@ -48,4 +50,12 @@ after confirming that we indeed can fast forward we simply =git-update-ref=:
   git update-ref refs/heads/[branch-a] [remote-b]/[branch-b]
 #+end_src
 
-  
+*** to sync an empty fork
+
+suppose the following situation: a repository A is created; a fork is created from A; new data is then pushed to repository A afterh creating the fork. we cannot ~merge-base~ since there's no commit to merge. we must do the following:
+
++ ~git fetch [remote] --tags~
++ ~git ls-remote --branches --tags [remote] -q~
++ for each branches and tags: ~git update-ref [ref-full-name] [commit-id]~
+
+

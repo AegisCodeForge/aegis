@@ -16,4 +16,5 @@ type RepositoryModel struct{
 	ReadmeString string
 	TreeFileList *TreeFileListTemplateModel
 	CommitInfo *CommitInfoTemplateModel
+	ComparisonInfo *gitlib.BranchComparisonInfo
 }

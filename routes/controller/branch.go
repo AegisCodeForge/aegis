@@ -226,9 +226,17 @@ func bindBranchController(ctx *RouterContext) {
 			}
 			
 			isFastForwardRequest := r.URL.Query().Has("ff")
-			if isFastForwardRequest && compareInfo != nil && rc.LoginInfo.IsOwner {
+			if isFastForwardRequest && compareInfo != nil {
+				if !rc.LoginInfo.IsOwner {
+					ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+						"Not enouhg privilege",
+						"Your user account seems to not have enough privilege for this action.",
+						w, r,
+					)
+					return
+				}
 				if len(compareInfo.ARevList) > 0 && len(compareInfo.BRevList) <= 0 {
-					err = rr.FetchRemote(branchName, "origin")
+					err = rr.FetchRemote("origin")
 					if err != nil {
 						rc.ReportInternalError(fmt.Sprintf("Failed to sync repository: %s", err), w, r)
 						return

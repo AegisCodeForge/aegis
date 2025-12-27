@@ -44,7 +44,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 			
-			if rc.Config.OperationMode != aegis.OP_MODE_NORMAL {
+			if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
 				rc.LoginInfo.IsOwner = s.Owner == rc.LoginInfo.UserName || ns.Owner == rc.LoginInfo.UserName
 			}
 			if !rc.Config.IsInPlainMode() && s.Status == model.REPO_NORMAL_PRIVATE {
@@ -82,6 +82,13 @@ func bindRepositoryController(ctx *RouterContext) {
 			var cobj *gitlib.CommitObject
 			var treeObjList []gitlib.TreeObjectItem
 			var permaLink string = ""
+			var isFork bool = false
+			var upstream model.LocalRepository
+			var compareInfo *gitlib.BranchComparisonInfo = nil
+			if len(s.ForkOriginName) > 0 || len(s.ForkOriginNamespace) > 0 {
+				isFork = true
+			}
+			
 			emailUserMap := make(map[string]string, 0)
 
 			repoHeaderInfo = GenerateRepoHeader("", "")
@@ -98,7 +105,9 @@ func bindRepositoryController(ctx *RouterContext) {
 			if !ok { br, ok = rr.BranchIndex["main"] }
 			if !ok {
 				k := auxfuncs.SortedKeys(rr.BranchIndex)
-				if len(k) <= 0 { goto findingMajorBranchDone; }
+				if len(k) <= 0 {
+					goto findingMajorBranchDone;
+				}
 				br = rr.BranchIndex[k[0]];
 			}
 			repoHeaderInfo.TypeStr = "branch"
@@ -187,8 +196,49 @@ func bindRepositoryController(ctx *RouterContext) {
 				readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
 				readmeString = fmt.Sprintf("<pre class=\"repo-readme\">%s</pre>", readmeString)
 			}
+			// resolve branch comparison info...
+			if isFork {
+				upstreamPath := path.Join(ctx.Config.GitRoot, s.ForkOriginNamespace, s.ForkOriginName)
+				upstream, _ = model.CreateLocalRepository(model.REPO_TYPE_GIT, s.ForkOriginNamespace, s.ForkOriginName, upstreamPath)
+				remoteName := fmt.Sprintf("%s/%s", s.Namespace, s.Name)
+				compareInfo, err = upstream.(*gitlib.LocalGitRepository).CompareBranchWithRemote(br.Name, remoteName)
+			}
 			
 		findingMajorBranchDone:
+			isFastForwardRequest := r.URL.Query().Has("ff")
+			if isFastForwardRequest {
+				if !rc.LoginInfo.IsOwner {
+					ctx.ReportRedirect(fmt.Sprintf("/repo/%s", rfn), 0,
+						"Not enouhg privilege",
+						"Your user account seems to not have enough privilege for this action.",
+						w, r,
+					)
+					return
+				}
+				if compareInfo != nil {
+					err = rr.FetchRemote("origin")
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to sync repository: %s", err), w, r)
+						return
+					}
+					if len(compareInfo.ARevList) > 0 && len(compareInfo.BRevList) <= 0 {
+						err = rr.UpdateRef(br.Name, compareInfo.ARevList[0])
+						if err != nil {
+							rc.ReportInternalError(fmt.Sprintf("Failed to sync repository: %s", err), w, r)
+							return
+						}
+					}
+				} else {
+					err = rr.SyncEmptyRepositoryFromRemote("origin")
+					if err != nil {
+						rc.ReportInternalError(fmt.Sprintf("Failed to sync repository: %s", err), w, r)
+						return
+					}
+				}
+				rc.ReportRedirect(fmt.Sprintf("/repo/%s/", rfn), 3, "Repository Synced", "The repository has been successfully fast-forwarded with its upstream.", w, r)
+				return
+			}
+			
 			LogTemplateError(rc.LoadTemplate("repository").Execute(w, templates.RepositoryModel{
 				Config: rc.Config,
 				Repository: s,
@@ -200,6 +250,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				MajorBranchPermaLink: permaLink,
 				TreeFileList: treeFileList,
 				CommitInfo: commitInfo,
+				ComparisonInfo: compareInfo,
 			}))
 		},
 	))
