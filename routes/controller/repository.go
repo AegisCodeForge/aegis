@@ -194,7 +194,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				}
 			default:
 				readmeString = bluemonday.UGCPolicy().Sanitize(readmeString)
-				readmeString = fmt.Sprintf("<pre class=\"repo-readme\">%s</pre>", readmeString)
+				readmeString = fmt.Sprintf("<pre>%s</pre>", readmeString)
 			}
 			// resolve branch comparison info...
 			if isFork {
