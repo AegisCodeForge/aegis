@@ -186,6 +186,7 @@ func codeTypeDiscern(s string) string {
 	case ".tex": return "TeX"
 	case ".toml": return "TOML"
 	case ".ts": return "TypeScript"
+	case ".txt": return "plaintext"
 	case ".typst": return "Typst"
 	case ".vala": return "Vala"
 	case ".vue": return "Vue"
