@@ -52,7 +52,9 @@ func bindLogoutController(ctx *RouterContext) {
 			}).String())
 			callbackURL := strings.TrimSpace(r.URL.Query().Get("callback"))
 			if callbackURL == "" { callbackURL = "/" }
-			FoundAt(w, callbackURL)
+			target, err := getQueryPath(callbackURL)
+			if err != nil { target = "/" }
+			FoundAt(w, target)
 		},
 	))
 }

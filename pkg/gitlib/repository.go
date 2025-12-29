@@ -31,7 +31,7 @@ func (gr LocalGitRepository) IsSHA256() bool {
 	return gr.isSHA256
 }
 
-func NewLocalGitRepository(/* namespace string, name string,*/ p string) *LocalGitRepository {
+func NewLocalGitRepository(p string) *LocalGitRepository {
 	res := LocalGitRepository{
 		GitDirectoryPath: p,
 		PackIndex: nil,

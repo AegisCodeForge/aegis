@@ -246,3 +246,9 @@ func newConfirmCode() string {
 	return string(res)
 }
 
+func getQueryPath(s string) (string, error) {
+	u, err := url.Parse(s)
+	if err != nil { return "", err }
+	return fmt.Sprintf("%s?%s", u.Path, u.Query().Encode()), nil
+}
+

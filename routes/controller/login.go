@@ -166,7 +166,9 @@ If this isn't you, we advise you to change your password on %s and other platfor
 			}).String())
 			callbackURL := strings.TrimSpace(r.Form.Get("login-callback"))
 			if callbackURL == "" { callbackURL = "/" }
-			FoundAt(w, callbackURL)
+			target, err := getQueryPath(callbackURL)
+			if err != nil { target = "/" }
+			FoundAt(w, target)
 		},
 	))
 
