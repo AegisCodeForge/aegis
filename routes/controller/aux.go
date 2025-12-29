@@ -249,8 +249,8 @@ func newConfirmCode() string {
 func getQueryPath(s string) (string, error) {
 	u, err := url.Parse(s)
 	if err != nil { return "", err }
-	return fmt.Sprintf("%s?%s",
-		url.QueryEscape(u.Path),
+	return fmt.Sprintf("/%s?%s",
+		url.QueryEscape(u.Path[1:]),
 		url.QueryEscape(u.Query().Encode())), nil
 }
 
