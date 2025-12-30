@@ -43,7 +43,7 @@ type WebInstallerRoutingContext struct {
 	// step 3 - session config
 	// step 4 - mailer config
 	// step 5 - receipt system config
-	// step 6 - git root & git user
+	// step 6 - git-related config
 	// step 7 - ignored namespaces & repositories
 	// step 8 - web front setup:
 	//          depot name
@@ -244,7 +244,6 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 	}))
 	
 	http.HandleFunc("GET /step6", withLog(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(ctx.Config.GitUser, ctx.Config.GitRoot)
 		logTemplateError(ctx.loadTemplate("webinstaller/step6").Execute(w, &templates.WebInstallerTemplateModel{
 			Config: ctx.Config,
 			ConfirmStageReached: ctx.ConfirmStageReached,
@@ -259,6 +258,8 @@ func bindAllWebInstallerRoutes(ctx *WebInstallerRoutingContext) {
 		ctx.Config.GitRoot = strings.TrimSpace(r.Form.Get("git-root"))
 		ctx.Config.GitUser = strings.TrimSpace(r.Form.Get("git-user"))
 		ctx.Config.SnippetRoot = strings.TrimSpace(r.Form.Get("snippet-root"))
+		ctx.Config.GitConfig.HTTPCloneProtocol.V1Dumb = len(strings.TrimSpace(r.Form.Get("git-http-clone-enable-v1-dumb"))) > 0
+		ctx.Config.GitConfig.HTTPCloneProtocol.V2 = len(strings.TrimSpace(r.Form.Get("git-http-clone-enable-v2"))) > 0
 		next := ""
 		if ctx.Config.IsInPlainMode() {
 			next = "/step7"

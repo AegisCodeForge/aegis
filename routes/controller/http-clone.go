@@ -33,6 +33,13 @@ func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/info/{p...}", UseMiddleware(
 		[]Middleware{ Logged }, ctx,
 		func(ctx *routes.RouterContext, w http.ResponseWriter, r *http.Request) {
+			allowV2 := ctx.Config.GitConfig.HTTPCloneProtocol.V2
+			allowV1Dumb := ctx.Config.GitConfig.HTTPCloneProtocol.V1Dumb
+			if !allowV1Dumb && !allowV2 {
+				w.WriteHeader(403)
+				fmt.Fprint(w, "HTTP clone not supported on this instance")
+				return
+			}
 			if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
 				ctx.ReportForbidden("", w, r)
 				return
@@ -60,11 +67,11 @@ func bindHttpCloneController(ctx *RouterContext) {
 			isRepoArchived := repo.Status == model.REPO_ARCHIVED
 			if !isNamespacePublic || !(isRepoPublic || isRepoArchived) {
 				w.WriteHeader(404)
-				w.Write([]byte("404 Not Found"))
+				fmt.Fprint(w, "404 Not Found")
 				return
 			}
 			// see docs/http-clone.org.
-			if (r.URL.Query().Has("service")) {
+			if (r.URL.Query().Has("service") && allowV2) {
 				switch r.URL.Query().Get("service") {
 				case "git-upload-pack":
 					cmd := exec.Command("git", "upload-pack", repo.LocalPath, "--http-backend-info-refs")
@@ -93,6 +100,11 @@ func bindHttpCloneController(ctx *RouterContext) {
 				return
 			}
 			// v1-dumb
+			if !allowV1Dumb {
+				w.WriteHeader(403)
+				fmt.Fprint(w, "v1-dumb protocl not supported on this instance.")
+				return
+			}
 			rr := repo.Repository.(*gitlib.LocalGitRepository)
 			p := path.Join(rr.GitDirectoryPath, "info", r.PathValue("p"))
 			s, err := os.ReadFile(p)
@@ -105,6 +117,11 @@ func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("POST /repo/{repoName}/git-upload-pack", UseMiddleware(
 		[]Middleware{ Logged }, ctx,
 		func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
+			if !ctx.Config.GitConfig.HTTPCloneProtocol.V2 {
+				w.WriteHeader(403)
+				fmt.Fprint(w, "v2 protocl not supported on this instance.")
+				return
+			}
 			if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
 				w.WriteHeader(403)
 				w.Write([]byte("Service not available right now."))

@@ -13,7 +13,7 @@
 
 	<hr />
 	<!-- step 6: git root & git user -->
-	<h2>Step 6: Git Root & Git User</h2>
+	<h2>Step 6: Git-Related Configurations</h2>
 	<form action="" method="POST">
 	  
 	  <div class="field">
@@ -41,7 +41,22 @@
 		  </tbody>
 		</table>
 	  </div>
-	  
+
+	  <div class="field">
+		<span class="field-label">Git HTTP Clone Protocol</span>
+		<p class="field-description">Configure the supported Git-over-HTTP protocols (see docs/http-clone.org).</p>
+		<table>
+		  <thead><tr><th>Field</th><th>Value</th></tr></thead>
+		  <tbody>
+			<tr><td><label for="chk-v1-dumb">v1-dumb</label></td>
+			  <td><input type="checkbox" name="git-http-clone-enable-v1-dumb" id="chk-v1-dumb" {{if .Config.GitConfig.HTTPCloneProtocol.V1Dumb}}checked{{end}} /></td>
+			</tr>
+			<tr><td><label for="chk-v2">v2</label></td>
+			  <td><input type="checkbox" name="git-http-clone-enable-v2" id="chk-v2" {{if .Config.GitConfig.HTTPCloneProtocol.V2}}checked{{end}} /></td>
+			</tr>
+		  </tbody>
+		</table>
+	  </div>
 
 	  <div class="field">
 		<label class="field-label" for="snippet-root">Snippet Root</label>

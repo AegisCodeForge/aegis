@@ -32,14 +32,6 @@
 				<td><input name="depot-name" id="tf-depot-name" class="field-tf" value="{{.Config.DepotName}}" /></td>
 			  </tr>
 			  <tr class="field">
-				<td><label class="field-label"  for="tf-root">Root:</label></td>
-				<td><input name="root" id="tf-root" required class="field-tf" value="{{.Config.GitRoot}}" /></td>
-			  </tr>
-			  <tr class="field">
-				<td><label class="field-label"  for="tf-git-user">Git User:</label></td>
-				<td><input name="git-user" id="tf-git-user" required class="field-tf" value="{{.Config.GitUser}}" /></td>
-			  </tr>
-			  <tr class="field">
 				<td><label class="field-label field-chkbox-label"  for="chkbox-use-namespace">Use Namespace:</label></td>
 				<td><input type="checkbox" name="use-namespace" id="chkbox-use-namespace" class="field-chkbox" {{if .Config.UseNamespace}}checked{{end}}/></td>
 			  </tr>
@@ -54,6 +46,35 @@
 			  <tr class="field">
 				<td><label class="field-label field-chkbox-label"  for="chkbox-manual-approval">Manual Approval Required:</label></td>
 				<td><input type="checkbox" name="manual-approval" id="chkbox-manual-approval" class="field-chkbox" {{if .Config.ManualApproval}}checked{{end}}/></td>
+			  </tr>
+			  <tr class="field">
+				<td></td>
+				<td><input class="field-submit" type="submit" value="Save Config" /></td>
+			  </tr>
+			</table>
+		  </form>
+		</fieldset>
+
+		<fieldset class="git-section">
+		  <legend>Git Settings</legend>
+		  <form action="" method="POST">
+			<input type="hidden" name="section" value="git" />
+			<table class="field-table">
+			  <tr class="field">
+				<td><label class="field-label"  for="tf-root">Root:</label></td>
+				<td><input name="root" id="tf-root" required class="field-tf" value="{{.Config.GitRoot}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label"  for="tf-git-user">Git User:</label></td>
+				<td><input name="git-user" id="tf-git-user" required class="field-tf" value="{{.Config.GitUser}}" /></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="chk-http-enable-v1dumb">Enable v1-dumb protocol for HTTP clone</label></td>
+				<td><input type="checkbox" id="chk-http-enable-v1dumb" name="git-http-enable-v1dumb" class="field-checkbox" {{if .Config.GitConfig.HTTPCloneProtocol.V1Dumb}}checked{{end}}/ ></td>
+			  </tr>
+			  <tr class="field">
+				<td><label class="field-label" for="chk-http-enable-v2">Enable v2 protocol for HTTP clone</label></td>
+				<td><input type="checkbox" id="chk-http-enable-v2" name="git-http-enable-v2" class="field-checkbox" {{if .Config.GitConfig.HTTPCloneProtocol.V2}}checked{{end}}/></td>
 			  </tr>
 			  <tr class="field">
 				<td></td>

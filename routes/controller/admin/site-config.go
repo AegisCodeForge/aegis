@@ -60,8 +60,6 @@ func bindAdminSiteConfigController(ctx *RouterContext) {
 				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
 			case "basic":
 				rc.Config.DepotName = r.Form.Get("depot-name")
-				rc.Config.GitRoot = r.Form.Get("root")
-				rc.Config.GitUser = r.Form.Get("git-user")
 				rc.Config.UseNamespace = false
 				if r.Form.Has("use-namespace") && r.Form.Get("use-namespace") == "on" {
 					rc.Config.UseNamespace = true
@@ -79,6 +77,21 @@ func bindAdminSiteConfigController(ctx *RouterContext) {
 					rc.Config.ManualApproval = true
 				}
 				rc.Config.RecalculateProperPath()
+				err := rc.Config.Sync()
+				if err != nil {
+					LogTemplateError(rc.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{
+						Config: rc.Config,
+						LoginInfo: rc.LoginInfo,
+						ErrorMsg: fmt.Sprintf("Error while saving config: %s. Please contact site owner for this...", err.Error()),
+					}))
+					return
+				}
+				rc.ReportRedirect("/admin/site-config", 3, "Updated", "Your specifie config has been updated.", w, r)
+			case "git":
+				rc.Config.GitRoot = r.Form.Get("root")
+				rc.Config.GitUser = r.Form.Get("git-user")
+				rc.Config.GitConfig.HTTPCloneProtocol.V1Dumb = len(strings.TrimSpace(r.Form.Get("git-http-enable-v1dumb"))) > 0
+				rc.Config.GitConfig.HTTPCloneProtocol.V2 = len(strings.TrimSpace(r.Form.Get("git-http-enable-v2"))) > 0
 				err := rc.Config.Sync()
 				if err != nil {
 					LogTemplateError(rc.LoadTemplate("admin/site-config").Execute(w, &templates.AdminConfigTemplateModel{

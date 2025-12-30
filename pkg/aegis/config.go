@@ -65,6 +65,10 @@ type AegisConfig struct {
 	// when set to true, all registration must be screened by the webmaster.
 	ManualApproval bool `json:"requireManualApproval"`
 
+	// git-related config.
+	// NOTE(2025.12.30): we'll gradually move certain config options into here.
+	GitConfig AegisGitConfig `json:"gitConfig"`
+
 	// cosmetic things...
 	
 	// the name of the depot (i.e. the top level of the site)
@@ -186,6 +190,15 @@ type AegisDatabaseConfig struct {
 	// to make your gitus instance to share a database with other
 	// applications.
 	TablePrefix string `json:"tablePrefix"`
+}
+
+type AegisGitHTTPTransferProtocolDescriptor struct {
+	// true if enabled.
+	V1Dumb bool `json:"v1dumb"`
+	V2 bool `json:"v2"`
+}
+type AegisGitConfig struct {
+	HTTPCloneProtocol AegisGitHTTPTransferProtocolDescriptor `json:"httpCloneProtocol"`
 }
 
 type AegisSessionConfig struct {
@@ -364,6 +377,12 @@ func CreateConfigFile(p string) error {
 		IgnoreRepository: nil,
 		GlobalVisibility: "public",
 		FullAccessUser: []string{"admin"},
+		GitConfig: AegisGitConfig{
+			HTTPCloneProtocol: AegisGitHTTPTransferProtocolDescriptor{
+				V1Dumb: true,
+				V2: true,
+			},
+		},
 		Database: AegisDatabaseConfig{
 			Type: "sqlite",
 			Path: "",
