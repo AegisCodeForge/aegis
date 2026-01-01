@@ -1,0 +1,30 @@
+* hg vs. git
+
+this file is to write down the difference between mercurial and git.
+
+** commit structure
+
+for git:
+
++ 4 kinds of obejct: commit, tree, blob, tag
+  + commit contains:
+    + link to commits (parents)
+    + link to tree (commit fs root)
+    + meta info: commit author, email, commit msg, datetime
+  + tree contains: list of 3-tuple: name, perm, objid
+    + recursively contains tree and blob objs.
+  + blob contains data. (used for actually storing data)
+  + tag contains
+    + link to object (can be commit, tree, blob or other tags)
+    + meta info: tag author, email, tag msg, datetime
+
+for mercurial:
+
++ *each file has its own logs*; different version of the same file, even if they have the same content, would have different "nodeid"
+  + this is unlike git where blobs w/ same content will have the same id
++ mercurial commits (called a "changeset") contains:
+  + maximum 2 parent commits (merge commits would have 2 parent commits)
+  + manifest: a thing that "describes the contents of the repository at a particular changeset id". basically a list of file names (full relpath) and their nodeid (i.e. a certwtain version in the history of a file)
+    + "A manifest describes the state of a project by listing each file and its nodeid to specify which version. Recreating a particular state means simply looking up its manifest and reconstructing the listed file versions from their revlogs."
+  + meta info: commit author, email, commit description, datetime
+    
