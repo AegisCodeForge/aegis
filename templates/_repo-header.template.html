@@ -8,6 +8,7 @@
   </h1>
   
   {{if eq .Config.OperationMode "normal"}}
+  <span class="repo-visibility">{{if eq .Repository.Status 1}}PUBLIC{{else if eq .Repository.Status 2}}PRIVATE{{else if eq .Repository.Status 4}}PUBLIC ARCHIVED{{else if eq .Repository.Status 5}}INTERNAL{{else if eq .Repository.Status 6}}LIMITED{{end}}</span>
   
   {{if .Repository.Owner}}
   <span>Owner: <a href="/u/{{.Repository.Owner}}">{{.Repository.Owner}}</a></span>
