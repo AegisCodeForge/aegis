@@ -3,6 +3,7 @@ package admin
 import (
 	"github.com/bctnry/aegis/routes"
 	"github.com/bctnry/aegis/routes/controller/admin/edit_user"
+	"github.com/bctnry/aegis/routes/controller/admin/rrdoc"
 )
 
 func BindAllAdminControllers(context *routes.RouterContext) {
@@ -14,6 +15,7 @@ func BindAllAdminControllers(context *routes.RouterContext) {
 	bindAdminReceiptSystemSettingController(context)
 	bindAdminUserListController(context)
 	edit_user.BindAdminEditUserController(context)
+	rrdoc.BindAdminRRDocController(context)
 	bindAdminNewUserController(context)
 	bindAdminNamespaceListController(context)
 	bindAdminEditNamespaceController(context)

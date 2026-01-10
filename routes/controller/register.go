@@ -76,6 +76,15 @@ func bindRegisterController(ctx *RouterContext) {
 				}))
 				return
 			}
+			if rc.Config.ReadingRequiredDocument != nil {
+				for i := range rc.Config.ReadingRequiredDocument {
+					if len(strings.TrimSpace(r.Form.Get(fmt.Sprintf("req-%d", i)))) <= 0 {
+						rc.ReportRedirect("/reg", 5, "Field Required", "You must consent to all the required documents.", w, r)
+						return
+					}
+				}
+			}
+			
 			password := r.Form.Get("password")
 			passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 			if err != nil {

@@ -64,6 +64,14 @@ type AegisConfig struct {
 	EmailConfirmationRequired bool `json:"emailConfirmationRequired"`
 	// when set to true, all registration must be screened by the webmaster.
 	ManualApproval bool `json:"requireManualApproval"`
+	// documents that users would have to read and agree to before
+	// registering a new account, e.g. terms of service. if "path"
+	// starts with "http://" or "https://", the path would be rendered
+	// as a link.  if it's not, it would be considered as na relpath to
+	// `$staticAssetDirectory/rrdoc`, e.g.  "Terms Of Service":
+	// "tos.md" links the file "$static/rrdoc/tos.md" to the title
+	// "Terms Of Service".
+	ReadingRequiredDocument []struct{Title string;Path string} `json:"readingRequiredDocument"`
 
 	// git-related config.
 	// NOTE(2025.12.30): we'll gradually move certain config options into here.
@@ -340,6 +348,13 @@ func (cfg *AegisConfig) LockForSync() {
 
 func (cfg *AegisConfig) Unlock() {
 	cfg.lock.Unlock()
+}
+
+func (cfg *AegisConfig) GetRRDocTitle(p string) string {
+	for _, v := range cfg.ReadingRequiredDocument {
+		if v.Path == p { return v.Title }
+	}
+	return ""
 }
 
 const (

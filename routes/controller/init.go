@@ -23,6 +23,7 @@ func InitializeRoute(context *routes.RouterContext) {
 	bindShutdownNoticeController(context)
 	bindMaintenanceNoticeController(context)
 	bindPrivateNoticeController(context)
+	bindRRDocController(context)
 	
 	if context.Config.UseNamespace {
 		bindNamespaceController(context)

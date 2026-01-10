@@ -44,6 +44,17 @@
 			  <td><textarea id="ta-reason" name="ta-reason"></textarea></td>
 			</tr>
 			{{end}}
+			{{if .Config.ReadingRequiredDocument}}
+			{{range $k, $v := .Config.ReadingRequiredDocument}}
+			<tr class="field">
+			  <td></td>
+			  <td>
+				<input style="display: inline" class="field-chkbox" type="checkbox" name="req-{{$k}}" id="chk-req-{{$k}}" />
+				<label for="chk-req-{{$k}}">I have read the content of <a target="_blank" href="{{getRRDocHref $v.Path}}">{{$v.Title}}</a> and consent to its terms</label>
+			  </td>
+			</tr>
+			{{end}}
+			{{end}}
 			<tr class="field">
 			  <td></td>
 			  <td><input class="form-submit" type="submit" value="Register" /></td>
