@@ -2,13 +2,13 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
 
 type SettingGPGKeyTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	LoginInfo *LoginInfoModel
-	KeyList []model.AegisSigningKey
+	KeyList []model.GitusSigningKey
 	ErrorMsg struct{
 		Type string
 		Message string

@@ -2,10 +2,10 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
 
 type IndexStaticTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	LoginInfo *LoginInfoModel
 	FrontPage string
 }

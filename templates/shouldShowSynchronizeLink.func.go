@@ -1,7 +1,7 @@
 //go:build ignore
 package templates
 
-import "github.com/bctnry/aegis/pkg/gitlib"
+import "github.com/GitusCodeForge/Gitus/pkg/gitlib"
 
 func(s *LoginInfoModel, ci *gitlib.BranchComparisonInfo) bool {
 	if !s.LoggedIn { return false }

@@ -2,10 +2,10 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
+import "github.com/bctnry/gitus/pkg/gitus"
 
 type GitBlameTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	Blame *gitlib.PorcelainBlame

@@ -2,7 +2,7 @@
 package templates
 
 import "encoding/json"
-import "github.com/bctnry/aegis/pkg/gitlib"
+import "github.com/GitusCodeForge/Gitus/pkg/gitlib"
 
 func(s string) *gitlib.MergeCheckResult {
 	var r *gitlib.MergeCheckResult

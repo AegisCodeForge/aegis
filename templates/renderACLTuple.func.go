@@ -1,7 +1,7 @@
 //go:build ignore
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
 
 model.ToCommaSeparatedString
 

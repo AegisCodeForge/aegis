@@ -2,10 +2,10 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
 
 type LoginTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	ErrorMsg string
 	LoginInfo *LoginInfoModel
 	Callback string

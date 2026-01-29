@@ -2,12 +2,12 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
-import "github.com/bctnry/aegis/pkg/gitlib"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitlib"
 
 type SnippetNewFileTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	LoginInfo *LoginInfoModel
 	BelongingUser string
 	Name string

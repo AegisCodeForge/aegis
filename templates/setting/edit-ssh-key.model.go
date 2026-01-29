@@ -2,14 +2,14 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
 
 type AdminUserEditSSHKeyTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	LoginInfo *LoginInfoModel
-	User *model.AegisUser
-	Key *model.AegisAuthKey
+	User *model.GitusUser
+	Key *model.GitusAuthKey
 	ErrorMsg struct{
 		Type string
 		Message string

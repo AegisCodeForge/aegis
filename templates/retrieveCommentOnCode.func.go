@@ -3,11 +3,11 @@ package templates
 
 import "encoding/json"
 import "path"
-import "github.com/bctnry/aegis/pkg/gitlib"
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitlib"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
 
-func(cfg *aegis.AegisConfig, s string) *model.PullRequestCommentOnCode {
+func(cfg *gitus.GitusConfig, s string) *model.PullRequestCommentOnCode {
 	var r *model.PullRequestCommentOnCode
 	json.Unmarshal([]byte(s), &r)
 	p := path.Join(cfg.GitRoot, r.RepoNamespace, r.RepoName)

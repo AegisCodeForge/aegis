@@ -2,11 +2,11 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
 
 type NamespaceSettingTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	Namespace *model.Namespace
 	LoginInfo *LoginInfoModel
 	ErrorMsg struct {
