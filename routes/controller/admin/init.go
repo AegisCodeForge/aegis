@@ -1,9 +1,9 @@
 package admin
 
 import (
-	"github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/routes/controller/admin/edit_user"
-	"github.com/bctnry/aegis/routes/controller/admin/rrdoc"
+	"github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/routes/controller/admin/edit_user"
+	"github.com/GitusCodeForge/Gitus/routes/controller/admin/rrdoc"
 )
 
 func BindAllAdminControllers(context *routes.RouterContext) {

@@ -6,12 +6,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/auxfuncs"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/auxfuncs"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"github.com/gomarkdown/markdown"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/niklasfasching/go-org/org"
@@ -44,7 +44,7 @@ func bindRepositoryController(ctx *RouterContext) {
 				return
 			}
 			
-			if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+			if rc.Config.OperationMode == gitus.OP_MODE_NORMAL {
 				rc.LoginInfo.IsOwner = s.Owner == rc.LoginInfo.UserName || ns.Owner == rc.LoginInfo.UserName
 			}
 			if !rc.Config.IsInPlainMode() && s.Status == model.REPO_NORMAL_PRIVATE {
@@ -123,7 +123,7 @@ func bindRepositoryController(ctx *RouterContext) {
 			// no readme.
 			if !gitlib.IsCommitObject(obj) { goto findingMajorBranchDone; }
 			cobj = obj.(*gitlib.CommitObject)
-			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+			if ctx.Config.OperationMode == gitus.OP_MODE_NORMAL {
 				emailUserMap[cobj.AuthorInfo.AuthorEmail] = ""
 				emailUserMap[cobj.CommitterInfo.AuthorEmail] = ""
 				rc.DatabaseInterface.ResolveMultipleEmailToUsername(emailUserMap)
@@ -255,7 +255,7 @@ func bindRepositoryController(ctx *RouterContext) {
 		},
 	))
 
-	if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+	if ctx.Config.OperationMode == gitus.OP_MODE_NORMAL {
 		bindRepositoryForkController(ctx)
 		bindRepositoryPullRequestController(ctx)
 	}

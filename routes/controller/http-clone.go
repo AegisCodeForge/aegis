@@ -9,11 +9,11 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	"github.com/bctnry/aegis/routes"
-	. "github.com/bctnry/aegis/routes"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	"github.com/GitusCodeForge/Gitus/routes"
+	. "github.com/GitusCodeForge/Gitus/routes"
 )
 
 func printGitError(w io.Writer, s string) {
@@ -40,7 +40,7 @@ func bindHttpCloneController(ctx *RouterContext) {
 				fmt.Fprint(w, "HTTP clone not supported on this instance")
 				return
 			}
-			if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			if ctx.Config.GlobalVisibility != gitus.GLOBAL_VISIBILITY_PUBLIC {
 				ctx.ReportForbidden("", w, r)
 				return
 			}
@@ -122,7 +122,7 @@ func bindHttpCloneController(ctx *RouterContext) {
 				fmt.Fprint(w, "v2 protocl not supported on this instance.")
 				return
 			}
-			if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			if ctx.Config.GlobalVisibility != gitus.GLOBAL_VISIBILITY_PUBLIC {
 				w.WriteHeader(403)
 				w.Write([]byte("Service not available right now."))
 				return
@@ -172,7 +172,7 @@ func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/HEAD", UseMiddleware(
 		[]Middleware{ Logged }, ctx,
 		func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			if ctx.Config.GlobalVisibility != gitus.GLOBAL_VISIBILITY_PUBLIC {
 				ctx.ReportForbidden("", w, r)
 				return
 			}
@@ -214,7 +214,7 @@ func bindHttpCloneController(ctx *RouterContext) {
 	http.HandleFunc("GET /repo/{repoName}/objects/{obj...}", UseMiddleware(
 		[]Middleware{ Logged }, ctx,
 		func(ctx *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if ctx.Config.GlobalVisibility != aegis.GLOBAL_VISIBILITY_PUBLIC {
+			if ctx.Config.GlobalVisibility != gitus.GLOBAL_VISIBILITY_PUBLIC {
 				ctx.ReportForbidden("", w, r)
 				return
 			}

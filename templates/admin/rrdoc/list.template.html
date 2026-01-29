@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Legal Document List :: {{.Config.DepotName}}</title>
+	<link rel="stylesheet" href="/static/style-const-default.css">
+	<link rel="stylesheet" href="/dynamic-asset/style-const-default.css">
+ 	<link rel="stylesheet" href="/static/style.css">
+	<link rel="stylesheet" href="/static/style-setting.css">
+	<link rel="stylesheet" href="/static/style-admin.css">
+  </head>
+  <body>
+	<header>
+	  {{template "_header-nav" .}}
+	  
+	  <h1 class="header-name" style="margin-bottom: 0">Admin/RRDoc</h1>
+	</header>
+	<hr />
+
+	<main>
+	  {{template "_admin-sidebar"}}
+
+	  <div class="setting-main main-side">
+		<h2>Legal document list</h2>
+		<blockquote>
+		  <i>These are documents that are required for user to read &amp; consent to before registering.</i>
+		</blockquote>
+		<a href="/admin/rrdoc/new">Add New Document</a>
+		<table>
+		  <thead>
+			<tr><th>Title</th><th>Path</th><th>Edit</th><th>Delete</th>
+		  </thead>
+		  <tbody>
+			{{range $k, $v := .Config.ReadingRequiredDocument}}
+			<tr>
+			  <td>{{$v.Title}}</td>
+			  <td>{{$v.Path}}</td>
+			  <td><a href="/admin/rrdoc/{{add $k 1}}/edit">Edit</a></td>
+			  <td><a href="/admin/rrdoc/{{add $k 1}}/delete">Delete</a></td>
+			</tr>
+			{{end}}
+		  </tbody>
+		</table>
+	  </div>
+	</main>
+	
+    <hr />
+	<footer>
+	  {{template "_footer"}}
+	</footer>
+  </body>
+</html>
+

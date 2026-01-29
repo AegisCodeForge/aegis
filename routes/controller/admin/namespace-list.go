@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 // /admin/namespace-list?p={pagenum}&s={pagesize}&q={query}
@@ -85,7 +85,7 @@ func bindAdminNamespaceListController(ctx *RouterContext) {
 				rc.ReportInternalError(fmt.Sprintf("Failed to register namespace: %s", err), w, r)
 				return
 			}
-			ns.Status = model.AegisNamespaceStatus(i)
+			ns.Status = model.GitusNamespaceStatus(i)
 			ns.Title = title
 			ns.Email = email
 			ns.Owner = owner

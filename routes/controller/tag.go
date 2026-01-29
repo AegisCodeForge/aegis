@@ -7,12 +7,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	"github.com/bctnry/aegis/routes"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	"github.com/GitusCodeForge/Gitus/routes"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func handleTagSnapshotRequest(repo *model.Repository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) error {
@@ -207,7 +207,7 @@ func bindTagController(ctx *RouterContext) {
 					)
 					return
 				}
-				if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				if rc.Config.OperationMode == gitus.OP_MODE_NORMAL {
 					m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
 				}
 				tagInfo.EmailUserMapping = m
@@ -238,7 +238,7 @@ func bindTagController(ctx *RouterContext) {
 				str := string(bobj.Data)
 				coloredStr, err := colorSyntax("", str)
 				if err == nil { str = coloredStr }
-				if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				if rc.Config.OperationMode == gitus.OP_MODE_NORMAL {
 					m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
 				}
 				tagInfo.EmailUserMapping = m
@@ -281,7 +281,7 @@ func bindTagController(ctx *RouterContext) {
 					TreePath: treePath,
 					TreePathSegmentList: treePathSegmentList,
 				}
-				if rc.Config.OperationMode == aegis.OP_MODE_NORMAL {
+				if rc.Config.OperationMode == gitus.OP_MODE_NORMAL {
 					m, _ = rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)
 				}
 				commitInfo.EmailUserMapping = m

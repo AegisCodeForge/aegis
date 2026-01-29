@@ -9,12 +9,12 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	"github.com/bctnry/aegis/routes"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	"github.com/GitusCodeForge/Gitus/routes"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func handleBranchSnapshotRequest(repo *model.Repository, branchName string, obj gitlib.GitObject, w http.ResponseWriter) {
@@ -99,7 +99,7 @@ func bindBranchController(ctx *RouterContext) {
 
 			cobj := gobj.(*gitlib.CommitObject)
 			m := make(map[string]string, 0)
-			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+			if ctx.Config.OperationMode == gitus.OP_MODE_NORMAL {
 				m[cobj.AuthorInfo.AuthorEmail] = ""
 				m[cobj.CommitterInfo.AuthorEmail] = ""
 				rc.DatabaseInterface.ResolveMultipleEmailToUsername(m)

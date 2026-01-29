@@ -12,7 +12,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/ini"
+	"github.com/GitusCodeForge/Gitus/pkg/ini"
 )
 
 type LocalGitRepository struct {

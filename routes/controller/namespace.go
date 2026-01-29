@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/db"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/db"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindNamespaceController(ctx *RouterContext) {
@@ -24,7 +24,7 @@ func bindNamespaceController(ctx *RouterContext) {
 			var ns *model.Namespace
 			var ok bool
 			var err error
-			if rc.Config.OperationMode != aegis.OP_MODE_NORMAL {
+			if rc.Config.OperationMode != gitus.OP_MODE_NORMAL {
 				ns, ok = rc.GitNamespaceList[namespaceName]
 				if !ok {
 					err = rc.SyncAllNamespacePlain()

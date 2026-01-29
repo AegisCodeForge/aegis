@@ -1,7 +1,7 @@
 package edit_user
 
 import (
-	. "github.com/bctnry/aegis/routes"
+	. "github.com/GitusCodeForge/Gitus/routes"
 )
 
 func BindAdminEditUserController(ctx *RouterContext) {

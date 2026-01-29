@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/aegis/receipt"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/receipt"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,15 +21,15 @@ func bindResetPasswordController(ctx *RouterContext) {
 		[]Middleware{Logged, UseLoginInfo, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			switch rc.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			case gitus.GLOBAL_VISIBILITY_MAINTENANCE:
 				FoundAt(w, "/maintenance-notice")
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			case gitus.GLOBAL_VISIBILITY_SHUTDOWN:
 				FoundAt(w, "/shutdown-notice")
 				return
 			}
 			LogTemplateError(rc.LoadTemplate("reset-password-request").Execute(w, struct{
-				Config *aegis.AegisConfig
+				Config *gitus.GitusConfig
 				ErrorMsg string
 				LoginInfo *templates.LoginInfoModel
 			}{
@@ -46,10 +46,10 @@ func bindResetPasswordController(ctx *RouterContext) {
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 		switch rc.Config.GlobalVisibility {
-		case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+		case gitus.GLOBAL_VISIBILITY_MAINTENANCE:
 			FoundAt(w, "/maintenance-notice")
 			return
-		case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+		case gitus.GLOBAL_VISIBILITY_SHUTDOWN:
 			FoundAt(w, "/shutdown-notice")
 			return
 		}
@@ -109,10 +109,10 @@ If this isn't you, you can simply ignore this message.`,
 		[]Middleware{Logged, UseLoginInfo, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			switch rc.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			case gitus.GLOBAL_VISIBILITY_MAINTENANCE:
 				FoundAt(w, "/maintenance-notice")
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			case gitus.GLOBAL_VISIBILITY_SHUTDOWN:
 				FoundAt(w, "/shutdown-notice")
 				return
 			}
@@ -137,7 +137,7 @@ If this isn't you, you can simply ignore this message.`,
 				return
 			}
 			LogTemplateError(rc.LoadTemplate("reset-password-update").Execute(w, struct {
-				Config *aegis.AegisConfig
+				Config *gitus.GitusConfig
 				ReceiptId string
 				LoginInfo *templates.LoginInfoModel
 			}{
@@ -154,10 +154,10 @@ If this isn't you, you can simply ignore this message.`,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			switch rc.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			case gitus.GLOBAL_VISIBILITY_MAINTENANCE:
 				FoundAt(w, "/maintenance-notice")
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			case gitus.GLOBAL_VISIBILITY_SHUTDOWN:
 				FoundAt(w, "/shutdown-notice")
 				return
 			}

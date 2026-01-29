@@ -5,21 +5,21 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/aegis/receipt"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/receipt"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindConfirmRegistrationController(ctx *RouterContext) {
 	http.HandleFunc("GET /confirm-registration", UseMiddleware(
 		[]Middleware{Logged, UseLoginInfo, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_SHUTDOWN {
+			if ctx.Config.GlobalVisibility == gitus.GLOBAL_VISIBILITY_SHUTDOWN {
 				FoundAt(w, "/shutdown-notice")
 			}
-			if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			if ctx.Config.GlobalVisibility == gitus.GLOBAL_VISIBILITY_MAINTENANCE {
 				FoundAt(w, "/maintenance-notice")
 			}
 			rid := r.URL.Query().Get("id")

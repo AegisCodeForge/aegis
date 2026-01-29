@@ -5,10 +5,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 // list of namespace if enabled,
@@ -26,7 +26,7 @@ func bindAllController(ctx *routes.RouterContext) {
 				var nsl map[string]*model.Namespace
 				var nslCount int64
 				var pageInfo *templates.PageInfoModel
-				if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+				if ctx.Config.OperationMode != gitus.OP_MODE_NORMAL {
 					if len(q) > 0 {
 						nsl, err = ctx.Config.SearchAllNamespacePlain(q)
 					} else {
@@ -91,7 +91,7 @@ func bindAllController(ctx *routes.RouterContext) {
 			var repol []*model.Repository
 			var repolCount int64
 			var pageInfo *templates.PageInfoModel
-			if ctx.Config.OperationMode != aegis.OP_MODE_NORMAL {
+			if ctx.Config.OperationMode != gitus.OP_MODE_NORMAL {
 				if len(q) > 0 {
 					repol, err = ctx.Config.SearchAllRepositoryPlain(q)
 				} else {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/bctnry/aegis/pkg/ini"
+	"github.com/GitusCodeForge/Gitus/pkg/ini"
 )
 
 type SubmoduleConfig struct {

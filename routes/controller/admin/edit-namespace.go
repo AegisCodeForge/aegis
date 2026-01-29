@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 
@@ -63,7 +63,7 @@ func bindAdminEditNamespaceController(ctx *RouterContext) {
 			ns.Title = title
 			ns.Email = email
 			ns.Owner = owner
-			ns.Status = model.AegisNamespaceStatus(i)
+			ns.Status = model.GitusNamespaceStatus(i)
 			ns.Description = description
 			err = rc.DatabaseInterface.UpdateNamespaceInfo(nsn, ns)
 			if err != nil {

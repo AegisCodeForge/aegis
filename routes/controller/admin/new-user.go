@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -57,7 +57,7 @@ func bindAdminNewUserController(ctx *RouterContext) {
 				}))
 				return
 			}
-			_, err = rc.DatabaseInterface.RegisterUser(userName, email, string(passwordHash), model.AegisUserStatus(i))
+			_, err = rc.DatabaseInterface.RegisterUser(userName, email, string(passwordHash), model.GitusUserStatus(i))
 			if err != nil {
 				LogTemplateError(rc.LoadTemplate("admin/new-user").Execute(w, templates.AdminConfigTemplateModel{
 					Config: rc.Config,

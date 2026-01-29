@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -67,11 +67,11 @@ func bindAdminEditUserInfoController(ctx *RouterContext) {
 					rc.ReportNormalError("Invalid request", w, r)
 					return
 				}
-				if !rc.LoginInfo.IsSuperAdmin && model.AegisUserStatus(i) != model.SUPER_ADMIN {
+				if !rc.LoginInfo.IsSuperAdmin && model.GitusUserStatus(i) != model.SUPER_ADMIN {
 					rc.ReportRedirect("/admin/user-list", 0, "Error", "Not enough permission.", w, r)
 					return
 				}
-				user.Status = model.AegisUserStatus(i)
+				user.Status = model.GitusUserStatus(i)
 				err = rc.DatabaseInterface.UpdateUserInfo(un, user)
 				if err != nil {
 					rc.ReportInternalError(fmt.Sprintf("Failed to update user info: %s", err.Error()), w, r)

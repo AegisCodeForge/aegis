@@ -1,9 +1,9 @@
 package controller
 
 import (
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/routes/controller/admin"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/routes/controller/admin"
 )
 
 func InitializeRoute(context *routes.RouterContext) {
@@ -27,12 +27,12 @@ func InitializeRoute(context *routes.RouterContext) {
 	
 	if context.Config.UseNamespace {
 		bindNamespaceController(context)
-		if context.Config.OperationMode == aegis.OP_MODE_NORMAL {
+		if context.Config.OperationMode == gitus.OP_MODE_NORMAL {
 			bindNamespaceSettingController(context)
 		}
 	}
 
-	if context.Config.OperationMode == aegis.OP_MODE_NORMAL {
+	if context.Config.OperationMode == gitus.OP_MODE_NORMAL {
 		bindUserController(context)
 		bindLoginController(context)
 		bindLogoutController(context)

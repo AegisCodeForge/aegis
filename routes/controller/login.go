@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/aegis/session"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/session"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,7 +19,7 @@ func bindLoginController(ctx *RouterContext) {
 	http.HandleFunc("GET /login", UseMiddleware(
 		[]Middleware{Logged, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			if ctx.Config.GlobalVisibility == gitus.GLOBAL_VISIBILITY_MAINTENANCE {
 				FoundAt(w, "/maintenance-notice")
 				return
 			}
@@ -37,7 +37,7 @@ func bindLoginController(ctx *RouterContext) {
 			Logged, RateLimit, ValidPOSTRequestRequired, ErrorGuard,
 		}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if rc.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			if rc.Config.GlobalVisibility == gitus.GLOBAL_VISIBILITY_MAINTENANCE {
 				FoundAt(w, "/maintenance-notice")
 				return
 			}
@@ -175,7 +175,7 @@ If this isn't you, we advise you to change your password on %s and other platfor
 	http.HandleFunc("GET /login/confirm", UseMiddleware(
 		[]Middleware{Logged, RateLimit, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if rc.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			if rc.Config.GlobalVisibility == gitus.GLOBAL_VISIBILITY_MAINTENANCE {
 				FoundAt(w, "/maintenance-notice")
 				return
 			}

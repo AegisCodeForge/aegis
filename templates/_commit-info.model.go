@@ -2,7 +2,7 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/gitlib"
+import "github.com/GitusCodeForge/Gitus/pkg/gitlib"
 
 type CommitInfoTemplateModel struct {
 	RootPath string

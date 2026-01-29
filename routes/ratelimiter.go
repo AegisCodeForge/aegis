@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/bctnry/aegis/pkg/aegis"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
 	"golang.org/x/time/rate"
 )
 
@@ -17,7 +17,7 @@ type RateLimiter struct {
 	cap int
 }
 
-func NewRateLimiter(cfg *aegis.AegisConfig) *RateLimiter {
+func NewRateLimiter(cfg *gitus.GitusConfig) *RateLimiter {
 	return &RateLimiter{
 		limiter: make(map[string]*rate.Limiter, 0),
 		mutex: &sync.RWMutex{},

@@ -1,12 +1,12 @@
 clean:
-	if [ -f "aegis" ]; then rm ./aegis; fi
+	if [ -f "gitus" ]; then rm ./gitus; fi
 
-aegis-web-server:
+gitus-web-server:
 	go run ./devtools/generate-template.go templates
 	go run ./devtools/generate-footer-template.go
 	go run ./devtools/embed-static.go ./static templates
-	go build ./cmd/aegis
+	go build ./cmd/gitus
 
 all:
-	make aegis-web-server
+	make gitus-web-server
 

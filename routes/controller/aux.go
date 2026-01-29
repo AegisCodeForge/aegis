@@ -15,8 +15,8 @@ import (
 	chromaHtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	"github.com/bctnry/aegis/routes"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	"github.com/GitusCodeForge/Gitus/routes"
 	"golang.org/x/crypto/bcrypt"
 )
 

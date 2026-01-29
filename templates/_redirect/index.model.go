@@ -3,7 +3,7 @@
 package templates
 
 type RedirectWithMessageModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	LoginInfo *LoginInfoModel
 	ErrorMsg string
 	Timeout int

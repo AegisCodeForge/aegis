@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	. "github.com/bctnry/aegis/routes"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	. "github.com/GitusCodeForge/Gitus/routes"
 )
 
 
@@ -13,7 +13,7 @@ func bindLogoutController(ctx *RouterContext) {
 	http.HandleFunc("GET /logout", UseMiddleware(
 		[]Middleware{Logged, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
-			if ctx.Config.GlobalVisibility == aegis.GLOBAL_VISIBILITY_MAINTENANCE {
+			if ctx.Config.GlobalVisibility == gitus.GLOBAL_VISIBILITY_MAINTENANCE {
 				FoundAt(w, "/maintenance-notice")
 				return
 			}

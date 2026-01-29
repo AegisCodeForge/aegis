@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/mail"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/mail"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindAdminMailerSettingController(ctx *RouterContext) {
@@ -43,7 +43,7 @@ func bindAdminMailerSettingController(ctx *RouterContext) {
 				rc.ReportNormalError("Invalid request", w, r)
 					return
 				}
-				mailer, err := mail.CreateMailerFromMailerConfig(&aegis.AegisMailerConfig{
+				mailer, err := mail.CreateMailerFromMailerConfig(&gitus.GitusMailerConfig{
 					Type: r.Form.Get("type"),
 					SMTPServer: r.Form.Get("server"),
 					SMTPPort: int(port),

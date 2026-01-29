@@ -10,9 +10,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/bctnry/aegis/pkg/aegis/db"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/db"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
 	"github.com/golang-jwt/jwt/v5"
 )
 

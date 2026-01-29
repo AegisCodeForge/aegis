@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/bctnry/aegis/routes"
+	. "github.com/GitusCodeForge/Gitus/routes"
 )
 
 func bindDynamicAssetController(ctx *RouterContext) {

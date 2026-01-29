@@ -3,7 +3,7 @@ package templates
 
 import "fmt"
 import "time"
-import "github.com/bctnry/aegis/pkg/fuzzytime"
+import "github.com/GitusCodeForge/Gitus/pkg/fuzzytime"
 
 // this is used to escape urls in html attribute values.
 

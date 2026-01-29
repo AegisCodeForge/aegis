@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/aegis/receipt"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/receipt"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,10 +19,10 @@ func bindRegisterController(ctx *RouterContext) {
 		[]Middleware{Logged, UseLoginInfo, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			switch rc.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			case gitus.GLOBAL_VISIBILITY_MAINTENANCE:
 				FoundAt(w, "/maintenance-notice")
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			case gitus.GLOBAL_VISIBILITY_SHUTDOWN:
 				FoundAt(w, "/shutdown-notice")
 				return
 			}
@@ -39,10 +39,10 @@ func bindRegisterController(ctx *RouterContext) {
 		[]Middleware{Logged, RateLimit, ValidPOSTRequestRequired, ErrorGuard}, ctx,
 		func(rc *RouterContext, w http.ResponseWriter, r *http.Request) {
 			switch rc.Config.GlobalVisibility {
-			case aegis.GLOBAL_VISIBILITY_MAINTENANCE:
+			case gitus.GLOBAL_VISIBILITY_MAINTENANCE:
 				FoundAt(w, "/maintenance-notice")
 				return
-			case aegis.GLOBAL_VISIBILITY_SHUTDOWN:
+			case gitus.GLOBAL_VISIBILITY_SHUTDOWN:
 				FoundAt(w, "/shutdown-notice")
 				return
 			}

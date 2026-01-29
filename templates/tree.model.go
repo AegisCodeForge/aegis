@@ -1,11 +1,11 @@
 //go:build ignore
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/aegis/model"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus/model"
 
 type TreeTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	TreeFileList *TreeFileListTemplateModel

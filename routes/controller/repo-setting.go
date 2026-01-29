@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/auxfuncs"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/auxfuncs"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindRepositorySettingController(ctx *RouterContext) {
@@ -128,7 +128,7 @@ func bindRepositorySettingController(ctx *RouterContext) {
 				return
 			}
 			repo.Description = newDescription
-			repo.Status = model.AegisRepositoryStatus(i)
+			repo.Status = model.GitusRepositoryStatus(i)
 			err = ctx.DatabaseInterface.UpdateRepositoryInfo(repo.Namespace, repo.Name, repo)
 			if err != nil {
 				rc.ReportInternalError(fmt.Sprintf("Failed to update repository info: %s", err), w, r)

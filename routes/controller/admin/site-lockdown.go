@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindAdminSiteLockdownController(ctx *RouterContext) {
@@ -40,12 +40,12 @@ func bindAdminSiteLockdownController(ctx *RouterContext) {
 			t := strings.TrimSpace(r.Form.Get("type"))
 			switch t {
 			case "public":
-				rc.Config.GlobalVisibility = aegis.GLOBAL_VISIBILITY_PUBLIC
+				rc.Config.GlobalVisibility = gitus.GLOBAL_VISIBILITY_PUBLIC
 			case "private":
-				rc.Config.GlobalVisibility = aegis.GLOBAL_VISIBILITY_PRIVATE
+				rc.Config.GlobalVisibility = gitus.GLOBAL_VISIBILITY_PRIVATE
 				rc.Config.PrivateNoticeMessage = r.Form.Get("private-notice-message")
 			case "shutdown":
-				rc.Config.GlobalVisibility = aegis.GLOBAL_VISIBILITY_SHUTDOWN
+				rc.Config.GlobalVisibility = gitus.GLOBAL_VISIBILITY_SHUTDOWN
 				ul := make([]string, 0)
 				for k := range strings.SplitSeq(r.Form.Get("full-access-user"), ",") {
 					ul = append(ul, strings.TrimSpace(k))
@@ -53,7 +53,7 @@ func bindAdminSiteLockdownController(ctx *RouterContext) {
 				rc.Config.FullAccessUser = ul
 				rc.Config.ShutdownMessage = r.Form.Get("shutdown-notice-message")
 			case "maintenance":
-				rc.Config.GlobalVisibility = aegis.GLOBAL_VISIBILITY_MAINTENANCE
+				rc.Config.GlobalVisibility = gitus.GLOBAL_VISIBILITY_MAINTENANCE
 				rc.Config.MaintenanceMessage = r.Form.Get("maintenance-notice-message")
 			}
 			err := rc.Config.Sync()

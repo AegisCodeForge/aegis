@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/gitlib"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitlib"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindDiffController(ctx *RouterContext) {
@@ -65,7 +65,7 @@ func bindDiffController(ctx *RouterContext) {
 			}
 			co := cobj.(*gitlib.CommitObject)
 			m := make(map[string]string, 0)
-			if ctx.Config.OperationMode == aegis.OP_MODE_NORMAL {
+			if ctx.Config.OperationMode == gitus.OP_MODE_NORMAL {
 				m[co.AuthorInfo.AuthorEmail] = ""
 				m[co.CommitterInfo.AuthorEmail] = ""
 				ctx.DatabaseInterface.ResolveMultipleEmailToUsername(m)

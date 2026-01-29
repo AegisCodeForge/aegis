@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 	"github.com/gomarkdown/markdown"
 	"github.com/microcosm-cc/bluemonday"
 	"github.com/niklasfasching/go-org/org"

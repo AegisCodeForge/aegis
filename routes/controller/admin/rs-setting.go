@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindAdminReceiptSystemSettingController(ctx *RouterContext) {

@@ -2,11 +2,11 @@
 
 package templates
 
-import "github.com/bctnry/aegis/pkg/aegis"
-import "github.com/bctnry/aegis/pkg/gitlib"
+import "github.com/GitusCodeForge/Gitus/pkg/gitus"
+import "github.com/GitusCodeForge/Gitus/pkg/gitlib"
 
 type FileTemplateModel struct {
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	Repository *model.Repository
 	RepoHeaderInfo RepoHeaderTemplateModel
 	File BlobTextTemplateModel

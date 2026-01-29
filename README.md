@@ -2,9 +2,9 @@
 	<img src="./logo.png" alt="Aegis Logo" />
 </center>
 
-# Aegis
+# Gitus
 
-Aegis is a self-hosted code forge that mainly supports the Git distributed version control system.
+Gitus is a self-hosted code forge that mainly supports the Git distributed version control system.
 
 + Simple, functional UI;
 + **No JavaScript** - works all major browsers and a lot of minor ones, including [Ladybird](https://ladybird.org), [K-Meleon](http://kmeleonbrowser.org) and [NetSurf](https://www.netsurf-browser.org).
@@ -40,7 +40,7 @@ make all
 Run the following command:
 
 ``` sh
-./aegis -init
+./gitus -init
 ```
 
 And choose to start the web installer. It will guide you through the configuration process.
@@ -48,7 +48,7 @@ And choose to start the web installer. It will guide you through the configurati
 After the configuration process, run:
 
 ``` sh
-./aegis -config {config_file_path}
+./gitus -config {config_file_path}
 ```
 
 This would set up everything that's required. After the setup process is completed, run the same command again to start the "main" web server.
@@ -56,7 +56,7 @@ This would set up everything that's required. After the setup process is complet
 This process would show you the password for the admin user, which is randomly generated. You can override this password by running:
 
 ``` sh
-./aegis -config {config_file_path} reset-admin
+./gitus -config {config_file_path} reset-admin
 ```
 
 Currently Aegis only supports the following systems for its components; support for other systems are planned:

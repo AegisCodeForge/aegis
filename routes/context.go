@@ -12,32 +12,32 @@ import (
 	"path"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis"
-	"github.com/bctnry/aegis/pkg/aegis/confirm_code"
-	"github.com/bctnry/aegis/pkg/aegis/db"
-	"github.com/bctnry/aegis/pkg/aegis/mail"
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	"github.com/bctnry/aegis/pkg/aegis/receipt"
-	"github.com/bctnry/aegis/pkg/aegis/session"
-	"github.com/bctnry/aegis/pkg/aegis/ssh"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/confirm_code"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/db"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/mail"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/receipt"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/session"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/ssh"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 type RouterContext struct {
 	GitUserHomeDirectory string
-	Config *aegis.AegisConfig
+	Config *gitus.GitusConfig
 	MasterTemplate *template.Template
 	GitRepositoryList map[string]*model.Repository
 	GitNamespaceList map[string]*model.Namespace
-	DatabaseInterface db.AegisDatabaseInterface
-	SessionInterface session.AegisSessionStore
+	DatabaseInterface db.GitusDatabaseInterface
+	SessionInterface session.GitusSessionStore
 	SSHKeyManagingContext *ssh.SSHKeyManagingContext
-	ReceiptSystem receipt.AegisReceiptSystemInterface
-	Mailer mail.AegisMailerInterface
+	ReceiptSystem receipt.GitusReceiptSystemInterface
+	Mailer mail.GitusMailerInterface
 	LoginInfo *templates.LoginInfoModel
 	LastError error
 	RateLimiter *RateLimiter
-	ConfirmCodeManager confirm_code.AegisConfirmCodeManager
+	ConfirmCodeManager confirm_code.GitusConfirmCodeManager
 	SimpleModeConfigCache model.SimpleModeConfigCache
 }
 
@@ -219,7 +219,7 @@ func (ctx *RouterContext) ResolveRepositoryFullName(str string) (string, string,
 	var ok bool
 	var err error
 	var ns *model.Namespace
-	if ctx.Config.IsInPlainMode() || ctx.Config.OperationMode == aegis.OP_MODE_SIMPLE {
+	if ctx.Config.IsInPlainMode() || ctx.Config.OperationMode == gitus.OP_MODE_SIMPLE {
 		ns, ok = ctx.GitNamespaceList[namespaceName]
 		if !ok {
 			err := ctx.SyncAllNamespacePlain()

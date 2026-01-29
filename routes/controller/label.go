@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindLabelController(ctx *RouterContext) {

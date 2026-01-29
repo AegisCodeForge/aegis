@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 // /admin/user-list?p={pagenum}&s={pagesize}
@@ -30,7 +30,7 @@ func bindAdminUserListController(ctx *RouterContext) {
 			if i % pageSize != 0 { totalPage += 1 }
 			if pageNum > totalPage { pageNum = totalPage }
 			if pageNum <= 1 { pageNum = 1 }
-			var userList []*model.AegisUser
+			var userList []*model.GitusUser
 			if len(q) > 0 {
 				userList, err = rc.DatabaseInterface.SearchForUser(q, pageNum-1, pageSize)
 			} else {

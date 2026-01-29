@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bctnry/aegis/pkg/aegis/model"
-	auxfuncs "github.com/bctnry/aegis/pkg/auxfuncs"
-	. "github.com/bctnry/aegis/routes"
-	"github.com/bctnry/aegis/templates"
+	"github.com/GitusCodeForge/Gitus/pkg/gitus/model"
+	auxfuncs "github.com/GitusCodeForge/Gitus/pkg/auxfuncs"
+	. "github.com/GitusCodeForge/Gitus/routes"
+	"github.com/GitusCodeForge/Gitus/templates"
 )
 
 func bindNamespaceSettingController(ctx *RouterContext) {
@@ -112,7 +112,7 @@ func bindNamespaceSettingController(ctx *RouterContext) {
 				)
 				return
 			}
-			ns.Status = model.AegisNamespaceStatus(i)
+			ns.Status = model.GitusNamespaceStatus(i)
 			err = rc.DatabaseInterface.UpdateNamespaceInfo(namespaceName, ns)
 			if err != nil {
 				rc.ReportInternalError(err.Error(), w, r)
